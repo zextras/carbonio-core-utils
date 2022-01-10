@@ -1,35 +1,25 @@
 #!/usr/bin/perl
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2011, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-#
+# SPDX-License-Identifier: GPL-2.0-only
+
 use strict;
-use lib '/opt/zimbra/common/lib/perl5';
+use lib '/opt/zextras/common/lib/perl5';
 use Net::LDAP;
 use XML::Simple;
 use Getopt::Long;
 
-if ( !-d "/opt/zimbra/common/etc/openldap/schema" ) {
+if ( !-d "/opt/zextras/common/etc/openldap/schema" ) {
     print "ERROR: openldap does not appear to be installed - exiting\n";
     exit(1);
 }
 
 my $id = getpwuid($<);
 chomp $id;
-if ( $id ne "zimbra" ) {
-    print "ERROR: must be run as zimbra user\n";
+if ( $id ne "zextras" ) {
+    print "ERROR: must be run as zextras user\n";
     exit(1);
 }
 my ( $help, $providerURI, $rid, $tls, $query, $add, $modify, $delete, $newrid );
@@ -61,7 +51,7 @@ usage(0) if ( $providerURI && $providerURI !~ /^ldaps?:\/\// );
 usage(0) if ( $providerURI && $providerURI !~ /\/$/ );
 usage(0) if ( $tls         && $tls ne "critical" && $tls ne "off" );
 
-my $localxml           = XMLin("/opt/zimbra/conf/localconfig.xml");
+my $localxml           = XMLin("/opt/zextras/conf/localconfig.xml");
 my $ldap_root_password = $localxml->{key}->{ldap_root_password}->{value};
 my $ldap_is_master     = $localxml->{key}->{ldap_is_master}->{value};
 my $ldap_replication_password =
@@ -78,7 +68,7 @@ die "ERROR: Cannot be used on a LDAP master.\n"
 my %providers;
 
 my $ldap =
-  Net::LDAP->new('ldapi://%2fopt%2fzimbra%2fdata%2fldap%2fstate%2frun%2fldapi/')
+  Net::LDAP->new('ldapi://%2fopt%2fzextras%2fdata%2fldap%2fstate%2frun%2fldapi/')
   or die "$@";
 my $mesg = $ldap->bind( "cn=config", password => "$ldap_root_password" );
 $mesg->code && die "Bind: " . $mesg->error . "\n";
@@ -183,7 +173,7 @@ if ($add) {
             $bdn,
             add => {
                 olcSyncrepl =>
-"rid=$rid provider=$providerURI bindmethod=simple timeout=0 network-timeout=0 binddn=uid=zmreplica,cn=admins,cn=zimbra credentials=$ldap_replication_password $tls filter=\"(objectclass=*)\" searchbase=\"\" logfilter=\"(&(objectClass=auditWriteObject)(reqResult=0))\" logbase=cn=accesslog scope=sub schemachecking=off type=refreshAndPersist retry=\"60 +\" syncdata=accesslog tls_cacertdir=/opt/zimbra/conf/ca keepalive=240:10:30"
+"rid=$rid provider=$providerURI bindmethod=simple timeout=0 network-timeout=0 binddn=uid=zmreplica,cn=admins,cn=zimbra credentials=$ldap_replication_password $tls filter=\"(objectclass=*)\" searchbase=\"\" logfilter=\"(&(objectClass=auditWriteObject)(reqResult=0))\" logbase=cn=accesslog scope=sub schemachecking=off type=refreshAndPersist retry=\"60 +\" syncdata=accesslog tls_cacertdir=/opt/zextras/conf/ca keepalive=240:10:30"
             },
         );
     }
@@ -192,7 +182,7 @@ if ($add) {
             $bdn,
             add => {
                 olcSyncrepl =>
-"rid=$rid provider=$providerURI bindmethod=simple timeout=0 network-timeout=0 binddn=uid=zmreplica,cn=admins,cn=zimbra credentials=$ldap_replication_password filter=\"(objectclass=*)\" searchbase=\"\" logfilter=\"(&(objectClass=auditWriteObject)(reqResult=0))\" logbase=cn=accesslog scope=sub schemachecking=off type=refreshAndPersist retry=\"60 +\" syncdata=accesslog tls_cacertdir=/opt/zimbra/conf/ca keepalive=240:10:30"
+"rid=$rid provider=$providerURI bindmethod=simple timeout=0 network-timeout=0 binddn=uid=zmreplica,cn=admins,cn=zimbra credentials=$ldap_replication_password filter=\"(objectclass=*)\" searchbase=\"\" logfilter=\"(&(objectClass=auditWriteObject)(reqResult=0))\" logbase=cn=accesslog scope=sub schemachecking=off type=refreshAndPersist retry=\"60 +\" syncdata=accesslog tls_cacertdir=/opt/zextras/conf/ca keepalive=240:10:30"
             },
         );
         $err = $mesg->code;

@@ -1,32 +1,36 @@
 #!/bin/bash
 
-if [ ! -x /opt/zimbra/common/sbin/amavisd ]; then
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
+if [ ! -x /opt/zextras/common/sbin/amavisd ]; then
   echo "Error: Must be run on an MTA"
   exit 1
 fi
 
-u=`id -un`
-if [ $u != "zimbra" ]; then
-    echo "Error: must be run as the zimbra user"
-    exit 1
+u=$(id -un)
+if [ $u != "zextras" ]; then
+  echo "Error: must be run as the zextras user"
+  exit 1
 fi
 
-re2c=`which re2c`
+re2c=$(which re2c)
 if [ x"$re2c" = "x" ]; then
   echo "Error: re2c is required to compile rules"
   exit 1
 fi
 
-make=`which make`
+make=$(which make)
 if [ x"$make" = "x" ]; then
   echo "Error: make is required to compile rules"
   exit 1
 fi
 
-NICE=`which nice`
+NICE=$(which nice)
 if [ x"$NICE" = "x" ]; then
-  /opt/zimbra/common/bin/sa-compile >/dev/null 2>&1
+  /opt/zextras/common/bin/sa-compile >/dev/null 2>&1
 else
   NICED="$NICE -n 19"
-  $NICED /opt/zimbra/common/bin/sa-compile >/dev/null 2>&1
+  $NICED /opt/zextras/common/bin/sa-compile >/dev/null 2>&1
 fi

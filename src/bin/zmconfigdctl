@@ -1,106 +1,93 @@
 #!/bin/bash
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2010, 2011, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
 
-if [ x`whoami` != xzimbra ]; then
-	echo Error: must be run as zimbra user
-  exit 1
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+if [ x$(whoami) != xzextras ]; then
+	echo Error: must be run as zextras user
+	exit 1
 fi
 
-source `dirname $0`/zmshutil || exit 1
+source $(dirname $0)/zmshutil || exit 1
 zmsetvars
 
 # These variables are not set if run via cron.  Make sure they are set prior to execution
 if [ x"$JYTHONPATH" = "x" ]; then
-  JAVA_HOME=/opt/zimbra/common/lib/jvm/java
-  PATH=/opt/zimbra/bin:/opt/zimbra/common/bin:${JAVA_HOME}/bin:/usr/sbin:${PATH}
-  export PATH
+	JAVA_HOME=/opt/zextras/common/lib/jvm/java
+	PATH=/opt/zextras/bin:/opt/zextras/common/bin:${JAVA_HOME}/bin:/usr/sbin:${PATH}
+	export PATH
 
-  JYTHONPATH="/opt/zimbra/common/lib/jylibs"
-  export JYTHONPATH
+	JYTHONPATH="/opt/zextras/common/lib/jylibs"
+	export JYTHONPATH
 fi
- 
+
 pid=""
 pidfile="${zimbra_log_directory}/zmconfigd.pid"
 
-NC=`which nc 2>/dev/null`; NC=${NC:-`which netcat 2>/dev/null`}
+NC=$(which nc 2>/dev/null)
+NC=${NC:-$(which netcat 2>/dev/null)}
 
-getpid()
-{
-  if [ -f ${pidfile} ]; then
-	pid=$(cat ${pidfile})
-  fi
+getpid() {
+	if [ -f ${pidfile} ]; then
+		pid=$(cat ${pidfile})
+	fi
 }
 
-checkrunning()
-{
-  getpid
-  if [ "x$pid" = "x0" ]; then
-    pid=`ps auxwww | grep zmconfigd | grep -v grep | grep -v zmconfigdctl |  awk '{print $2}'`
-  fi
-  if [ "x$pid" = "x" ]; then
-	running=0
-  else
-	status=`echo STATUS | $NC -w 15 localhost ${zmconfigd_listen_port} 2>/dev/null`
-	if [ $? = 0 -a "x$status" = "xSUCCESS ACTIVE" ]; then
-		running=1
-	else
-		running=0
+checkrunning() {
+	getpid
+	if [ "x$pid" = "x0" ]; then
+		pid=$(ps auxwww | grep zmconfigd | grep -v grep | grep -v zmconfigdctl | awk '{print $2}')
 	fi
-  fi
-} 
+	if [ "x$pid" = "x" ]; then
+		running=0
+	else
+		status=$(echo STATUS | $NC -w 15 localhost ${zmconfigd_listen_port} 2>/dev/null)
+		if [ $? = 0 -a "x$status" = "xSUCCESS ACTIVE" ]; then
+			running=1
+		else
+			running=0
+		fi
+	fi
+}
 
-startzmconfigd()
-{
+startzmconfigd() {
 	err=0
 	checkrunning
 	echo -n "Starting zmconfigd..."
 	if [ $running = 1 ]; then
-	  echo "zmconfigd is already running."
-	  return
+		echo "zmconfigd is already running."
+		return
 	fi
 	if [ "x$JYTHONPATH" = "x" ]; then
-	  echo "JYTHONPATH is unset!"
-	  err=1
-	  return
+		echo "JYTHONPATH is unset!"
+		err=1
+		return
 	fi
 	if [ "x${pid}" != "x" ]; then
 		kill -9 ${pid}
 	fi
 	rm -rf ${pidfile}
-	/opt/zimbra/libexec/zmconfigd >/dev/null 2>&1 &
-	for ((i = 0; i < 30; i++)) do
+	/opt/zextras/libexec/zmconfigd >/dev/null 2>&1 &
+	for ((i = 0; i < 30; i++)); do
 		if [ -f ${pidfile} ]; then
 			break
 		fi
 		sleep 1
 	done
-	for ((i = 0; i < ${zmconfigd_startup_pause}; i++)) do
-	  checkrunning
-	  if [ $running = 1 ]; then
-		echo "done."
-		return
-	  fi
-	  if [ $running = -1 ]; then
-		echo "Failed to start"
-		err=1
-		return
-	  fi
-	  sleep 1
+	for ((i = 0; i < ${zmconfigd_startup_pause}; i++)); do
+		checkrunning
+		if [ $running = 1 ]; then
+			echo "done."
+			return
+		fi
+		if [ $running = -1 ]; then
+			echo "Failed to start"
+			err=1
+			return
+		fi
+		sleep 1
 	done
 	echo "failed."
 	err=1
@@ -108,58 +95,58 @@ startzmconfigd()
 }
 
 case "$1" in
-  'start')
+'start')
 	startzmconfigd
 	exit ${err}
-   ;;
+	;;
 
-  'kill'|'stop')
+'kill' | 'stop')
 	checkrunning
 	echo -n "Stopping zmconfigd..."
 	if [ $running -lt 1 ]; then
-	  echo "zmconfigd is not running."
-	  exit 0
-	else 
-	  for ((i = 0; i < 30; i++)); do
-		kill -0 $pid 2> /dev/null
-		if [ $? != 0 ]; then
-		  rm -rf ${pidfile}
-		  break
-		fi
-		kill $pid
-		sleep 1
-	  done
+		echo "zmconfigd is not running."
+		exit 0
+	else
+		for ((i = 0; i < 30; i++)); do
+			kill -0 $pid 2>/dev/null
+			if [ $? != 0 ]; then
+				rm -rf ${pidfile}
+				break
+			fi
+			kill $pid
+			sleep 1
+		done
 	fi
 	if [ -s ${pidfile} ]; then
-	  echo "failed."
-	  exit 1
+		echo "failed."
+		exit 1
 	else
-	  echo "done."
+		echo "done."
 	fi
 	exit 0
-  ;;
+	;;
 
-	
-  'restart'|'reload')
+\
+	'restart' | 'reload')
 	$0 stop
 	$0 start
-  ;;
-  
-  'status')
+	;;
+
+'status')
 	echo -n "zmconfigd is "
 	checkrunning
 	if [ $running -lt 1 ]; then
-	  echo "not running." 
-	  exit 1
+		echo "not running."
+		exit 1
 	else
-	  echo "running."
-	  exit 0
+		echo "running."
+		exit 0
 	fi
-   ;;
-	
-  *)
+	;;
+
+*)
 	echo "Usage: $0 start|stop|kill|restart|reload|status"
 	exit 1
-  ;;
+	;;
 
 esac

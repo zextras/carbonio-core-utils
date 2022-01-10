@@ -1,28 +1,18 @@
 #!/usr/bin/perl
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-#
+# SPDX-License-Identifier: GPL-2.0-only
+
 use strict;
-use lib '/opt/zimbra/common/lib/perl5';
+use lib '/opt/zextras/common/lib/perl5';
 use Net::LDAP;
 use Net::LDAP::Util qw ( ldap_error_name );
 use XML::Simple;
 use Getopt::Long qw(:config no_ignore_case);
 
-if ( !-x "/opt/zimbra/common/bin/cbpolicyd" ) {
+if ( !-x "/opt/zextras/common/bin/cbpolicyd" ) {
     print
 "ERROR: cluebringer policy daemon does not appear to be installed - exiting\n";
     exit(1);
@@ -30,8 +20,8 @@ if ( !-x "/opt/zimbra/common/bin/cbpolicyd" ) {
 
 my $id = getpwuid($<);
 chomp $id;
-if ( $id ne "zimbra" ) {
-    print STDERR "Error: must be run as zimbra user\n";
+if ( $id ne "zextras" ) {
+    print STDERR "Error: must be run as zextras user\n";
     exit(1);
 }
 
@@ -40,7 +30,7 @@ if ( !@ARGV ) {
     exit(1);
 }
 
-my $localxml              = XMLin("/opt/zimbra/conf/localconfig.xml");
+my $localxml              = XMLin("/opt/zextras/conf/localconfig.xml");
 my $ldap_url              = $localxml->{key}->{ldap_url}->{value};
 my $zimbra_admin_dn       = $localxml->{key}->{zimbra_ldap_userdn}->{value};
 my $zimbra_admin_password = $localxml->{key}->{zimbra_ldap_password}->{value};
@@ -50,14 +40,14 @@ my $ldap_starttls_supported =
 my $zimbra_require_interprocess_security =
   $localxml->{key}->{zimbra_require_interprocess_security}->{value};
 
-my $cbpadmin = "/opt/zimbra/common/bin/cbpadmin";
+my $cbpadmin = "/opt/zextras/common/bin/cbpadmin";
 
 my $mesg;
-my @servers = split( / /, $ldap_url );
+my @servers    = split( / /, $ldap_url );
 my $server_ref = \@servers;
 
 my $server_base = "cn=servers,cn=zimbra";
-my $hostname    = qx(/opt/zimbra/bin/zmhostname);
+my $hostname    = qx(/opt/zextras/bin/zmhostname);
 
 my $ldap = Net::LDAP->new($server_ref) or die "$@";
 
@@ -65,7 +55,7 @@ if ( $ldap_url !~ /^ldaps/i ) {
     if ($ldap_starttls_supported) {
         $mesg = $ldap->start_tls(
             verify => 'none',
-            capath => "/opt/zimbra/conf/ca",
+            capath => "/opt/zextras/conf/ca",
         ) or die "start_tls: $@";
         $mesg->code && die "Could not execute StartTLS\n";
     }
@@ -76,7 +66,7 @@ if ( !defined($ldap) ) {
 $mesg = $ldap->bind( $zimbra_admin_dn, password => $zimbra_admin_password );
 $mesg->code && die "Bind: " . $mesg->error . "\n";
 
-if ( -f '/opt/zimbra/conf/cbpolicyd.conf' ) {
+if ( -f '/opt/zextras/conf/cbpolicyd.conf' ) {
     $mesg = $ldap->search(
         base   => "cn=$hostname,$server_base",
         filter => "(zimbraServiceEnabled=cbpolicyd)",
@@ -88,8 +78,8 @@ if ( -f '/opt/zimbra/conf/cbpolicyd.conf' ) {
         print STDERR "cluebringer not enabled.\n";
         exit(1);
     }
-    system( "/opt/zimbra/common/bin/cbpadmin",
-        "--config=/opt/zimbra/conf/cbpolicyd.conf", @ARGV );
+    system( "/opt/zextras/common/bin/cbpadmin",
+        "--config=/opt/zextras/conf/cbpolicyd.conf", @ARGV );
     exit($?);
 }
 else {

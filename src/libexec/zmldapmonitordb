@@ -1,6 +1,11 @@
 #!/usr/bin/perl
+
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
 use strict;
-use lib qw (/opt/zimbra/common/lib/perl5);
+use lib qw (/opt/zextras/common/lib/perl5);
 use XML::Simple;
 use Getopt::Long;
 use Filesys::Df;
@@ -8,15 +13,15 @@ use POSIX;
 use Mail::Mailer;
 use Net::LDAP;
 
-if ( ! -d "/opt/zimbra/common/etc/openldap/schema" ) {
+if ( ! -d "/opt/zextras/common/etc/openldap/schema" ) {
   print "ERROR: openldap does not appear to be installed - exiting\n";
   exit(1);
 }
 
 my $id = getpwuid($<);
 chomp $id;
-if ($id ne "zimbra") {
-    print STDERR "Error: must be run as zimbra user\n";
+if ($id ne "zextras") {
+    print STDERR "Error: must be run as zextras user\n";
     exit (1);
 }
 
@@ -34,7 +39,7 @@ if ($help) {
   usage(0);
 }
 
-my $localxml = XMLin("/opt/zimbra/conf/localconfig.xml");
+my $localxml = XMLin("/opt/zextras/conf/localconfig.xml");
 
 my $ldap_monitor_mdb = $localxml->{key}->{ldap_monitor_mdb}->{value};
 my $ldap_monitor_alert_only = $localxml->{key}->{ldap_monitor_alert_only}->{value};
@@ -116,17 +121,17 @@ if ($ldap_monitor_growth > 1) {
   $ldap_monitor_growth/=100;
 }
 
-my $zmlocalconfig="/opt/zimbra/bin/zmlocalconfig";
-my $mdb_stat="/opt/zimbra/common/bin/mdb_stat -e";
-my $db="/opt/zimbra/data/ldap/mdb/db/data.mdb";
-my $adb="/opt/zimbra/data/ldap/accesslog/db/data.mdb";
-my $dbdir="/opt/zimbra/data/ldap/mdb/db";
-my $adbdir="/opt/zimbra/data/ldap/accesslog/db";
+my $zmlocalconfig="/opt/zextras/bin/zmlocalconfig";
+my $mdb_stat="/opt/zextras/common/bin/mdb_stat -e";
+my $db="/opt/zextras/data/ldap/mdb/db/data.mdb";
+my $adb="/opt/zextras/data/ldap/accesslog/db/data.mdb";
+my $dbdir="/opt/zextras/data/ldap/mdb/db";
+my $adbdir="/opt/zextras/data/ldap/accesslog/db";
 my $mdb_used=0;
 my $alog_used=0;
 my $is_master=0;
 
-if ($ldap_is_master && -f "/opt/zimbra/data/ldap/accesslog/db/data.mdb") {
+if ($ldap_is_master && -f "/opt/zextras/data/ldap/accesslog/db/data.mdb") {
   $is_master=1;
 }
 
@@ -162,7 +167,7 @@ if ($is_master) {
   $alog_used=$page_size*$pages_used;
 }
 
-my $partUsage=df("/opt/zimbra/data/ldap/mdb/db");
+my $partUsage=df("/opt/zextras/data/ldap/mdb/db");
 my $totalspace = $partUsage->{blocks}*1024;
 my $freespace = $partUsage->{bfree}*1024;
 my $usedspace = $partUsage->{used}*1024;
@@ -370,7 +375,7 @@ sub getLdapServerConfigValue {
     my $attrib = shift;
 
     return (undef) unless ($attrib);
-    open( CONF, "/opt/zimbra/bin/zmprov -l gs $server '$attrib' |" )
+    open( CONF, "/opt/zextras/bin/zmprov -l gs $server '$attrib' |" )
       or die("Open server config failed: $!");
 
     my ( $key, $val );
@@ -388,7 +393,7 @@ sub getLdapGlobalConfigValue {
 
     return (undef) unless ($attrib);
 
-    open( CONF, "/opt/zimbra/bin/zmprov -l gcf '$attrib' |" )
+    open( CONF, "/opt/zextras/bin/zmprov -l gcf '$attrib' |" )
       or die("Open global config failed: $!");
 
     my ( $key, $val );
@@ -403,7 +408,7 @@ sub getLdapGlobalConfigValue {
 sub sendEmailReport {
   my $subject = shift;
   my $msg = shift;
-  my $localxml = XMLin("/opt/zimbra/conf/localconfig.xml");
+  my $localxml = XMLin("/opt/zextras/conf/localconfig.xml");
 
   my $from_address= $localxml->{key}->{smtp_source}->{value};
   my $to_address = $localxml->{key}->{smtp_destination}->{value};

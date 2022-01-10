@@ -1,22 +1,11 @@
 #!/usr/bin/perl
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
 
-use lib "/opt/zimbra/common/lib/perl5";
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+use lib "/opt/zextras/common/lib/perl5";
 use strict;
 use warnings;
 use DBI;
@@ -31,12 +20,12 @@ my %hostmap;
 use vars qw($logger_directory $log_file);
 
 # Exit if software-only node.
-exit(0) unless (-f '/opt/zimbra/conf/localconfig.xml');
+exit(0) unless (-f '/opt/zextras/conf/localconfig.xml');
 
-my $pid_file = "/opt/zimbra/log/zmlogprocess.pid";
-my $state_file = "/opt/zimbra/log/zmlogprocess.state";
+my $pid_file = "/opt/zextras/log/zmlogprocess.pid";
+my $state_file = "/opt/zextras/log/zmlogprocess.state";
 $logger_directory = getLocalConfig("logger_data_directory");
-$log_file = '/var/log/zimbra.log';
+$log_file = '/var/log/carbonio.log';
 
 
 # Regexes for Postfix Queue IDs
@@ -70,7 +59,7 @@ sub gethostmap() {
 }
 
 sub listMTA() {
-    open(MTALIST, "/opt/zimbra/bin/zmprov gas mta |") || die $!;
+    open(MTALIST, "/opt/zextras/bin/zmprov gas mta |") || die $!;
     my @mtas = <MTALIST>;
     chomp(@mtas);
     close(MTALIST);
@@ -140,7 +129,7 @@ sub getLocalConfig {
     return $ENV{$key};
   }
   open CONF, 
-    "/opt/zimbra/bin/zmlocalconfig -q -x -s -m shell |" 
+    "/opt/zextras/bin/zmlocalconfig -q -x -s -m shell |" 
     or die "Can't open local config: $!";
   my @conf = <CONF>;
   close CONF;

@@ -1,19 +1,9 @@
 #!/usr/bin/perl
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2006, 2007, 2008, 2009, 2010, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
+# SPDX-License-Identifier: GPL-2.0-only
 
 =head1 NAME
 
@@ -32,7 +22,7 @@ zmdailyreport - report on email usage
 use warnings;
 use strict;
 use Pod::Usage qw(pod2usage);
-use lib "/opt/zimbra/common/lib/perl5";
+use lib "/opt/zextras/common/lib/perl5";
 use Zimbra::Util::Common;
 use Zimbra::Mon::Logger;
 use Getopt::Long qw(GetOptions);
@@ -67,14 +57,14 @@ if (fork()) {
 	
 	my $found = 0;
 	my $old_log;
-	if (-f "/var/log/zimbra.log.1.gz") {
-		$old_log = "gzip -dc /var/log/zimbra.log.1.gz |";
-	} elsif (-f "/var/log/zimbra.log-$ymd.gz") {
-		$old_log = "gzip -dc /var/log/zimbra.log-$ymd.gz |";
-	} elsif (-f "/var/log/zimbra.log.1.bz2") {
-		$old_log = "bzip2 -dc /var/log/zimbra.log.1.bz2 |";
-	} elsif (-f "/var/log/zimbra.log-$ymd.bz2") {
-		$old_log = "bzip2 -dc /var/log/zimbra.log-$ymd.bz2 |";
+	if (-f "/var/log/carbonio.log.1.gz") {
+		$old_log = "gzip -dc /var/log/carbonio.log.1.gz |";
+	} elsif (-f "/var/log/carbonio.log-$ymd.gz") {
+		$old_log = "gzip -dc /var/log/carbonio.log-$ymd.gz |";
+	} elsif (-f "/var/log/carbonio.log.1.bz2") {
+		$old_log = "bzip2 -dc /var/log/carbonio.log.1.bz2 |";
+	} elsif (-f "/var/log/carbonio.log-$ymd.bz2") {
+		$old_log = "bzip2 -dc /var/log/carbonio.log-$ymd.bz2 |";
 	}
 	if (defined($old_log)) {
 	    if (open(LOG, $old_log)) {
@@ -92,7 +82,7 @@ if (fork()) {
 	    }
 		
 	}
-	open(LOG, "</var/log/zimbra.log") || die $!;
+	open(LOG, "</var/log/carbonio.log") || die $!;
 	$found = 0;
 	while (<LOG>) {
 		my $line = $_;
@@ -126,7 +116,7 @@ if (fork()) {
 	$user_limit = 50 if $user_limit !~ /^\d+/;
 	$host_limit = 50 if $host_limit !~ /^\d+/;
     @ARGV = ('-u', $user_limit, '-h', $host_limit);
-    do '/opt/zimbra/common/bin/pflogsumm.pl';
+    do '/opt/zextras/common/bin/pflogsumm.pl';
     close(STDOUT);
 }
 
@@ -143,7 +133,7 @@ if (fork()) {
 sub loadLocalConfig {
     my %conf;
 
-    open( CONF, "/opt/zimbra/bin/zmlocalconfig -s -q -m shell |" )
+    open( CONF, "/opt/zextras/bin/zmlocalconfig -s -q -m shell |" )
       or die("Open local config failed: $!\n");
 
     while (<CONF>) {
@@ -177,7 +167,7 @@ sub getLdapServerConfigValue {
     return (undef) unless ($attrib);
     my $server = getLocalConfig("zimbra_server_hostname");
     # could consider redirecting STDERR to /dev/null
-    open( CONF, "/opt/zimbra/bin/zmprov -l gs $server '$attrib' |" )
+    open( CONF, "/opt/zextras/bin/zmprov -l gs $server '$attrib' |" )
       or die("Open global config failed: $!");
 
     my ( $key, $val );
@@ -197,7 +187,7 @@ sub getLdapGlobalConfigValue {
     return (undef) unless ($attrib);
 
     # could consider redirecting STDERR to /dev/null
-    open( CONF, "/opt/zimbra/bin/zmprov -l gcf '$attrib' |" )
+    open( CONF, "/opt/zextras/bin/zmprov -l gcf '$attrib' |" )
       or die("Open global config failed: $!");
 
     my ( $key, $val );

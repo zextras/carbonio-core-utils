@@ -1,26 +1,15 @@
 #!/bin/bash
-#
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-#
 
-source /opt/zimbra/bin/zmshutil || exit 1
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+source /opt/zextras/bin/zmshutil || exit 1
 
 zmsetvars -f
 
-u=`id -un`
+u=$(id -un)
 if [ $u != ${zimbra_user} ]; then
   echo "Error: must be run as ${zimbra_user} user"
   exit 1
@@ -28,7 +17,7 @@ fi
 
 verifyLdapInstalled() {
   echo -n "Looking for LDAP installation..."
-  if [ ! -d /opt/zimbra/common/etc/openldap/schema ]; then
+  if [ ! -d /opt/zextras/common/etc/openldap/schema ]; then
     echo "FAILED"
     echo "ERROR: openldap does not appear to be installed - exiting"
     exit 1
@@ -37,76 +26,76 @@ verifyLdapInstalled() {
 }
 
 createSchemaDir() {
-  mkdir -p /opt/zimbra/data/ldap/config/cn\=config/cn\=schema
-  chown ${zimbra_user}:${zimbra_user} /opt/zimbra/data/ldap/config/cn\=config/cn\=schema
-  chmod 750 /opt/zimbra/data/ldap/config/cn\=config/cn\=schema
+  mkdir -p /opt/zextras/data/ldap/config/cn\=config/cn\=schema
+  chown ${zimbra_user}:${zimbra_user} /opt/zextras/data/ldap/config/cn\=config/cn\=schema
+  chmod 750 /opt/zextras/data/ldap/config/cn\=config/cn\=schema
 }
 
 installCoreSchema() {
   echo "Installing core schema..."
-  cp -f /opt/zimbra/common/etc/openldap/schema/core.ldif /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{0\}core.ldif
-  chown ${zimbra_user}:${zimbra_user} /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{0\}core.ldif
-  chmod 600 /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{0\}core.ldif
+  cp -f /opt/zextras/common/etc/openldap/schema/core.ldif /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{0\}core.ldif
+  chown ${zimbra_user}:${zimbra_user} /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{0\}core.ldif
+  chmod 600 /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{0\}core.ldif
   sed -i.orig -e '/^dn: cn=core,/ s/dn: cn=core,cn=schema,cn=config/dn: cn={0}core/' -e '/^cn: core/ s/cn: core/cn: {0}core/' \
-    /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{0\}core.ldif
+    /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{0\}core.ldif
 }
 
 installCosineSchema() {
   echo "Installing cosine schema..."
-  cp -f /opt/zimbra/common/etc/openldap/schema/cosine.ldif /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{1\}cosine.ldif
-  chown ${zimbra_user}:${zimbra_user} /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{1\}cosine.ldif
-  chmod 600 /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{1\}cosine.ldif
+  cp -f /opt/zextras/common/etc/openldap/schema/cosine.ldif /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{1\}cosine.ldif
+  chown ${zimbra_user}:${zimbra_user} /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{1\}cosine.ldif
+  chmod 600 /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{1\}cosine.ldif
   sed -i.orig -e '/^dn: cn=cosine,/ s/dn: cn=cosine,cn=schema,cn=config/dn: cn={1}cosine/' -e '/^cn: cosine/ s/cn: cosine/cn: {1}cosine/' \
-    /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{1\}cosine.ldif
+    /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{1\}cosine.ldif
 }
 
 installInetOrgPersonSchema() {
   echo "Installing inetOrgPerson schema..."
-  cp -f /opt/zimbra/common/etc/openldap/schema/inetorgperson.ldif /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{2\}inetorgperson.ldif
-  chown ${zimbra_user}:${zimbra_user} /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{2\}inetorgperson.ldif
-  chmod 600 /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{2\}inetorgperson.ldif
+  cp -f /opt/zextras/common/etc/openldap/schema/inetorgperson.ldif /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{2\}inetorgperson.ldif
+  chown ${zimbra_user}:${zimbra_user} /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{2\}inetorgperson.ldif
+  chmod 600 /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{2\}inetorgperson.ldif
   sed -i.orig -e '/^dn: cn=inetorgperson,/ s/dn: cn=inetorgperson,cn=schema,cn=config/dn: cn={2}inetorgperson/' -e '/^cn: inetorgperson/ s/cn: inetorgperson/cn: {2}inetorgperson/' \
-    /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{2\}inetorgperson.ldif
+    /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{2\}inetorgperson.ldif
 }
 
 installDynlistSchema() {
   echo "Installing dyngroup schema..."
-  cp -f /opt/zimbra/common/etc/openldap/schema/dyngroup.ldif /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{3\}dyngroup.ldif
-  chown ${zimbra_user}:${zimbra_user} /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{3\}dyngroup.ldif
-  chmod 600 /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{3\}dyngroup.ldif
+  cp -f /opt/zextras/common/etc/openldap/schema/dyngroup.ldif /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{3\}dyngroup.ldif
+  chown ${zimbra_user}:${zimbra_user} /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{3\}dyngroup.ldif
+  chmod 600 /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{3\}dyngroup.ldif
   sed -i.orig -e '/^dn: cn=dyngroup,/ s/dn: cn=dyngroup,cn=schema,cn=config/dn: cn={3}dyngroup/' -e '/^cn: dyngroup/ s/cn: dyngroup/cn: {3}dyngroup/' \
-    /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{3\}dyngroup.ldif
+    /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{3\}dyngroup.ldif
 }
 
 installZimbraSchema() {
   echo "Installing zimbra schema..."
-  cp -f /opt/zimbra/common/etc/openldap/zimbra/schema/zimbra.ldif /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{4\}zimbra.ldif
-  chown ${zimbra_user}:${zimbra_user} /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{4\}zimbra.ldif
-  chmod 600 /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{4\}zimbra.ldif
+  cp -f /opt/zextras/common/etc/openldap/zimbra/schema/carbonio.ldif /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{4\}carbonio.ldif
+  chown ${zimbra_user}:${zimbra_user} /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{4\}carbonio.ldif
+  chmod 600 /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{4\}carbonio.ldif
   sed -i.orig -e '/^dn: cn=zimbra,/ s/dn: cn=zimbra,cn=schema,cn=config/dn: cn={4}zimbra/' -e '/^cn: zimbra/ s/cn: zimbra/cn: {4}zimbra/' \
-    /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{4\}zimbra.ldif
+    /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{4\}carbonio.ldif
 }
 
 installAmavisSchema() {
   echo "Installing amavis schema..."
-  cp -f /opt/zimbra/common/etc/openldap/zimbra/schema/amavisd.ldif /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{5\}amavisd.ldif
-  chown ${zimbra_user}:${zimbra_user} /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{5\}amavisd.ldif
-  chmod 600 /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{5\}amavisd.ldif
+  cp -f /opt/zextras/common/etc/openldap/zimbra/schema/amavisd.ldif /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{5\}amavisd.ldif
+  chown ${zimbra_user}:${zimbra_user} /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{5\}amavisd.ldif
+  chmod 600 /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{5\}amavisd.ldif
   sed -i.orig -e '/^dn: cn=amavisd,/ s/dn: cn=amavisd,cn=schema,cn=config/dn: cn={5}amavisd/' -e '/^cn: amavisd/ s/cn: amavisd/cn: {5}amavisd/' \
-    /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{5\}amavisd.ldif
+    /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{5\}amavisd.ldif
 }
 
 installOpenDKIMSchema() {
   echo "Installing OpenDKIM schema..."
-  cp -f /opt/zimbra/common/etc/openldap/zimbra/schema/opendkim.ldif /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{6\}opendkim.ldif
-  chown ${zimbra_user}:${zimbra_user} /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{6\}opendkim.ldif
-  chmod 600 /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{6\}opendkim.ldif
+  cp -f /opt/zextras/common/etc/openldap/zimbra/schema/opendkim.ldif /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{6\}opendkim.ldif
+  chown ${zimbra_user}:${zimbra_user} /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{6\}opendkim.ldif
+  chmod 600 /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{6\}opendkim.ldif
   sed -i.orig -e '/^dn: cn=opendkim,/ s/dn: cn=opendkim,cn=schema,cn=config/dn: cn={6}opendkim/' -e '/^cn: opendkim/ s/cn: opendkim/cn: {6}opendkim/' \
-    /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/cn\=\{6\}opendkim.ldif
+    /opt/zextras/data/ldap/config/cn\=config/cn\=schema/cn\=\{6\}opendkim.ldif
 }
 
 cleanup() {
-  rm -f /opt/zimbra/data/ldap/config/cn\=config/cn\=schema/*.orig
+  rm -f /opt/zextras/data/ldap/config/cn\=config/cn\=schema/*.orig
 }
 
 verifyLdapInstalled

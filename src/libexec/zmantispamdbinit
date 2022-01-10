@@ -1,22 +1,11 @@
 #!/bin/bash
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2010, 2011, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
 
-source /opt/zimbra/bin/zmshutil || exit 1
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
 sql_root_pw=$1
@@ -24,110 +13,107 @@ sql_root_pw=$1
 #
 # Sanity checks
 #
-zmassert -x /opt/zimbra/bin/antispam-mysqladmin
-zmassert -x /opt/zimbra/bin/antispam-mysql
-zmassert -x /opt/zimbra/bin/zmlocalconfig
-zmassert -x /opt/zimbra/bin/zmantispamdbpasswd
-zmassert -x /opt/zimbra/common/share/mysql/scripts/mysql_install_db
-zmassert -r /opt/zimbra/data/amavisd/mysql/antispamdb.sql
+zmassert -x /opt/zextras/bin/antispam-mysqladmin
+zmassert -x /opt/zextras/bin/antispam-mysql
+zmassert -x /opt/zextras/bin/zmlocalconfig
+zmassert -x /opt/zextras/bin/zmantispamdbpasswd
+zmassert -x /opt/zextras/common/share/mysql/scripts/mysql_install_db
+zmassert -r /opt/zextras/data/amavisd/mysql/antispamdb.sql
 
 # Check if log directory exists.  If not, create.
 if [ ! -d ${zimbra_log_directory} ]; then
-	mkdir -p ${zimbra_log_directory}
+  mkdir -p ${zimbra_log_directory}
 fi
 
 #
 # Create antispam-my.cnf file if it does not exist
 #
-if [ ! -s ${antispam_mysql_mycnf} ]; then 
-    /opt/zimbra/libexec/zmantispammycnf > ${antispam_mysql_mycnf}
+if [ ! -s ${antispam_mysql_mycnf} ]; then
+  /opt/zextras/libexec/zmantispammycnf >${antispam_mysql_mycnf}
 fi
 
 #
 # Create database
 #
 echo '*' Creating database in ${antispam_mysql_data_directory}
-(/opt/zimbra/common/share/mysql/scripts/mysql_install_db \
-    --basedir=/opt/zimbra/common \
-    --datadir=${antispam_mysql_data_directory} \
-    --defaults-file=${antispam_mysql_mycnf} ) \
-    >> ${zimbra_log_directory}/zmantispamdbinit.log 2>&1
+(/opt/zextras/common/share/mysql/scripts/mysql_install_db \
+  --basedir=/opt/zextras/common \
+  --datadir=${antispam_mysql_data_directory} \
+  --defaults-file=${antispam_mysql_mycnf}) \
+  >>${zimbra_log_directory}/zmantispamdbinit.log 2>&1
 
 #
 # Start mysql server for antispam db
 #
-zmassert -d `dirname ${antispam_mysql_pidfile}`
+zmassert -d $(dirname ${antispam_mysql_pidfile})
 if [ -f ${antispam_mysql_pidfile} ]; then
-    pid=`cat ${antispam_mysql_pidfile}`
+  pid=$(cat ${antispam_mysql_pidfile})
 fi
 if [ "x$pid" != "x" ]; then
-    kill -0 $pid 2> /dev/null
-    if [ $? = 0 ]; then
-        # What the heck happened here.  mysqld_safe for anti-spam should not already be running!
-        echo "mysqld_safe for anti-spam already running with pid $pid"
-        exit 1
-    fi
+  kill -0 $pid 2>/dev/null
+  if [ $? = 0 ]; then
+    # What the heck happened here.  mysqld_safe for anti-spam should not already be running!
+    echo "mysqld_safe for anti-spam already running with pid $pid"
+    exit 1
+  fi
 fi
 # --defaults-file must be first argument
 echo -n '*' Starting antispam mysql server ...
-/opt/zimbra/common/bin/mysqld_safe \
-    --defaults-file=${antispam_mysql_mycnf} \
-    --basedir=/opt/zimbra/common \
-    --datadir=${antispam_mysql_data_directory} \
-    --external-locking \
-    --log-error=${antispam_mysql_errlogfile} \
-    --ledir=/opt/zimbra/common/sbin < /dev/null > /dev/null 2>&1 &
+/opt/zextras/common/bin/mysqld_safe \
+  --defaults-file=${antispam_mysql_mycnf} \
+  --basedir=/opt/zextras/common \
+  --datadir=${antispam_mysql_data_directory} \
+  --external-locking \
+  --log-error=${antispam_mysql_errlogfile} \
+  --ledir=/opt/zextras/common/sbin </dev/null >/dev/null 2>&1 &
 SQLSTARTED=0
-for ((i = 0; i < 60; i++))
-do
-    /opt/zimbra/bin/antispam-mysqladmin -s ping 2>&1 > /dev/null
-    if [ $? = 0 ]; then
-        SQLSTARTED=1
-        break
-    fi
-    sleep 2
+for ((i = 0; i < 60; i++)); do
+  /opt/zextras/bin/antispam-mysqladmin -s ping 2>&1 >/dev/null
+  if [ $? = 0 ]; then
+    SQLSTARTED=1
+    break
+  fi
+  sleep 2
 done
 if [ ${SQLSTARTED} -ne 1 ]; then
-    echo "failed."
-	exit 1
+  echo "failed."
+  exit 1
 else
-    echo "done."
+  echo "done."
 fi
-
 
 #
 # Load zimbra sql files
 #
-echo '*' Loading schema /opt/zimbra/data/amavisd/mysql/antispamdb.sql 
-/opt/zimbra/bin/antispam-mysql -u root --password= < \
-    /opt/zimbra/data/amavisd/mysql/antispamdb.sql
-
+echo '*' Loading schema /opt/zextras/data/amavisd/mysql/antispamdb.sql
+/opt/zextras/bin/antispam-mysql -u root --password= < \
+  /opt/zextras/data/amavisd/mysql/antispamdb.sql
 
 #
 # Generate passwords for mysql into local config
 #
 if [ x$sql_root_pw = "x" ]; then
-    echo '*' Setting random password for antispam mysql root user in zimbra local config
-    /opt/zimbra/bin/zmlocalconfig -r -f -e antispam_mysql_root_password
+  echo '*' Setting random password for antispam mysql root user in zimbra local config
+  /opt/zextras/bin/zmlocalconfig -r -f -e antispam_mysql_root_password
 
-    echo '*' Setting random password for antispam mysql zimbra user in zimbra local config
-    /opt/zimbra/bin/zmlocalconfig -r -f -e antispam_mysql_password
+  echo '*' Setting random password for antispam mysql zextras user in zimbra local config
+  /opt/zextras/bin/zmlocalconfig -r -f -e antispam_mysql_password
 else
-    echo '*' Setting password for antispam mysql root user in zimbra local config
-    /opt/zimbra/bin/zmlocalconfig -f -e antispam_mysql_root_password=$sql_root_pw
-    echo '*' Setting password for antispam mysql zimbra user in zimbra local config
-    /opt/zimbra/bin/zmlocalconfig -f -e antispam_mysql_password=$sql_root_pw
+  echo '*' Setting password for antispam mysql root user in zimbra local config
+  /opt/zextras/bin/zmlocalconfig -f -e antispam_mysql_root_password=$sql_root_pw
+  echo '*' Setting password for antispam mysql zextras user in zimbra local config
+  /opt/zextras/bin/zmlocalconfig -f -e antispam_mysql_password=$sql_root_pw
 fi
 
 #
-# Change mysql root user password, but first read back the passwords 
+# Change mysql root user password, but first read back the passwords
 # zimbra local config - they was generated above.  Note that we can not
 # use 'zmmypasswd --root' here because of bootstrapping problems - at
 # this stage we know that the root password is empty.
 #
 zmsetvars -f
 echo '*' Changing antispam mysql root user password
-/opt/zimbra/bin/antispam-mysqladmin -u root --password= password ${antispam_mysql_root_password}
+/opt/zextras/bin/antispam-mysqladmin -u root --password= password ${antispam_mysql_root_password}
 
 echo '*' Changing antispam mysql user password
-/opt/zimbra/bin/zmantispamdbpasswd ${antispam_mysql_password}
+/opt/zextras/bin/zmantispamdbpasswd ${antispam_mysql_password}

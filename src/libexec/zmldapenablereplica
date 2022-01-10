@@ -1,38 +1,27 @@
 #!/usr/bin/perl
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
+# SPDX-License-Identifier: GPL-2.0-only
 
 use strict;
-use lib '/opt/zimbra/common/lib/perl5';
+use lib '/opt/zextras/common/lib/perl5';
 use Net::LDAP;
 use XML::Simple;
 use Getopt::Long;
 use File::Copy qw/ cp /;
 use File::Path;
 
-if ( ! -d "/opt/zimbra/common/etc/openldap/schema" ) {
+if ( ! -d "/opt/zextras/common/etc/openldap/schema" ) {
   print "ERROR: openldap does not appear to be installed - exiting\n";
   exit(1);
 }
 
 my $id = getpwuid($<);
 chomp $id;
-if ($id ne "zimbra") {
-    print STDERR "Error: must be run as zimbra user\n";
+if ($id ne "zextras") {
+    print STDERR "Error: must be run as zextras user\n";
     exit (1);
 }
 
@@ -50,7 +39,7 @@ if ($help) {
   usage(0);
 }
 
-my $localxml = XMLin("/opt/zimbra/conf/localconfig.xml");
+my $localxml = XMLin("/opt/zextras/conf/localconfig.xml");
 
 my $ldap_root_password = $localxml->{key}->{ldap_root_password}->{value};
 chomp($ldap_root_password);
@@ -63,7 +52,7 @@ my $ldap_port = $localxml->{key}->{ldap_port}->{value};
 my $zimbra_ldap_password = $localxml->{key}->{zimbra_ldap_password}->{value};
 my $zimbra_ldap_userdn = $localxml->{key}->{zimbra_ldap_userdn}->{value};
 
-my $zmprov="/opt/zimbra/bin/zmprov";
+my $zmprov="/opt/zextras/bin/zmprov";
 
 my ($lmr, $junk) = split ' ', $ldap_master_url, 2;
 my $ldap_master_host=$lmr;
@@ -90,7 +79,7 @@ sub verifyLdap {
     if ($ldap_starttls_supported) {
       $mesg = $ldap->start_tls(
         verify => 'none',
-        capath => "/opt/zimbra/conf/ca",
+        capath => "/opt/zextras/conf/ca",
       ) or die "start_tls: $@";
       $mesg->code && die "TLS: " . $mesg->error . "\n";
     }
@@ -104,7 +93,7 @@ sub verifyLdap {
 sub verifyAccesslog {
   # Verify that accesslog DB doesn't already exist.
 
-  my $ldap = Net::LDAP->new('ldapi://%2fopt%2fzimbra%2fdata%2fldap%2fstate%2frun%2fldapi/') or die "$@";
+  my $ldap = Net::LDAP->new('ldapi://%2fopt%2fzextras%2fdata%2fldap%2fstate%2frun%2fldapi/') or die "$@";
   my $mesg;
   $mesg = $ldap->bind("cn=config", password=>"$ldap_root_password");
 
@@ -124,7 +113,7 @@ sub verifyAccesslog {
 }
 
 sub verifySyncProv {
-  my $ldap = Net::LDAP->new('ldapi://%2fopt%2fzimbra%2fdata%2fldap%2fstate%2frun%2fldapi/') or die "$@";
+  my $ldap = Net::LDAP->new('ldapi://%2fopt%2fzextras%2fdata%2fldap%2fstate%2frun%2fldapi/') or die "$@";
   my $mesg;
 
   $mesg = $ldap->bind("cn=config", password=>"$ldap_root_password");
@@ -146,9 +135,9 @@ sub verifySyncProv {
 
 sub enableSyncProv {
   print "Enabling sync provider on master...";
-  File::Path::mkpath("/opt/zimbra/data/ldap/accesslog/db");
+  File::Path::mkpath("/opt/zextras/data/ldap/accesslog/db");
 
-  my $ldap = Net::LDAP->new('ldapi://%2fopt%2fzimbra%2fdata%2fldap%2fstate%2frun%2fldapi/') or die "$@";
+  my $ldap = Net::LDAP->new('ldapi://%2fopt%2fzextras%2fdata%2fldap%2fstate%2frun%2fldapi/') or die "$@";
   my $mesg = $ldap->bind("cn=config", password=>"$ldap_root_password");
   $mesg->code && die "Bind: ". $mesg->error . "\n";
 
@@ -158,7 +147,7 @@ sub enableSyncProv {
     attr => [
       objectClass=>["olcDatabaseConfig","olcMdbConfig"],
       olcDatabase=>"{2}mdb",
-      olcDbDirectory=>"/opt/zimbra/data/ldap/accesslog/db",
+      olcDbDirectory=>"/opt/zextras/data/ldap/accesslog/db",
       olcSuffix=>"cn=accesslog",
       olcAccess=>'{0}to dn.subtree="cn=accesslog"  by dn.exact="uid=zimbra,cn=admins,cn=zimbra" read  by dn.exact="cn=config" read  by dn.exact="uid=zmreplica,cn=admins,cn=zimbra" read',
       olcLastMod=>"TRUE",
@@ -223,7 +212,7 @@ sub createLdapConfig {
     $ldaps=1;
   }
 
-  my $ldap = Net::LDAP->new('ldapi://%2fopt%2fzimbra%2fdata%2fldap%2fstate%2frun%2fldapi/') or die "$@";
+  my $ldap = Net::LDAP->new('ldapi://%2fopt%2fzextras%2fdata%2fldap%2fstate%2frun%2fldapi/') or die "$@";
   my $mesg = $ldap->bind("cn=config", password=>"$ldap_root_password");
   $mesg->code && die "Bind: ". $mesg->error . "\n";
 
@@ -232,7 +221,7 @@ sub createLdapConfig {
     $mesg = $ldap->modify(
       $bdn,
       add=>[
-        olcSyncrepl=>"rid=100 provider=$lmr bindmethod=simple timeout=0 network-timeout=0 binddn=uid=zmreplica,cn=admins,cn=zimbra credentials=$ldap_replication_password filter=\"(objectclass=*)\" searchbase=\"\" logfilter=\"(&(objectClass=auditWriteObject)(reqResult=0))\" logbase=cn=accesslog scope=sub schemachecking=off type=refreshAndPersist retry=\"60 +\" syncdata=accesslog tls_cacertdir=/opt/zimbra/conf/ca keepalive=240:10:30",
+        olcSyncrepl=>"rid=100 provider=$lmr bindmethod=simple timeout=0 network-timeout=0 binddn=uid=zmreplica,cn=admins,cn=zimbra credentials=$ldap_replication_password filter=\"(objectclass=*)\" searchbase=\"\" logfilter=\"(&(objectClass=auditWriteObject)(reqResult=0))\" logbase=cn=accesslog scope=sub schemachecking=off type=refreshAndPersist retry=\"60 +\" syncdata=accesslog tls_cacertdir=/opt/zextras/conf/ca keepalive=240:10:30",
         olcUpdateRef=>"$lmr",
       ],
     );
@@ -240,7 +229,7 @@ sub createLdapConfig {
     $mesg = $ldap->modify(
       $bdn,
       add=>[
-        olcSyncrepl=>"rid=100 provider=$lmr bindmethod=simple timeout=0 network-timeout=0 binddn=uid=zmreplica,cn=admins,cn=zimbra credentials=$ldap_replication_password starttls=critical filter=\"(objectclass=*)\" searchbase=\"\" logfilter=\"(&(objectClass=auditWriteObject)(reqResult=0))\" logbase=cn=accesslog scope=sub schemachecking=off type=refreshAndPersist retry=\"60 +\" syncdata=accesslog tls_cacertdir=/opt/zimbra/conf/ca keepalive=240:10:30",
+        olcSyncrepl=>"rid=100 provider=$lmr bindmethod=simple timeout=0 network-timeout=0 binddn=uid=zmreplica,cn=admins,cn=zimbra credentials=$ldap_replication_password starttls=critical filter=\"(objectclass=*)\" searchbase=\"\" logfilter=\"(&(objectClass=auditWriteObject)(reqResult=0))\" logbase=cn=accesslog scope=sub schemachecking=off type=refreshAndPersist retry=\"60 +\" syncdata=accesslog tls_cacertdir=/opt/zextras/conf/ca keepalive=240:10:30",
         olcUpdateRef=>"$lmr",
       ],
     );
@@ -248,7 +237,7 @@ sub createLdapConfig {
     $mesg = $ldap->modify(
       $bdn,
       add=>[
-        olcSyncrepl=>"rid=100 provider=$lmr bindmethod=simple timeout=0 network-timeout=0 binddn=uid=zmreplica,cn=admins,cn=zimbra credentials=$ldap_replication_password filter=\"(objectclass=*)\" searchbase=\"\" logfilter=\"(&(objectClass=auditWriteObject)(reqResult=0))\" logbase=cn=accesslog scope=sub schemachecking=off type=refreshAndPersist retry=\"60 +\" syncdata=accesslog tls_cacertdir=/opt/zimbra/conf/ca keepalive=240:10:30",
+        olcSyncrepl=>"rid=100 provider=$lmr bindmethod=simple timeout=0 network-timeout=0 binddn=uid=zmreplica,cn=admins,cn=zimbra credentials=$ldap_replication_password filter=\"(objectclass=*)\" searchbase=\"\" logfilter=\"(&(objectClass=auditWriteObject)(reqResult=0))\" logbase=cn=accesslog scope=sub schemachecking=off type=refreshAndPersist retry=\"60 +\" syncdata=accesslog tls_cacertdir=/opt/zextras/conf/ca keepalive=240:10:30",
         olcUpdateRef=>"$lmr",
       ],
     );
@@ -296,7 +285,7 @@ sub enableLdapService {
   }
 
   if (!$found) {
-    system("/opt/zimbra/bin/zmprov -m -l ms ${zimbra_server_hostname} +zimbraServiceEnabled ldap");
+    system("/opt/zextras/bin/zmprov -m -l ms ${zimbra_server_hostname} +zimbraServiceEnabled ldap");
   }
 
   print "succeeded\n"; 
@@ -304,23 +293,23 @@ sub enableLdapService {
 
 sub updateLdapHost {
 	print "Setting ldap_url on ${zimbra_server_hostname}...";
-	qx(/opt/zimbra/bin/zmlocalconfig -f -e ldap_url="${proto}://${zimbra_server_hostname}:${ldap_port} ${lmr}");
+	qx(/opt/zextras/bin/zmlocalconfig -f -e ldap_url="${proto}://${zimbra_server_hostname}:${ldap_port} ${lmr}");
 	print "done\n";
 }
 
 sub resetLdapUrl {
 	print "Resetting ldap_url on ${zimbra_server_hostname}...";
-	qx(/opt/zimbra/bin/zmlocalconfig -f -e ldap_url="${lmr}");
+	qx(/opt/zextras/bin/zmlocalconfig -f -e ldap_url="${lmr}");
 	print "done\n";
 }
 
 sub startLdap {
   print "Starting LDAP on ${zimbra_server_hostname}...";
-  my $cmd = "/opt/zimbra/bin/ldap status";
+  my $cmd = "/opt/zextras/bin/ldap status";
   my $rc = system($cmd);
   $rc >>= 8;
   if ($rc != 0) {
-    $cmd = "/opt/zimbra/bin/ldap start";
+    $cmd = "/opt/zextras/bin/ldap start";
     $rc = system($cmd);
     $rc >>= 8;
     if ($rc == 1) {

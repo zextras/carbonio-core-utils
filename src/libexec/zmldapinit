@@ -1,20 +1,9 @@
 #!/usr/bin/perl
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
+# SPDX-License-Identifier: GPL-2.0-only
 
 # Add entries to or update master LDAP server
 #
@@ -25,7 +14,7 @@
 # 2 - ldapmodify failed
 
 use strict;
-use lib "/opt/zimbra/common/lib/perl5";
+use lib "/opt/zextras/common/lib/perl5";
 use Zimbra::Util::Common;
 use Getopt::Std;
 use Net::LDAP;
@@ -43,9 +32,9 @@ my $zimbra_user=getLocalConfig("zimbra_user");
 my $zimbra_tmp_directory=getLocalConfig("zimbra_tmp_directory");
 my $ldap_master_url=getLocalConfig("ldap_master_url");
 my $ldap_starttls_supported=getLocalConfig("ldap_starttls_supported");
-my $source_config_dir="/opt/zimbra/common/etc/openldap";
-my $config_dir="/opt/zimbra/conf";
-my $ldap_config_dir="/opt/zimbra/data/ldap/config/cn\=config";
+my $source_config_dir="/opt/zextras/common/etc/openldap";
+my $config_dir="/opt/zextras/conf";
+my $ldap_config_dir="/opt/zextras/data/ldap/config/cn\=config";
 
 if ($#ARGV== -1) {
 	setLocalConfigRandom("ldap_root_password");
@@ -105,9 +94,9 @@ if ( -s $outfile ) {
   print "Warning: Failed to update root password.\n";
 }
 
-# Update zimbra.ldif
-$infile = "$source_config_dir/zimbra/zimbra.ldif";
-$outfile = "$config_dir/zimbra.ldif";
+# Update carbonio.ldif
+$infile = "$source_config_dir/zimbra/carbonio.ldif";
+$outfile = "$config_dir/carbonio.ldif";
 my $ldifin = Net::LDAP::LDIF->new( "$infile", "r", onerror => 'undef' );
 my $ldifout = Net::LDAP::LDIF->new("$outfile", "w", onerror => 'undef' );
 while( not $ldifin->eof()) {
@@ -129,7 +118,7 @@ $ldifout->done ( );
 
 # Start ldap
 
-my $rc=qx(/opt/zimbra/bin/ldap start);
+my $rc=qx(/opt/zextras/bin/ldap start);
 
 if ( $rc eq 0 ) {
 	exit 1;
@@ -143,7 +132,7 @@ if ($ldap_master_url !~ /^ldaps/i) {
   if ($ldap_starttls_supported) {
     $mesg = $ldap->start_tls(
          verify => 'none',
-         capath => "/opt/zimbra/conf/ca",
+         capath => "/opt/zextras/conf/ca",
          ) or die "start_tls: $@";
     $mesg->code && die "TLS: " . $mesg->error . "\n";
   }
@@ -151,7 +140,7 @@ if ($ldap_master_url !~ /^ldaps/i) {
 
 $mesg = $ldap->bind("cn=config", password=>"$ldap_root_password");
 
-$infile = "$config_dir/zimbra.ldif";
+$infile = "$config_dir/carbonio.ldif";
 $ldifin = Net::LDAP::LDIF->new("$infile", "r", onerror => 'undef' );
 while ( not $ldifin->eof() ) {
     my $entry = $ldifin->read_entry();
@@ -203,10 +192,10 @@ while ( not $ldifin->eof() ) {
     }
 }
 
-if (-f "/opt/zimbra/conf/ldap/zimbra_mimehandlers.ldif") {
-  $infile = "/opt/zimbra/conf/ldap/zimbra_mimehandlers.ldif";
+if (-f "/opt/zextras/conf/ldap/mimehandlers.ldif") {
+  $infile = "/opt/zextras/conf/ldap/mimehandlers.ldif";
 } else {
-  $infile = "$source_config_dir/zimbra/zimbra_mimehandlers.ldif";
+  $infile = "$source_config_dir/zimbra/mimehandlers.ldif";
 }
 $ldifin = Net::LDAP::LDIF->new("$infile", "r", onerror => 'undef' );
 while ( not $ldifin->eof() ) {
@@ -245,12 +234,12 @@ sub setLocalConfig {
     return;
   }
   $main::saved{lc}{$key} = $val;
-  qx(/opt/zimbra/bin/zmlocalconfig -f -e ${key}=\'${val}\' 2> /dev/null);
+  qx(/opt/zextras/bin/zmlocalconfig -f -e ${key}=\'${val}\' 2> /dev/null);
 }
 
 sub setLocalConfigRandom {
   my $key = shift;
-  qx(/opt/zimbra/bin/zmlocalconfig -f -e -r ${key} 2> /dev/null);
+  qx(/opt/zextras/bin/zmlocalconfig -f -e -r ${key} 2> /dev/null);
 }
 
 sub getLocalConfig {
@@ -259,7 +248,7 @@ sub getLocalConfig {
   return $main::loaded{lc}{$key}
     if (exists $main::loaded{lc}{$key});
 
-  my $val = qx(/opt/zimbra/bin/zmlocalconfig -x -s -m nokey ${key} 2> /dev/null);
+  my $val = qx(/opt/zextras/bin/zmlocalconfig -x -s -m nokey ${key} 2> /dev/null);
   chomp $val;
   $main::loaded{lc}{$key} = $val;
   return $val;

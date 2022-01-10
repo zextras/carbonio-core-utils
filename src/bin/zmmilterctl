@@ -1,34 +1,23 @@
 #!/bin/bash
-#
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2010, 2011, 2013, 2014, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-#
 
-source `dirname $0`/zmshutil || exit 1
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+source $(dirname $0)/zmshutil || exit 1
 zmsetvars
 
-libjars=/opt/zimbra/lib/jars
-configfile=/opt/zimbra/conf/localconfig.xml
-log4jfile=/opt/zimbra/conf/milter.log4j.properties
+libjars=/opt/zextras/lib/jars
+configfile=/opt/zextras/conf/localconfig.xml
+log4jfile=/opt/zextras/conf/milter.log4j.properties
 pidfile=${zimbra_log_directory}/milter.pid
 pid=""
-java="/opt/zimbra/bin/zmjava"
+java="/opt/zextras/bin/zmjava"
 
-case "`uname`" in
-CYGWIN*) PATHSEP=";";;
-*) PATHSEP=":";;
+case "$(uname)" in
+CYGWIN*) PATHSEP=";" ;;
+*) PATHSEP=":" ;;
 esac
 
 java_version=$(${java} -version 2>&1 | grep "java version" | sed -e 's/"//g' | awk '{print $NF}' | awk -F_ '{print $1}')
@@ -38,23 +27,21 @@ else
   java_options=""
 fi
 
-runcmd="${java} ${java_options} -Dlog4j.configuration=file:${log4jfile} -Dzimbra.home=\"/opt/zimbra\" -Dzimbra.config=\"${configfile}\" \
+runcmd="${java} ${java_options} -Dlog4j.configuration=file:${log4jfile} -Dzimbra.home=\"/opt/zextras\" -Dzimbra.config=\"${configfile}\" \
    com.zimbra.cs.milter.MilterServer"
 
-getpid()
-{
+getpid() {
   if [ -f ${pidfile} ]; then
     pid=$(cat ${pidfile})
   fi
 }
 
-checkrunning()
-{
+checkrunning() {
   getpid
   if [ "x$pid" = "x" ]; then
     running=0
   else
-    kill -0 $pid 2> /dev/null
+    kill -0 $pid 2>/dev/null
     if [ $? != 0 ]; then
       pid=""
       running=0
@@ -64,92 +51,91 @@ checkrunning()
   fi
 }
 
-refresh()
-{
-    getpid
+refresh() {
+  getpid
   if [ "x$pid" = "x" ]; then
     echo "milter server is not currently running"
   else
-    kill -CONT $pid 2> /dev/null
+    kill -CONT $pid 2>/dev/null
   fi
 }
 
 case "$1" in
-  start)
-    checkrunning
-    echo -n "Starting milter server..."
-    if [ $running = 1 ]; then
-      echo "milter server is already running."
-      exit 0
-    fi
-
-    nohup sh -c "exec ${runcmd} 2>&1" > /opt/zimbra/log/milter.out 2>&1 &
-
-    pid=$!
-    if [ "x$pid" != 'x' ]; then
-      echo $pid > $pidfile
-    else
-      echo "failed."
-      exit 1
-    fi
-    checkrunning
-    if [ $running = 1 ]; then
-      echo "done."
-      exit 0
-    else
-      echo "failed."
-      exit 1
-    fi
-  ;;
-  stop)
-    checkrunning
-    echo -n "Stopping milter server..."
-    if [ $running = 0 ]; then
-      echo "milter server is not running."
-      exit 0
-    else
-      for ((i = 0; i < 30; i++)); do
-        kill -0 $pid 2> /dev/null
-        if [ $? != 0 ]; then
-          rm -rf ${pidfile}
-          break
-        fi
-        kill $pid
-        sleep 1
-      done
-    fi
-    if [ -s ${pidfile} ]; then
-      echo "failed."
-      exit 1
-    else
-      echo "done."
-    fi
+start)
+  checkrunning
+  echo -n "Starting milter server..."
+  if [ $running = 1 ]; then
+    echo "milter server is already running."
     exit 0
-  ;;
-  restart)
-    $0 stop
-    $0 start
-  ;;
-  reload)
-    $0 stop
-    $0 start
-  ;;
-  refresh)
-    refresh
-  ;;
-  status)
-    echo -n "Milter server is "
-    checkrunning
-    if [ $running = 0 ]; then
-      echo "not running."
-      exit 1
-    else
-      echo "running."
-      exit 0
-    fi
-  ;;
-  *)
-    echo "$0 start|stop|restart|reload|refresh|status"
+  fi
+
+  nohup sh -c "exec ${runcmd} 2>&1" >/opt/zextras/log/milter.out 2>&1 &
+
+  pid=$!
+  if [ "x$pid" != 'x' ]; then
+    echo $pid >$pidfile
+  else
+    echo "failed."
     exit 1
+  fi
+  checkrunning
+  if [ $running = 1 ]; then
+    echo "done."
+    exit 0
+  else
+    echo "failed."
+    exit 1
+  fi
+  ;;
+stop)
+  checkrunning
+  echo -n "Stopping milter server..."
+  if [ $running = 0 ]; then
+    echo "milter server is not running."
+    exit 0
+  else
+    for ((i = 0; i < 30; i++)); do
+      kill -0 $pid 2>/dev/null
+      if [ $? != 0 ]; then
+        rm -rf ${pidfile}
+        break
+      fi
+      kill $pid
+      sleep 1
+    done
+  fi
+  if [ -s ${pidfile} ]; then
+    echo "failed."
+    exit 1
+  else
+    echo "done."
+  fi
+  exit 0
+  ;;
+restart)
+  $0 stop
+  $0 start
+  ;;
+reload)
+  $0 stop
+  $0 start
+  ;;
+refresh)
+  refresh
+  ;;
+status)
+  echo -n "Milter server is "
+  checkrunning
+  if [ $running = 0 ]; then
+    echo "not running."
+    exit 1
+  else
+    echo "running."
+    exit 0
+  fi
+  ;;
+*)
+  echo "$0 start|stop|restart|reload|refresh|status"
+  exit 1
   ;;
 esac

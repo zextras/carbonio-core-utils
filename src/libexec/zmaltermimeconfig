@@ -1,22 +1,12 @@
 #!/usr/bin/perl
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
+# SPDX-License-Identifier: GPL-2.0-only
+
 use strict;
-use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/libexec/scripts);
+use lib qw(/opt/zextras/common/lib/perl5 /opt/zextras/libexec/scripts);
 use Net::DNS;
 use Socket;
 use Net::LDAP;
@@ -26,9 +16,9 @@ use Getopt::Long;
 my (%c,%loaded,%saved,$rc);
 my ($help, $verbose, $force, $enable, $disable);
 
-my (undef, undef,$uid,$gid) = getpwnam('zimbra');
+my (undef, undef,$uid,$gid) = getpwnam('zextras');
 if ($> ne $uid) {
-  print "Must be run as user zimbra.\n";
+  print "Must be run as user zextras.\n";
   &usage
 }
 
@@ -49,8 +39,8 @@ if ($enable && $disable) {
 
 &usage if ($help);
 
-$c{zmlocalconfig}="/opt/zimbra/bin/zmlocalconfig";
-$c{zmprov}="/opt/zimbra/bin/zmprov -l --";
+$c{zmlocalconfig}="/opt/zextras/bin/zmlocalconfig";
+$c{zmprov}="/opt/zextras/bin/zmprov -l --";
 
 # ***** Main *****
 my $ldappass = qx($c{zmlocalconfig} -s -m nokey zimbra_ldap_password);
@@ -106,14 +96,14 @@ if (lc($enabled) eq "true") {
       $html = $mesg->entry($loop)->get_value('zimbraAmavisDomainDisclaimerHTML');
       $domain = $mesg->entry($loop)->get_value('amavisDisclaimerOptions');
       print "Generating disclaimers for domain $domain.\n";
-      writeFile("/opt/zimbra/data/altermime/$domain.txt", "$text");
-      writeFile("/opt/zimbra/data/altermime/$domain.html", "$html");
-      if ( -f "/opt/zimbra/data/altermime/$domain.txt") {
-        open(FILE, "/opt/zimbra/data/altermime/$domain.txt");
+      writeFile("/opt/zextras/data/altermime/$domain.txt", "$text");
+      writeFile("/opt/zextras/data/altermime/$domain.html", "$html");
+      if ( -f "/opt/zextras/data/altermime/$domain.txt") {
+        open(FILE, "/opt/zextras/data/altermime/$domain.txt");
         my $buf;
         while (read(FILE, $buf, 60*57)) {
           my $b64 = MIME::Base64::encode_base64($buf);
-          writeFile("/opt/zimbra/data/altermime/$domain.b64", "$b64");
+          writeFile("/opt/zextras/data/altermime/$domain.b64", "$b64");
         }
         close(FILE);
       }
@@ -185,9 +175,9 @@ sub disableDomain() {
   } else {
     print "Warning: Domain $disable does not have disclaimers enabled\n";
   }
-  unlink("/opt/zimbra/data/altermime/$disable.txt");
-  unlink("/opt/zimbra/data/altermime/$disable.html");
-  unlink("/opt/zimbra/data/altermime/$disable.b64");
+  unlink("/opt/zextras/data/altermime/$disable.txt");
+  unlink("/opt/zextras/data/altermime/$disable.html");
+  unlink("/opt/zextras/data/altermime/$disable.b64");
 }
 
 sub getLocalConfig {

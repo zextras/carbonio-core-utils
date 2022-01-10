@@ -1,104 +1,94 @@
 #!/bin/bash
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
-source `dirname $0`/zmshutil || exit 1
+# SPDX-License-Identifier: GPL-2.0-only
+
+source $(dirname $0)/zmshutil || exit 1
 zmsetvars
 
-BASE=/opt/zimbra
+BASE=/opt/zextras
 
-if [ ! -x /opt/zimbra/common/sbin/postfix ]; then
-  echo "Error: postfix not installed"
-  exit 1
+if [ ! -x /opt/zextras/common/sbin/postfix ]; then
+	echo "Error: postfix not installed"
+	exit 1
 fi
 
-if [ -f "/opt/zimbra/conf/mta_milter_options" ]; then
-  source /opt/zimbra/conf/mta_milter_options
+if [ -f "/opt/zextras/conf/mta_milter_options" ]; then
+	source /opt/zextras/conf/mta_milter_options
 fi
 zimbraMilterServerEnabled=${zimbraMilterServerEnabled:=FALSE}
 
 if [ x"$zimbraMilterServerEnabled" = "xTRUE" ]; then
-  START_SCRIPTS="zmmilterctl zmsaslauthdctl postfix"
-  STOP_SCRIPTS="postfix zmsaslauthdctl zmmilterctl"
-else 
-  START_SCRIPTS="zmsaslauthdctl postfix"
-  STOP_SCRIPTS="postfix zmsaslauthdctl"
+	START_SCRIPTS="zmmilterctl zmsaslauthdctl postfix"
+	STOP_SCRIPTS="postfix zmsaslauthdctl zmmilterctl"
+else
+	START_SCRIPTS="zmsaslauthdctl postfix"
+	STOP_SCRIPTS="postfix zmsaslauthdctl"
 fi
 
 rewriteconfig() {
-  echo -n "Rewriting configuration files..."
-  if [ ! -f /opt/zimbra/common/conf/main.cf ]; then
-    touch /opt/zimbra/common/conf/main.cf
-    /opt/zimbra/bin/postconf -e mail_owner=${postfix_mail_owner} setgid_group=${postfix_setgid_group}
-  fi
-  /opt/zimbra/libexec/configrewrite antispam antivirus opendkim mta sasl  > /dev/null 2>&1
-  if [ $? = 0 ]; then
-    echo "done."
-  else
-    echo "failed."
-  fi
+	echo -n "Rewriting configuration files..."
+	if [ ! -f /opt/zextras/common/conf/main.cf ]; then
+		touch /opt/zextras/common/conf/main.cf
+		/opt/zextras/bin/postconf -e mail_owner=${postfix_mail_owner} setgid_group=${postfix_setgid_group}
+	fi
+	/opt/zextras/libexec/configrewrite antispam antivirus opendkim mta sasl >/dev/null 2>&1
+	if [ $? = 0 ]; then
+		echo "done."
+	else
+		echo "failed."
+	fi
 }
 
-case "$1" in 
-	start)
-		if [ x$2 = "x" ]; then
-			rewriteconfig
+case "$1" in
+start)
+	if [ x$2 = "x" ]; then
+		rewriteconfig
+	fi
+	STATUS=0
+	for i in $START_SCRIPTS; do
+		/opt/zextras/bin/$i start norewrite
+		R=$?
+		if [ $R -ne "0" ]; then
+			echo "$i failed to start"
+			STATUS=$R
 		fi
-		STATUS=0
-		for i in $START_SCRIPTS; do
-			/opt/zimbra/bin/$i start norewrite
-			R=$?
-			if [ $R -ne "0" ]; then
-				echo "$i failed to start"
-				STATUS=$R
-			fi
-		done
-		exit $STATUS
+	done
+	exit $STATUS
 	;;
-	stop)
-		for i in $STOP_SCRIPTS; do
-			/opt/zimbra/bin/$i stop
-		done
+stop)
+	for i in $STOP_SCRIPTS; do
+		/opt/zextras/bin/$i stop
+	done
 	;;
-	reload|restart)
+reload | restart)
+	if [ x$2 = "x" ]; then
+		rewriteconfig
+	fi
+	for i in $START_SCRIPTS; do
 		if [ x$2 = "x" ]; then
-			rewriteconfig
+			/opt/zextras/bin/$i reload
+		else
+			/opt/zextras/bin/$i reload $2
 		fi
-		for i in $START_SCRIPTS; do
-			if [ x$2 = "x" ]; then
-				/opt/zimbra/bin/$i reload
-			else
-				/opt/zimbra/bin/$i reload $2
-			fi
-		done
+	done
 	;;
-	status)
-		STATUS=0
-		for i in $START_SCRIPTS; do
-			/opt/zimbra/bin/$i status > /dev/null 2>&1
-			R=$?
-			if [ $R -ne "0" ]; then
-				echo "$i is not running"
-				STATUS=$R
-			fi
-		done
-		exit $STATUS
+status)
+	STATUS=0
+	for i in $START_SCRIPTS; do
+		/opt/zextras/bin/$i status >/dev/null 2>&1
+		R=$?
+		if [ $R -ne "0" ]; then
+			echo "$i is not running"
+			STATUS=$R
+		fi
+	done
+	exit $STATUS
 	;;
-	*)
-		echo "$0 start|stop|restart|reload|status"
-		exit 1
+*)
+	echo "$0 start|stop|restart|reload|status"
+	exit 1
 	;;
 esac

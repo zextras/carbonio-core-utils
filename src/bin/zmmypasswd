@@ -1,33 +1,18 @@
 #!/bin/bash
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2005, 2006, 2007, 2009, 2010, 2013, 2014, 2016 Synacor, Inc.
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
-#
-# Change password for zimbra_mysql_password, and optionally for
-# mysql_root_password.  Updates both the Zimbra local config file and
-# MySQL.
-#
-source `dirname $0`/zmshutil || exit 1
+# SPDX-License-Identifier: GPL-2.0-only
+
+source $(dirname $0)/zmshutil || exit 1
 zmsetvars
 
 #
 # Usage.
 #
 usage() {
-    cat<<EOF
+  cat <<EOF
 Usage: $ zmmypasswd [ --root ] newpassword
 
 By default, this script changes zimbra_myql_password.  If the --root
@@ -45,71 +30,71 @@ EOF
 # Parse command line
 #
 if [ "x$1" = "x-h" -o "x$1" = "x--help" ]; then
-	usage
-	exit 0
+  usage
+  exit 0
 fi
 
 if [ "x$1" = "x--root" ]; then
-    password_key="mysql_root_password"
-    shift # lose --root option
+  password_key="mysql_root_password"
+  shift # lose --root option
 else
-    password_key="zimbra_mysql_password"
+  password_key="zimbra_mysql_password"
 fi
 
 if [ $# -ne 1 ]; then
-    usage
-    exit 1
+  usage
+  exit 1
 fi
 newpassword="$1"
 
 #
 # For zimbra_mysql_password
 #
-if [ ${password_key} = zimbra_mysql_password ]; then 
-    # Change the password in mysql.
-    cat <<EOF | /opt/zimbra/bin/mysql -u root --password="${mysql_root_password}"
+if [ ${password_key} = zimbra_mysql_password ]; then
+  # Change the password in mysql.
+  cat <<EOF | /opt/zextras/bin/mysql -u root --password="${mysql_root_password}"
 SET PASSWORD FOR '${zimbra_mysql_user}' = PASSWORD('${newpassword}');
 SET PASSWORD FOR '${zimbra_mysql_user}'@'localhost' = PASSWORD('${newpassword}');
 SET PASSWORD FOR '${zimbra_mysql_user}'@'localhost.localdomain' = PASSWORD('${newpassword}');
 EOF
-    if [ $? = 0 ]; then
-        echo '*' Changed zimbra mysql user password
-    else
-        echo '****' PASSWORD CHANGE FAILED
-        exit 1
-    fi
+  if [ $? = 0 ]; then
+    echo '*' Changed zextras mysql user password
+  else
+    echo '****' PASSWORD CHANGE FAILED
+    exit 1
+  fi
 fi
 
 #
 # For mysql_root_password
 #
 if [ ${password_key} = mysql_root_password ]; then
-    echo /opt/zimbra/bin/mysqladmin -u root --password="${mysql_root_password}" password "${newpassword}"
-    /opt/zimbra/bin/mysqladmin -u root --password="${mysql_root_password}" password "${newpassword}"
-    if [ $? = 0 ]; then
-        echo '*' Changed mysql root user password
-    else
-        echo '****' PASSWORD CHANGE FAILED
-        exit 1
-    fi
-    # Change for localhost socket clients also - useful for dev.
-    cat <<EOF | /opt/zimbra/bin/mysql -u root --password="${newpassword}"
+  echo /opt/zextras/bin/mysqladmin -u root --password="${mysql_root_password}" password "${newpassword}"
+  /opt/zextras/bin/mysqladmin -u root --password="${mysql_root_password}" password "${newpassword}"
+  if [ $? = 0 ]; then
+    echo '*' Changed mysql root user password
+  else
+    echo '****' PASSWORD CHANGE FAILED
+    exit 1
+  fi
+  # Change for localhost socket clients also - useful for dev.
+  cat <<EOF | /opt/zextras/bin/mysql -u root --password="${newpassword}"
 SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${newpassword}');
 SET PASSWORD FOR 'root'@'localhost.localdomain' = PASSWORD('${newpassword}');
 EOF
-    if [ $? = 0 ]; then
-        echo '*' Changed mysql root user password root@localhost
-    else
-        echo '****' PASSWORD CHANGE FAILED FOR root@localhost
-        exit 1
-    fi
+  if [ $? = 0 ]; then
+    echo '*' Changed mysql root user password root@localhost
+  else
+    echo '****' PASSWORD CHANGE FAILED FOR root@localhost
+    exit 1
+  fi
 fi
 
 #
 # Change the password in local config.  TODO: notify app server that
 # the password has changed, for now you will have to restart mailboxd
 #
-if ! /opt/zimbra/bin/zmlocalconfig -f -e "${password_key}=${newpassword}"; then
-    echo Error: command failed: /opt/zimbra/bin/zmlocalconfig -f -e ${password_key}='#'
-    exit 1
+if ! /opt/zextras/bin/zmlocalconfig -f -e "${password_key}=${newpassword}"; then
+  echo Error: command failed: /opt/zextras/bin/zmlocalconfig -f -e ${password_key}='#'
+  exit 1
 fi

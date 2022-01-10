@@ -1,37 +1,26 @@
 #!/bin/bash
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2009, 2010, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
 
-if [ x`whoami` != xzimbra ]; then
-  echo "Error: must be run as zimbra user"
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+if [ x$(whoami) != xzextras ]; then
+  echo "Error: must be run as zextras user"
   exit 1
 fi
 
-if [ ! -x /opt/zimbra/common/bin/cbpolicyd ]; then
+if [ ! -x /opt/zextras/common/bin/cbpolicyd ]; then
   echo "Error: cluebringer not installed"
   exit 1
 fi
-source /opt/zimbra/bin/zmshutil || exit 1
+source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
 pidfile=${cbpolicyd_pid_file:=${zimbra_log_directory}/cbpolicyd.pid}
-dbfile=${cbpolicyd_db_file:=/opt/zimbra/data/cbpolicyd/db/cbpolicyd.sqlitedb}
+dbfile=${cbpolicyd_db_file:=/opt/zextras/data/cbpolicyd/db/cbpolicyd.sqlitedb}
 dbdir=$(dirname $dbfile)
-cbpolicyDir=/opt/zimbra/common
+cbpolicyDir=/opt/zextras/common
 sqlite3=$(which sqlite3)
 
 if [ x${sqlite3} = "x" ]; then
@@ -43,14 +32,14 @@ if [ ! -d $dbdir ]; then
   mkdir -p $dbdir
   if [ $? = 0 ]; then
     exit 1
-  fi 
+  fi
 fi
 
 initCBPolicyd() {
   if [ -f ${dbfile} ]; then
     if [ x"$force" = "x" ]; then
       echo "Must use -force to overwrite existing database."
-      exit 1;
+      exit 1
     else
       rm -f $dbfile
     fi
@@ -58,25 +47,7 @@ initCBPolicyd() {
   echo -n "Converting policyd database templates to sqlite..."
   for i in core.tsql access_control.tsql accounting.tsql amavis.tsql quotas.tsql checkhelo.tsql checkspf.tsql greylisting.tsql; do
     ${cbpolicyDir}/share/database/convert-tsql sqlite ${cbpolicyDir}/share/database/$i | sed -e '/^#/d'
-  done > ${dbfile}.sq3
-  if [ $? != 0 ]; then
-    echo "failed."
-    exit 1
-  else 
-    echo "done."
-  fi
- 
-  echo -n "Creating sqlite database..."  
-  ${sqlite3} ${dbfile} < ${dbfile}.sq3
-  if [ $? != 0 ]; then
-    echo "failed."
-    exit 1
-  else
-    echo "done."
-  fi
-  
-  echo -n "Adding Domains..."
-    for dom in `zmprov gad`; do sqlite3 /opt/zimbra/data/cbpolicyd/db/cbpolicyd.sqlitedb "INSERT INTO policy_group_members (PolicyGroupID,Member) VALUES ('2','@$dom');"; done
+  done >${dbfile}.sq3
   if [ $? != 0 ]; then
     echo "failed."
     exit 1
@@ -84,9 +55,27 @@ initCBPolicyd() {
     echo "done."
   fi
 
- echo -n "Adding subnets from Mynetworks global..."
+  echo -n "Creating sqlite database..."
+  ${sqlite3} ${dbfile} <${dbfile}.sq3
+  if [ $? != 0 ]; then
+    echo "failed."
+    exit 1
+  else
+    echo "done."
+  fi
+
+  echo -n "Adding Domains..."
+  for dom in $(zmprov gad); do sqlite3 /opt/zextras/data/cbpolicyd/db/cbpolicyd.sqlitedb "INSERT INTO policy_group_members (PolicyGroupID,Member) VALUES ('2','@$dom');"; done
+  if [ $? != 0 ]; then
+    echo "failed."
+    exit 1
+  else
+    echo "done."
+  fi
+
+  echo -n "Adding subnets from Mynetworks global..."
   globalSubnet=$(zmprov gacf | grep zimbraMtaMyNetworks | sed 's/127.0.0.0\/8 //g' | awk '{ print $NF }')
-  sqlite3 /opt/zimbra/data/cbpolicyd/db/cbpolicyd.sqlitedb "INSERT INTO policy_group_members (PolicyGroupID,Member) VALUES (1,'$globalSubnet');"
+  sqlite3 /opt/zextras/data/cbpolicyd/db/cbpolicyd.sqlitedb "INSERT INTO policy_group_members (PolicyGroupID,Member) VALUES (1,'$globalSubnet');"
   if [ $? != 0 ]; then
     echo "failed."
     exit 1
@@ -95,8 +84,8 @@ initCBPolicyd() {
   fi
 
   echo -n "Adding subnets from Mynetworks server..."
-  serverSubnet=$(zmprov gs `zmhostname` | grep zimbraMtaMyNetworks | sed 's/127.0.0.0\/8 //g' | awk '{ print $NF }')
-  sqlite3 /opt/zimbra/data/cbpolicyd/db/cbpolicyd.sqlitedb "INSERT INTO policy_group_members (PolicyGroupID,Member) VALUES (1,'$serverSubnet');"
+  serverSubnet=$(zmprov gs $(zmhostname) | grep zimbraMtaMyNetworks | sed 's/127.0.0.0\/8 //g' | awk '{ print $NF }')
+  sqlite3 /opt/zextras/data/cbpolicyd/db/cbpolicyd.sqlitedb "INSERT INTO policy_group_members (PolicyGroupID,Member) VALUES (1,'$serverSubnet');"
   if [ $? != 0 ]; then
     echo "failed."
     exit 1
@@ -107,24 +96,22 @@ initCBPolicyd() {
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    -f|--force|-force)
-      force=1
-      shift
-      ;;
-    -h|-help|--help|help)
-      echo "$0 initializes the sqlite database for cbpolicyd"
-      echo "Usage: $0 [-force]"
-      exit
-      ;;
-    *)
-      echo "Unknown option $1"
-      echo "Usage: $0 [-force]"
-      exit 1
-      ;;
+  -f | --force | -force)
+    force=1
+    shift
+    ;;
+  -h | -help | --help | help)
+    echo "$0 initializes the sqlite database for cbpolicyd"
+    echo "Usage: $0 [-force]"
+    exit
+    ;;
+  *)
+    echo "Unknown option $1"
+    echo "Usage: $0 [-force]"
+    exit 1
+    ;;
   esac
 done
 
 initCBPolicyd
 exit 0
-  
-

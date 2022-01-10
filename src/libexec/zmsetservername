@@ -1,22 +1,12 @@
 #!/usr/bin/perl
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
+# SPDX-License-Identifier: GPL-2.0-only
+
 use strict;
-use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/libexec/scripts);
+use lib qw(/opt/zextras/common/lib/perl5 /opt/zextras/libexec/scripts);
 use Net::DNS;
 use Socket;
 use Net::LDAP;
@@ -28,9 +18,9 @@ use File::Basename;
 my (%c,%loaded,%saved,$rc);
 my ($oldServerName, $newServerName, $help, $verbose, $force, $delete, $skipusers, $usersonly);
 
-my (undef, undef,$uid,$gid) = getpwnam('zimbra');
+my (undef, undef,$uid,$gid) = getpwnam('zextras');
 if ($> ne $uid) {
-  print "Must be run as user zimbra.\n";
+  print "Must be run as user zextras.\n";
   &usage
 }
 
@@ -45,9 +35,9 @@ GetOptions("help" => \$help,
 
 &usage if ($help or !$newServerName);
 
-$c{zmlocalconfig}="/opt/zimbra/bin/zmlocalconfig";
-$c{zmprov}="/opt/zimbra/bin/zmprov -l -m --";
-$c{zmcertmgr}="/opt/zimbra/bin/zmcertmgr";
+$c{zmlocalconfig}="/opt/zextras/bin/zmlocalconfig";
+$c{zmprov}="/opt/zextras/bin/zmprov -l -m --";
+$c{zmcertmgr}="/opt/zextras/bin/zmcertmgr";
 
 if ($usersonly && !$oldServerName) {
   print "--usersonly requries --oldServerName.\n";
@@ -105,7 +95,7 @@ if ($delete && $c{zimbra_log_host} eq "") {
 if (!$usersonly) {
   print "Renaming $c{zimbra_server_hostname} to $newServerName\n";
   print "Shutting down zimbra...";
-  my $rc = runCommand("/opt/zimbra/bin/zmcontrol stop");
+  my $rc = runCommand("/opt/zextras/bin/zmcontrol stop");
   print (($rc==0) ? "done.\n" : "failed.\n");
 
 
@@ -136,34 +126,34 @@ if (!$usersonly) {
     $c{ldap_host} = getLocalConfig("ldap_host");
     $c{ldap_port} = getLocalConfig("ldap_port");
     print "Reinitializing the mta config...";
-    $rc = runCommand("/opt/zimbra/libexec/zmmtainit $c{ldap_host} $c{ldap_port}");
+    $rc = runCommand("/opt/zextras/libexec/zmmtainit $c{ldap_host} $c{ldap_port}");
     print (($rc==0) ? "done.\n" : "failed.\n");
   }
 
   # Reinitialize swatchrc
   if (index($c{zimbraServiceEnabled}, "snmp") != -1) {
     print "Reinitializing the snmp config...";
-    $rc = runCommand("/opt/zimbra/libexec/zmsnmpinit");
+    $rc = runCommand("/opt/zextras/libexec/zmsnmpinit");
     print (($rc==0) ? "done.\n" : "failed.\n");
   }
 
   #remap or delete logger data for the host
   if (index($c{zimbraServiceEnabled}, "logger") != -1) {
     if ($delete) {
-      runCommand("/opt/zimbra/bin/zmloggerhostmap -d $oldServerName $oldServerName");
+      runCommand("/opt/zextras/bin/zmloggerhostmap -d $oldServerName $oldServerName");
     } else {
-      runCommand("/opt/zimbra/bin/zmloggerhostmap $oldServerName $newServerName");
+      runCommand("/opt/zextras/bin/zmloggerhostmap $oldServerName $newServerName");
     }
   } else {
     if ($delete) {
-      runCommand("/opt/zimbra/libexec/zmrc $c{zimbra_log_host} HOST:$c{zimbra_log_host} zmloggerhostmap -d $oldServerName $oldServerName");
+      runCommand("/opt/zextras/libexec/zmrc $c{zimbra_log_host} HOST:$c{zimbra_log_host} zmloggerhostmap -d $oldServerName $oldServerName");
     } else {
-      runCommand("/opt/zimbra/libexec/zmrc $c{zimbra_log_host} HOST:$c{zimbra_log_host} zmloggerhostmap $oldServerName $newServerName");
+      runCommand("/opt/zextras/libexec/zmrc $c{zimbra_log_host} HOST:$c{zimbra_log_host} zmloggerhostmap $oldServerName $newServerName");
     }
   }
 
   # Regenerate Self-signed certs
-  if (!-f "/opt/zimbra/ssl/zimbra/commercial/commercial.crt") {
+  if (!-f "/opt/zextras/ssl/carbonio/commercial/commercial.crt") {
     if(lc($c{ldap_is_master}) eq "true") {
       runCommand("$c{zmcertmgr} createca -new");
       runCommand("$c{zmcertmgr} deployca");
@@ -218,7 +208,7 @@ sub modifyServerName($) {
     if ($c{ldap_starttls_supported}) {
       $result = $ldap->start_tls(
         verify => 'none',
-        capath => "/opt/zimbra/conf/ca",
+        capath => "/opt/zextras/conf/ca",
         ) or die "start_tls: $@";
       $result->code && die "TLS: " . $result->error . "\n";
     }
@@ -464,7 +454,7 @@ sub modifyAccountData($) {
     if ($c{ldap_starttls_supported}) {
       $result = $ldap->start_tls(
         verify => 'none',
-        capath => "/opt/zimbra/conf/ca",
+        capath => "/opt/zextras/conf/ca",
         ) or die "start_tls: $@";
       $result->code && die "TLS: " . $result->error . "\n";
     }
@@ -524,7 +514,7 @@ sub modifyListData($) {
     if ($c{ldap_starttls_supported}) {
       $result = $ldap->start_tls(
         verify => 'none',
-        capath => "/opt/zimbra/conf/ca",
+        capath => "/opt/zextras/conf/ca",
         ) or die "start_tls: $@";
       $result->code && die "TLS: " . $result->error . "\n";
     }
@@ -715,7 +705,7 @@ sub runCommand {
 
 sub isLdapRunning {
   if (index($c{ldap_url}, "/".$c{zimbra_server_hostname}) != -1) {
-    my $isrunning = 0xffff & system("/opt/zimbra/bin/ldap status > /dev/null 2>&1");
+    my $isrunning = 0xffff & system("/opt/zextras/bin/ldap status > /dev/null 2>&1");
     return ($isrunning)?0:1;
   } 
 }
@@ -726,7 +716,7 @@ sub startLdap {
     print "already running.\n";
     return;
   }
-  $rc = runCommand("/opt/zimbra/bin/ldap start");
+  $rc = runCommand("/opt/zextras/bin/ldap start");
   if ($rc==0) {
     print "done.\n";
   } else {

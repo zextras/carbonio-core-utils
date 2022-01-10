@@ -1,46 +1,32 @@
 #!/bin/bash
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
 
-if [ x`whoami` != xzimbra ]; then
-    echo Error: must be run as zimbra user
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+if [ x$(whoami) != xzextras ]; then
+  echo Error: must be run as zextras user
   exit 1
 fi
 
-
-source `dirname $0`/zmshutil || exit 1
+source $(dirname $0)/zmshutil || exit 1
 zmsetvars
 
 pid=""
-pidfile="/opt/zimbra/data/sasl2/state/saslauthd.pid"
+pidfile="/opt/zextras/data/sasl2/state/saslauthd.pid"
 
 rewriteconfig() {
-  /opt/zimbra/libexec/configrewrite sasl > /dev/null 2>&1
+  /opt/zextras/libexec/configrewrite sasl >/dev/null 2>&1
 }
 
-getpid()
-{
+getpid() {
   if [ -f ${pidfile} ]; then
     pid=$(cat ${pidfile})
   fi
 }
 
-checkrunning()
-{
+checkrunning() {
   getpid
   if [ "x$pid" = "x" ]; then
     running=0
@@ -58,73 +44,73 @@ checkrunning()
 # Main
 #
 case "$1" in
-  'start')
+'start')
+  checkrunning
+  echo -n "Starting saslauthd..."
+  if [ $running = 1 ]; then
+    echo "already running."
+    exit 0
+  fi
+  mkdir -p /opt/zextras/data/sasl2/state
+  if [ x$2 = "x" ]; then
+    rewriteconfig
+  fi
+  /opt/zextras/common/sbin/saslauthd -r -a zimbra
+  for ((i = 0; i < 30; i++)); do
     checkrunning
-    echo -n "Starting saslauthd..."
     if [ $running = 1 ]; then
-      echo "already running."
+      echo "done."
       exit 0
     fi
-    mkdir -p /opt/zimbra/data/sasl2/state
-    if [ x$2 = "x" ]; then
-      rewriteconfig
-    fi
-    /opt/zimbra/common/sbin/saslauthd -r -a zimbra 
-    for ((i = 0; i < 30; i++)) do
-      checkrunning
-      if [ $running = 1 ]; then
-        echo "done."
-        exit 0
+    sleep 1
+  done
+  echo "failed."
+  exit 1
+  ;;
+
+'kill' | 'stop')
+  checkrunning
+  if [ $running = 0 ]; then
+    echo "saslauthd is not running."
+    exit 0
+  else
+    echo -n "Stopping saslauthd..."
+    for ((i = 0; i < 30; i++)); do
+      kill -0 $pid 2>/dev/null
+      if [ $? != 0 ]; then
+        rm -rf ${pidfile}
+        break
       fi
+      kill $pid
       sleep 1
     done
-    echo "failed."
+  fi
+  if [ -s ${pidfile} ]; then
     exit 1
-    ;;
+  else
+    echo "done."
+  fi
+  exit 0
+  ;;
 
-  'kill'|'stop')
-    checkrunning
-    if [ $running = 0 ]; then
-      echo "saslauthd is not running."
-      exit 0
-    else
-      echo -n "Stopping saslauthd..."
-      for ((i = 0; i < 30; i++)); do
-        kill -0 $pid 2> /dev/null
-        if [ $? != 0 ]; then
-          rm -rf ${pidfile}
-          break
-        fi
-        kill $pid
-        sleep 1
-      done
-    fi
-    if [ -s ${pidfile} ]; then
-      exit 1
-    else
-      echo "done."
-    fi
+'restart' | 'reload')
+  $0 stop
+  $0 start $2
+  ;;
+
+'status')
+  checkrunning
+  if [ $running = 1 ]; then
+    echo "saslauthd is running."
     exit 0
-    ;;
+  else
+    echo "saslauthd is not running."
+    exit 1
+  fi
+  ;;
 
-  'restart'|'reload')
-    $0 stop
-    $0 start $2
-    ;;
-  
-  'status')
-    checkrunning
-    if [ $running = 1 ]; then
-      echo "saslauthd is running."
-      exit 0
-    else 
-      echo "saslauthd is not running."
-      exit 1
-    fi
-    ;;
-    
-    *)
-        echo "Usage: $0 start|stop|kill|restart|reload|status"
-        exit 1
-        ;;
+*)
+  echo "Usage: $0 start|stop|kill|restart|reload|status"
+  exit 1
+  ;;
 esac

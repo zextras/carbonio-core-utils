@@ -1,23 +1,12 @@
 #!/usr/bin/perl
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2007, 2008, 2009, 2010, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
+# SPDX-License-Identifier: GPL-2.0-only
 
 use strict;
-use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib);
+use lib qw(/opt/zextras/common/lib/perl5 /opt/zextras/zimbramon/lib);
 use Zimbra::Mon::Logger;
 
 use FileHandle;
@@ -78,13 +67,13 @@ sub usage {
 
 sub checkDbs() {
   my $mysql_root_passwd = getLocalConfig("mysql_root_password");
-  my $mysql_socket = getLocalConfig("mysql_socket") || "/opt/zimbra/db/mysql.sock";
-  my $mysql_mycnf = getLocalConfig("mysql_mycnf") || "/opt/zimbra/conf/my.cnf";
+  my $mysql_socket = getLocalConfig("mysql_socket") || "/opt/zextras/db/mysql.sock";
+  my $mysql_mycnf = getLocalConfig("mysql_mycnf") || "/opt/zextras/conf/my.cnf";
   my $cmd;
-  if ( -x "/opt/zimbra/mysql/bin/mysqlcheck") {
-    $cmd = "/opt/zimbra/mysql/bin/mysqlcheck";
-  } elsif ( -x "/opt/zimbra/common/bin/mysqlcheck") {
-    $cmd = "/opt/zimbra/common/bin/mysqlcheck";
+  if ( -x "/opt/zextras/mysql/bin/mysqlcheck") {
+    $cmd = "/opt/zextras/mysql/bin/mysqlcheck";
+  } elsif ( -x "/opt/zextras/common/bin/mysqlcheck") {
+    $cmd = "/opt/zextras/common/bin/mysqlcheck";
   } else {
     print "ERROR: Unable to find mysqlcheck.\n";
     exit 1;
@@ -159,7 +148,7 @@ sub getLocalConfig {
 		return $ENV{$key};
 	}
 	open CONF, 
-		"/opt/zimbra/bin/zmlocalconfig -s -q -m shell |" or die "Can't open local config: $!";
+		"/opt/zextras/bin/zmlocalconfig -s -q -m shell |" or die "Can't open local config: $!";
 	my @conf = <CONF>;
 	close CONF;
 
@@ -239,7 +228,7 @@ sub getLdapServerConfigValue {
     return (undef) unless ($attrib);
     my $server = getLocalConfig("zimbra_server_hostname");
     # could consider redirecting STDERR to /dev/null
-    open( CONF, "/opt/zimbra/bin/zmprov -l gs $server '$attrib' |" )
+    open( CONF, "/opt/zextras/bin/zmprov -l gs $server '$attrib' |" )
       or die("Open global config failed: $!");
 
     my ( $key, $val );
@@ -259,7 +248,7 @@ sub getLdapGlobalConfigValue {
   $rfh = new FileHandle;
   $wfh = new FileHandle;
   $efh = new FileHandle;
-  $cmd = "/opt/zimbra/bin/zmprov -l gcf $attrib";
+  $cmd = "/opt/zextras/bin/zmprov -l gcf $attrib";
   my $pid = open3($wfh,$rfh,$efh, $cmd);
   unless(defined($pid)) {
     return undef;

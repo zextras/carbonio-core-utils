@@ -1,27 +1,16 @@
 #!/bin/bash
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
 
-if [ x`whoami` != xzimbra ]; then
-  echo "Error: must be run as zimbra user"
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+if [ x$(whoami) != xzextras ]; then
+  echo "Error: must be run as zextras user"
   exit 1
 fi
 
-if [ ! -x /opt/zimbra/common/bin/mysql ]; then
+if [ ! -x /opt/zextras/common/bin/mysql ]; then
   echo "Error: mariadb not available"
   exit 1
 fi
@@ -43,14 +32,14 @@ if [ x"$1" = "x-h" ]; then
   exit 0
 fi
 
-source `dirname $0`/zmshutil || exit 1
+source $(dirname $0)/zmshutil || exit 1
 zmsetvars
 
-if [ -x "/opt/zimbra/common/bin/innotop" ]; then
+if [ -x "/opt/zextras/common/bin/innotop" ]; then
   if [ x"$1" = "x-r" ]; then
     shift
-    /opt/zimbra/common/bin/innotop --socket $mysql_socket --user root --password $mysql_root_password $@
+    /opt/zextras/common/bin/innotop --socket $mysql_socket --user root --password $mysql_root_password $@
   else
-    /opt/zimbra/common/bin/innotop --socket $mysql_socket --user $zimbra_mysql_user --password $zimbra_mysql_password $@
+    /opt/zextras/common/bin/innotop --socket $mysql_socket --user $zimbra_mysql_user --password $zimbra_mysql_password $@
   fi
 fi

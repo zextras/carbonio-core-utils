@@ -1,36 +1,21 @@
 #!/usr/bin/perl
-#
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-#
 
-# Potential Issues:
-# - Openssl bug/feature ignores $ENV{RANDFILE}
-#   TODO?: override RANDFILE in zmssl.cnf.in?
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
 
 # Testing in an *new* install like scenario:
 # 1. Run these on a fresh install with LDAP *down*:
-#   /opt/zimbra/bin/zmcertmgr createca -new
-#   /opt/zimbra/bin/zmcertmgr deployca -localonly
-#   /opt/zimbra/bin/zmcertmgr createcrt -new
-#   /opt/zimbra/bin/zmcertmgr deploycrt self
+#   /opt/zextras/bin/zmcertmgr createca -new
+#   /opt/zextras/bin/zmcertmgr deployca -localonly
+#   /opt/zextras/bin/zmcertmgr createcrt -new
+#   /opt/zextras/bin/zmcertmgr deploycrt self
 #  - can cleanup/retest by removing files via:
-#   rm -rf /opt/zimbra/ssl/zimbra/*
+#   rm -rf /opt/zextras/ssl/carbonio/*
 # 2. Bring up LDAP and run these:
-#   /opt/zimbra/bin/zmcertmgr deployca
-#   /opt/zimbra/bin/zmcertmgr savecrt self
+#   /opt/zextras/bin/zmcertmgr deployca
+#   /opt/zextras/bin/zmcertmgr savecrt self
 
 =head1 NAME
 
@@ -66,8 +51,8 @@ Where valid command/option combinations are:
   migrate
 
  <certfile> <csr_file> <priv_key> are stored by "type" as follows:
-   self       /opt/zimbra/ssl/zimbra/server/server.{crt,csr,key}
-   commercial /opt/zimbra/ssl/zimbra/commercial/commercial.{crt,csr,key}
+   self       /opt/zextras/ssl/carbonio/server/server.{crt,csr,key}
+   commercial /opt/zextras/ssl/carbonio/commercial/commercial.{crt,csr,key}
 
 =head1 OPTIONS
 
@@ -133,9 +118,9 @@ Valid services are 'all' or any of: ldap,mailboxd,mta,proxy,imapd.
 The X.500 distinguished name (DN). The default is:
 
  CA:
-  /O=CA/OU=Zimbra Collaboration Server/CN=`zmhostname`
+  /O=CA/OU=Zextras Carbonio/CN=`zmhostname`
  Server:
-       /OU=Zimbra Collaboration Server/CN=`zmhostname`
+       /OU=Zextras Carbonio/CN=`zmhostname`
 
 This argument is passed as the '-subj' argument to I<openssl req> and
 thus must be formatted as /type0=value0/type1=value1/type2=...,
@@ -249,8 +234,8 @@ commands are run:
 
 Certificates are installed from:
 
-  self - /opt/zimbra/ssl/zimbra/server
-  comm - /opt/zimbra/ssl/zimbra/commercial
+  self - /opt/zextras/ssl/carbonio/server
+  comm - /opt/zextras/ssl/carbonio/commercial
 
 Note: if B<-allservers> does not work, there may be problems with SSH
 authorized keys in the environment.
@@ -379,11 +364,11 @@ Distinguished Names
 
 =head1 CAVEATS
 
-As of ZCS 8.7, this tool must be run as user 'zimbra' not 'root'.
+As of ZCS 8.7, this tool must be run as user 'zextras' not 'root'.
 
 =cut
 
-use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
+use lib qw(/opt/zextras/common/lib/perl5 /opt/zextras/zimbramon/lib/);
 
 # main
 {
@@ -457,9 +442,9 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
 
     sub _defaultSubject {
         my ($self) = @_;
-        my $svr = $self->Localconfig->get("zimbra_server_hostname");
-        my $o = $self->Command eq "createca" ? "/O=CA" : "";
-        return "$o/OU=Zimbra Collaboration Server/CN=$svr";
+        my $svr    = $self->Localconfig->get("zimbra_server_hostname");
+        my $o      = $self->Command eq "createca" ? "/O=CA" : "";
+        return "$o/OU=Zextras Carbonio/CN=$svr";
     }
 
     sub new {
@@ -469,7 +454,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
         # set Debug as early as possible!
         my %args    = @_;
         my %default = (
-            Debug => $args{debug} || 0,
+            Debug                 => $args{debug} || 0,
             Defaultsubjectaltname => 1,
             Keysize               => $class->_defaultKeysize,
         );
@@ -518,7 +503,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
         $self->Digest( $self->_defaultDigest ) if !$self->Digest;
 
         # hard coded "options"
-        my $home = $self->Home("/opt/zimbra");
+        my $home = $self->Home("/opt/zextras");
         my $ozcb = "$home/common/bin";
         my $jbin = -x "$home/java/bin" ? "$home/java/bin" : $ozcb;
         $self->Java("$jbin/java");
@@ -528,7 +513,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
             ? "$ozcb/openssl"
             : "$home/openssl/bin/openssl"
         );
-        $self->Owner("zimbra");
+        $self->Owner("zextras");
 
         $self->Randfile( $self->Home . "/ssl/.rnd" );
         $self->Zmprov( $self->Home . "/bin/zmprov" );
@@ -612,7 +597,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
         while ( my $l = <$ifh> ) {
             $l =~ s/\r?\n?$/\n/;
             $incert = ++$count if ( $l =~ /BEGIN CERTIFICATE/ );
-            $certdata .= $l if ($incert);
+            $certdata .= $l    if ($incert);
             if ( $l =~ /END CERTIFICATE/ ) {
                 $incert = 0;
                 push( @cert, $certdata );
@@ -640,7 +625,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
         my $ismaster = lc( $self->lc->get("ldap_is_master") || "" );
         if ( $self->New and $ismaster eq "false" ) {
             my $hostname = lc( $self->lc->get("zimbra_server_hostname") || "" );
-            my $ldaphost = lc( $self->lc->get("ldap_host") || "" );
+            my $ldaphost = lc( $self->lc->get("ldap_host")              || "" );
             return $self->error("'-new' is only allowed on an ldap master\n")
               if ( $hostname ne $ldaphost );
         }
@@ -1064,15 +1049,15 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
 
         $self->initSSLDirs or return undef;
 
-        $crtf ||= $self->sslFiles( $type . "_crt" );    # cert / cli_comm_crt
-        my $keyf = $self->sslFiles( $type . "_key" );   # private key
+        $crtf ||= $self->sslFiles( $type . "_crt" );     # cert / cli_comm_crt
+        my $keyf = $self->sslFiles( $type . "_key" );    # private key
 
         if ( $type eq "self" ) {
             if ( !-s $crtf ) {
                 $self->createcrt or return undef;
             }
         }
-        else {                                          # "comm"
+        else {                                           # "comm"
             if ( @_ > 1 ) {
                 die("certfile and ca_chain_file must both be specified\n")
                   unless ( defined($crtf) and defined($ca_pem) );
@@ -1114,7 +1099,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
         }
 
         # COMPAT: ignore savecrt errors
-        my $err = 0;
+        my $err      = 0;
         my $ismaster = lc( $self->lc->get("ldap_is_master") || "" );
         if ( !$self->Localonly and $ismaster eq "true" ) {
             $self->savecrt($type) or $err++;
@@ -1162,7 +1147,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
             foreach my $svr ( sort @allsvrs ) {
                 $svr = lc($svr);
                 next if $svr eq $myname;
-                my $zmrc = "/opt/zimbra/libexec/zmrc $svr";
+                my $zmrc = "/opt/zextras/libexec/zmrc $svr";
                 my $cmd  = "zmcertmgr getcrt $type -allservers";
                 my @out  = $self->run(qq(echo "HOST:$svr $cmd" | $zmrc));
 
@@ -1365,7 +1350,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
 
         print("** Saving config key '$key' via zmprov @args...");
         my $content = $self->_slurp($file);
-        my @err = $self->Debug ? () : "2>/dev/null";
+        my @err     = $self->Debug ? () : "2>/dev/null";
         my @out =
           $self->run( $self->Zmprov, qw(-m -l), @args, $key, $content, @err );
         my $rc = $? >> 8;
@@ -1401,7 +1386,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
         my $keyf = $self->sslFiles( $type . "_key" );    # private key
         my $crtf = $self->sslFiles( $type . "_crt" );    # certificate
 
-        my $scope = $self->Allservers ? "global" : "server";
+        my $scope     = $self->Allservers ? "global" : "server";
         my %file_data = (
             $crtf => $self->getConfKey( "zimbraSSLCertificate", $scope ),
             $keyf => $self->getConfKey( "zimbraSSLPrivateKey",  $scope ),
@@ -1411,7 +1396,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
         # recreate the commercial ca_crt from the concatenated cert in ldap
         if ( $type eq "comm" and $file_data{$crtf} ) {
             my $ca_pem = $self->sslFiles( $type . "_ca_crt" );    # PEM format
-            my @cert = $self->getFromConcatData( $file_data{$crtf} );
+            my @cert   = $self->getFromConcatData( $file_data{$crtf} );
             shift @cert;    # skip the first cert
             $file_data{$ca_pem} = join( "", @cert );
         }
@@ -1828,7 +1813,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
 
         print("** Creating keystore '$keystore'\n");
         my $cpath =
-"/opt/zimbra/lib/ext/com_zimbra_cert_manager/com_zimbra_cert_manager.jar";
+"/opt/zextras/lib/ext/com_zimbra_cert_manager/com_zimbra_cert_manager.jar";
         my $class = "com.zimbra.cert.MyPKCS12Import";
 
         @out = $self->run(
@@ -1851,8 +1836,8 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
         warn("DEBUG: createimapdkeystore(@_)\n") if $self->Debug;
         $self->_checkType($type) or return undef;
 
-        my $keyf = $self->sslFiles( "imapd_key" );
-        my $crtf = $self->sslFiles( "imapd_crt" );
+        my $keyf = $self->sslFiles("imapd_key");
+        my $crtf = $self->sslFiles("imapd_crt");
         $self->_checkFiles( $keyf, $crtf ) or return undef;
 
         # clean up any previous settings first
@@ -1889,7 +1874,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
 
         print("** Creating keystore '$keystore'\n");
         my $cpath =
-"/opt/zimbra/lib/ext/com_zimbra_cert_manager/com_zimbra_cert_manager.jar";
+"/opt/zextras/lib/ext/com_zimbra_cert_manager/com_zimbra_cert_manager.jar";
         my $class = "com.zimbra.cert.MyPKCS12Import";
 
         @out = $self->run(
@@ -1940,7 +1925,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
     sub migrate {
         my ($self) = @_;
 
-        my $olddir = "/opt/zimbra/ssl/ssl";
+        my $olddir = "/opt/zextras/ssl/ssl";
         my $curdir = $self->sslDirs("ssl_directory");
         unless ( -d $olddir ) {
             print("** No '$olddir' directory. Nothing to migrate.\n");
@@ -2042,7 +2027,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
             }
 
             # look for unreadable files like:
-            #   /opt/zimbra/ssl/zimbra/ca/{ca.srl,index.txt*,newcerts/*.pem}
+            #   /opt/zextras/ssl/carbonio/ca/{ca.srl,index.txt*,newcerts/*.pem}
             my @noread;
             File::Find::find(
                 sub { push( @noread, $File::Find::name ) unless -r; }, $dir );
@@ -2093,7 +2078,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
         my @dirs = sort values %{ $self->sslDirs };
         push( @dirs, $self->sslDirs("ca_directory") . "/newcerts" );
 
-        # zimbra username and uid
+        # zextras username and uid
         my $zn = $self->Owner;
         my $zu = ( getpwnam($zn) )[2];
         my ( $err, $etag ) = ( 0, "initSSLDirs" );
@@ -2155,17 +2140,17 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
         Carp::croak("only one dir arg allowed\n") if ( @dirs > 1 );
 
         if ( !$self->{sslDirs} ) {
-            my $based = $self->Home . "/ssl/zimbra";
+            my $based = $self->Home . "/ssl/carbonio";
             my $confd = $self->confDir;
 
             $self->{sslDirs} = {
-                ca_conf_dir  => "$confd/ca",    # deployed ca
-                ca_directory => "$based/ca",    # zimbra_ca_directory
+                ca_conf_dir         => "$confd/ca",    # deployed ca
+                ca_directory        => "$based/ca",    # zimbra_ca_directory
                 comm_cert_directory =>
-                  "$based/commercial",          # zimbra_comm_cert_directory
+                  "$based/commercial",    # zimbra_comm_cert_directory
                 self_cert_directory =>
-                  "$based/server",              # zimbra_self_cert_directory
-                ssl_directory => $based,        # zimbra_ssl_directory
+                  "$based/server",        # zimbra_self_cert_directory
+                ssl_directory => $based,  # zimbra_ssl_directory
             };
         }
 
@@ -2214,8 +2199,8 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
                 # OLD: in_ssl_conf and zimbra_cert_ssl_conf
                 ssl_conf_in   => $confdir . "/zmssl.cnf.in",
                 ssl_conf_cert => $confdir . "/zmssl.cnf",
-                imapd_crt      => $confdir . "/imapd.crt",
-                imapd_key      => $confdir . "/imapd.key",
+                imapd_crt     => $confdir . "/imapd.crt",
+                imapd_key     => $confdir . "/imapd.key",
                 ldap_crt      => $confdir . "/slapd.crt",
                 ldap_key      => $confdir . "/slapd.key",
                 mta_crt       => $confdir . "/smtpd.crt",
@@ -2223,10 +2208,11 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
                 proxy_crt     => $confdir . "/nginx.crt",
                 proxy_key     => $confdir . "/nginx.key",
 
-                cacerts  => $self->lc->get("mailboxd_truststore"),
-                keystore => $self->lc->get("mailboxd_keystore"),
+                cacerts        => $self->lc->get("mailboxd_truststore"),
+                keystore       => $self->lc->get("mailboxd_keystore"),
                 imapd_keystore => $self->lc->get("imapd_keystore"),
-                imapd_keystore_password => $self->lc->get("imapd_keystore_password"),
+                imapd_keystore_password =>
+                  $self->lc->get("imapd_keystore_password"),
 
                 # deployed CA
                 conf_ca_crt => "$confcad/ca.pem",
@@ -2498,8 +2484,8 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
             "deploycrt" => {
                 need_type => undef,
                 opts      => [ 'allservers', 'deploy=s@', 'localonly' ],
-                xargs => [ 0, 2 ],
-                xinfo =>
+                xargs     => [ 0, 2 ],
+                xinfo     =>
 "<<self>|<comm [certfile ca_chain_file]>> [-localonly] [-allservers] [[-deploy $services] ...]",
             },
 
@@ -2543,7 +2529,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
             push( @err, "a command must be specified" );
         }
         elsif ( exists $commands{ $ARGV[0] } ) {
-            $cmd = $opt{command} = shift @ARGV;
+            $cmd   = $opt{command} = shift @ARGV;
             $opts  = $commands{$cmd}->{opts}  if ( $commands{$cmd}->{opts} );
             $xargs = $commands{$cmd}->{xargs} if ( $commands{$cmd}->{xargs} );
             $xinfo = $commands{$cmd}->{xinfo} if ( $commands{$cmd}->{xinfo} );
@@ -2572,7 +2558,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
 
         unless ( grep { $_ eq scalar @ARGV } @$xargs ) {
             warn("DEBUG: xargs(@$xargs) #ARGV($#ARGV)\n") if $opt{debug};
-            push( @err, "$cmd $xinfo" ) if $xinfo;
+            push( @err, "$cmd $xinfo" )                   if $xinfo;
             push( @err, "unexpected argument(s): @ARGV" ) if @ARGV;
         }
 
@@ -2609,7 +2595,7 @@ use lib qw(/opt/zimbra/common/lib/perl5 /opt/zimbra/zimbramon/lib/);
     sub new {
         my ( $class, @attrs ) = @_;
 
-        my $lc = "/opt/zimbra/bin/zmlocalconfig";
+        my $lc = "/opt/zextras/bin/zmlocalconfig";
         die("unable to execute '$lc': $!\n") unless ( -x $lc );
 
         my @cmd = ( $lc, qw(-s -q -m shell) );

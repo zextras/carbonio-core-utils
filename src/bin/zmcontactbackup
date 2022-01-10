@@ -1,18 +1,9 @@
 #!/usr/bin/perl
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2018 Synacor, Inc.
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
+# SPDX-License-Identifier: GPL-2.0-only
 
 =head1 NAME
 
@@ -186,15 +177,15 @@ my $Prog = basename($0);
 my ( $start, $stop, $help, $append, $query, $def, $flush, $man, $all ) =
   ( 0, 0, 0, 0, 0, 0, 0, 0, 0 );
 GetOptions(
-            'h|help'    => \$help,
-            'r|start'   => \$start,
-            'p|stop'    => \$stop,
-            'a|append'  => \$append,
-            'q|query'   => \$query,
-            'd|default' => \$def,
-            'f|flush'   => \$flush,
-            'm|man'     => \$man,
-            'l|all'     => \$all,
+    'h|help'    => \$help,
+    'r|start'   => \$start,
+    'p|stop'    => \$stop,
+    'a|append'  => \$append,
+    'q|query'   => \$query,
+    'd|default' => \$def,
+    'f|flush'   => \$flush,
+    'm|man'     => \$man,
+    'l|all'     => \$all,
 );
 my $schedule;
 my @servers;
@@ -243,75 +234,164 @@ sub userCheck() {
 }
 
 sub validateOptions() {
-    if ( !$help && !$start && !$stop && !$append && !$def && !$query && !$flush && !$man ) {
+    if (   !$help
+        && !$start
+        && !$stop
+        && !$append
+        && !$def
+        && !$query
+        && !$flush
+        && !$man )
+    {
         $help = 1;    #defaulting to help
-    } elsif ( $query
-            && ( $start || $stop || $append || $help || $def || $flush || $man || $all )) {
+    }
+    elsif (
+        $query
+        && (   $start
+            || $stop
+            || $append
+            || $help
+            || $def
+            || $flush
+            || $man
+            || $all )
+      )
+    {
         pod2usage(
-                -message => "$Prog: query can not be used with other options\n",
-                -verbose => 0 );
-    } elsif ( $help
-            && ( $start || $stop || $append || $query || $def || $flush || $man || $all )) {
+            -message => "$Prog: query can not be used with other options\n",
+            -verbose => 0
+        );
+    }
+    elsif (
+        $help
+        && (   $start
+            || $stop
+            || $append
+            || $query
+            || $def
+            || $flush
+            || $man
+            || $all )
+      )
+    {
         pod2usage(
-                 -message => "$Prog: help can not be used with other options\n",
-                 -verbose => 0 );
-    } elsif ( $start
-          && ( $help || $stop || $append || $query || $def || $flush || $man )) {
+            -message => "$Prog: help can not be used with other options\n",
+            -verbose => 0
+        );
+    }
+    elsif ( $start
+        && ( $help || $stop || $append || $query || $def || $flush || $man ) )
+    {
         pod2usage(
-             -message =>
-               "$Prog: start can not be used with other options except --all\n",
-             -verbose => 0 );
-    } elsif ( $stop
-         && ( $help || $start || $append || $query || $def || $flush || $man )) {
+            -message =>
+              "$Prog: start can not be used with other options except --all\n",
+            -verbose => 0
+        );
+    }
+    elsif ( $stop
+        && ( $help || $start || $append || $query || $def || $flush || $man ) )
+    {
         pod2usage(
-              -message =>
-                "$Prog: stop can not be used with other options except --all\n",
-              -verbose => 0 );
-    } elsif ( $append
-           && ( $help || $stop || $start || $query || $def || $flush || $man )) {
+            -message =>
+              "$Prog: stop can not be used with other options except --all\n",
+            -verbose => 0
+        );
+    }
+    elsif ( $append
+        && ( $help || $stop || $start || $query || $def || $flush || $man ) )
+    {
         pod2usage(
             -message =>
               "$Prog: append can not be used with other options except --all\n",
-            -verbose => 0 );
-    } elsif ( $def
-            && ( $help || $stop || $start || $query || $append || $flush || $man || $all )) {
+            -verbose => 0
+        );
+    }
+    elsif (
+        $def
+        && (   $help
+            || $stop
+            || $start
+            || $query
+            || $append
+            || $flush
+            || $man
+            || $all )
+      )
+    {
         pod2usage(
-              -message => "$Prog: default can not be used with other options\n",
-              -verbose => 0 );
-    } elsif ( $flush
-            && ( $help || $stop || $start || $query || $append || $def || $man || $all )) {
+            -message => "$Prog: default can not be used with other options\n",
+            -verbose => 0
+        );
+    }
+    elsif (
+        $flush
+        && (   $help
+            || $stop
+            || $start
+            || $query
+            || $append
+            || $def
+            || $man
+            || $all )
+      )
+    {
         pod2usage(
-                -message => "$Prog: flush can not be used with other options\n",
-                -verbose => 0 );
-    } elsif ( $man
-            && ( $help || $stop || $start || $query || $append || $def || $flush || $all )) {
-        pod2usage(-message => "$Prog: man can not be used with other options\n",
-                  -verbose => 0 );
-    } elsif ( $append && not defined $schedule ) {
+            -message => "$Prog: flush can not be used with other options\n",
+            -verbose => 0
+        );
+    }
+    elsif (
+        $man
+        && (   $help
+            || $stop
+            || $start
+            || $query
+            || $append
+            || $def
+            || $flush
+            || $all )
+      )
+    {
         pod2usage(
-             -message => "$Prog: Valid schedule must be provided with append\n",
-             -verbose => 0 );
-    } elsif ( $all && !( $stop || $start || $append ) ) {
+            -message => "$Prog: man can not be used with other options\n",
+            -verbose => 0
+        );
+    }
+    elsif ( $append && not defined $schedule ) {
         pod2usage(
-                 -message => "$Prog: All must be used with start/stop/append\n",
-                 -verbose => 0 );
-    } elsif ( $all && @servers ) {
+            -message => "$Prog: Valid schedule must be provided with append\n",
+            -verbose => 0
+        );
+    }
+    elsif ( $all && !( $stop || $start || $append ) ) {
         pod2usage(
-                -message => "$Prog: Server list can not be provided with all\n",
-                -verbose => 0 );
+            -message => "$Prog: All must be used with start/stop/append\n",
+            -verbose => 0
+        );
+    }
+    elsif ( $all && @servers ) {
+        pod2usage(
+            -message => "$Prog: Server list can not be provided with all\n",
+            -verbose => 0
+        );
     }
 }
 
 sub validateSchedule {
     if ( not defined $schedule ) {
-        pod2usage( -message => "$Prog: Schedule must be provided\n",
-                   -verbose => 1 );
+        pod2usage(
+            -message => "$Prog: Schedule must be provided\n",
+            -verbose => 1
+        );
     }
     my @fields = split( " ", $schedule );
     if ( scalar(@fields) != 5 ) {
-        pod2usage( -message => "$Prog: Invalid schedule provided\n",
-                   -verbose => 1 );
-    } else {
+        pod2usage(
+            -message => "$Prog: Invalid schedule provided\n",
+            -verbose => 1
+        );
+    }
+    else {
 
         # Legal values
         #
@@ -323,58 +403,82 @@ sub validateSchedule {
         if ( $fields[0] ne "*" ) {
             if ( $fields[0] =~ m|(\d+)(/\d+)?| ) {
                 if ( $1 < 0 || $1 > 59 ) {
-                    pod2usage( -message => "$Prog: Invalid schedule provided\n",
-                               -verbose => 1 );
+                    pod2usage(
+                        -message => "$Prog: Invalid schedule provided\n",
+                        -verbose => 1
+                    );
                 }
-            } else {
-                pod2usage( -message => "$Prog: Invalid schedule provided\n",
-                           -verbose => 1 );
+            }
+            else {
+                pod2usage(
+                    -message => "$Prog: Invalid schedule provided\n",
+                    -verbose => 1
+                );
             }
         }
         if ( $fields[1] ne "*" ) {
             if ( $fields[1] =~ m|(\d+)(/\d+)?| ) {
                 if ( $1 < 0 || $1 > 23 ) {
-                    pod2usage( -message => "$Prog: Invalid schedule provided\n",
-                               -verbose => 1 );
+                    pod2usage(
+                        -message => "$Prog: Invalid schedule provided\n",
+                        -verbose => 1
+                    );
                 }
-            } else {
-                pod2usage( -message => "$Prog: Invalid schedule provided\n",
-                           -verbose => 1 );
+            }
+            else {
+                pod2usage(
+                    -message => "$Prog: Invalid schedule provided\n",
+                    -verbose => 1
+                );
             }
         }
         if ( $fields[2] ne "*" ) {
             if ( $fields[2] =~ m|(\d+)(/\d+)?| ) {
                 if ( $1 < 1 || $1 > 31 ) {
-                    pod2usage( -message => "$Prog: Invalid schedule provided\n",
-                               -verbose => 1 );
+                    pod2usage(
+                        -message => "$Prog: Invalid schedule provided\n",
+                        -verbose => 1
+                    );
                 }
-            } else {
-                pod2usage( -message => "$Prog: Invalid schedule provided\n",
-                           -verbose => 1 );
+            }
+            else {
+                pod2usage(
+                    -message => "$Prog: Invalid schedule provided\n",
+                    -verbose => 1
+                );
             }
         }
         if ( $fields[3] ne "*" ) {
             if ( $fields[3] =~ m|(\d+)(/\d+)?| ) {
                 if ( $1 < 1 || $1 > 12 ) {
-                    pod2usage( -message => "$Prog: Invalid schedule provided\n",
-                               -verbose => 1 );
+                    pod2usage(
+                        -message => "$Prog: Invalid schedule provided\n",
+                        -verbose => 1
+                    );
                 }
-            } else {
-                pod2usage( -message => "$Prog: Invalid schedule provided\n",
-                           -verbose => 1 );
+            }
+            else {
+                pod2usage(
+                    -message => "$Prog: Invalid schedule provided\n",
+                    -verbose => 1
+                );
             }
         }
         if ( $fields[4] ne "*" ) {
             if ( $fields[4] =~ m|(\d+)(/\d+)?| ) {
                 if ( $1 < 0 || $1 > 7 ) {
-                    pod2usage( -message => "$Prog: Invalid schedule provided\n",
-                               -verbose => 1 );
+                    pod2usage(
+                        -message => "$Prog: Invalid schedule provided\n",
+                        -verbose => 1
+                    );
                 }
-            } elsif (
-                     $fields[4] !~ /^(?:(?:mon|tue|wed|thu|fri|sat|sun),?)+$/i )
+            }
+            elsif ( $fields[4] !~ /^(?:(?:mon|tue|wed|thu|fri|sat|sun),?)+$/i )
             {
-                pod2usage( -message => "$Prog: Invalid schedule provided\n",
-                           -verbose => 1 );
+                pod2usage(
+                    -message => "$Prog: Invalid schedule provided\n",
+                    -verbose => 1
+                );
             }
         }
         @schedules = @fields;
@@ -409,13 +513,13 @@ sub loadCron {
     if ( !$comments_good ) {
         print STDERR "Rebuilding contact backup cron\n\n";
 
-        # Find ZIMBRAEND, and add contact backup comments
+        # Find CARBONIO-END, and add contact backup comments
         # before it. If not found add comments at the end
         my $zimbraEndLoc = 0;
         for ( my $i = 0 ; $i <= $#cron ; $i++ ) {
             $_ = $cron[$i];
             if (
-m/ZIMBRAEND -- DO NOT EDIT ANYTHING BETWEEN THIS LINE AND ZIMBRASTART/
+m/CARBONIO-END -- DO NOT EDIT ANYTHING BETWEEN THIS LINE AND CARBONIO-START/
               )
             {
                 $zimbraEndLoc = $i;
@@ -424,21 +528,16 @@ m/ZIMBRAEND -- DO NOT EDIT ANYTHING BETWEEN THIS LINE AND ZIMBRASTART/
         }
         if ($zimbraEndLoc) {
 
-            # ZIMBRAEND found, insert contact backup comments before ZIMBRAEND
-            splice(
-                    @cron,
-                    $zimbraEndLoc - 1,
-                    0,
-                    (
-                       "#\n# CONTACT BACKUP BEGIN\n",
-                       "# CONTACT BACKUP END\n#\n"
-                    )
+        # CARBONIO-END found, insert contact backup comments before CARBONIO-END
+            splice( @cron, $zimbraEndLoc - 1, 0,
+                ( "#\n# CONTACT BACKUP BEGIN\n", "# CONTACT BACKUP END\n#\n" )
             );
             saveCron();
             loadCron();
-        } else {
+        }
+        else {
 
-            # ZIMBRAEND not found
+            # CARBONIO-END not found
             # One or both contact backup comments not found.
             # Clean up the array, and add them to the end
             if ( $cronstart == -1 && $cronstop == -1 ) {
@@ -450,7 +549,8 @@ m/ZIMBRAEND -- DO NOT EDIT ANYTHING BETWEEN THIS LINE AND ZIMBRASTART/
                 push @cron, "# CONTACT BACKUP END\n#\n";
                 saveCron();
                 loadCron();
-            } else {
+            }
+            else {
 
            # It's not possible to find an end and no start.
            # No end comment - add the end comment right after the start comment.
@@ -489,14 +589,15 @@ sub displayCurrentSchedule {
 }
 
 sub prepareSoap {
-    $soap = "/opt/zimbra/bin/zmsoap -z ContactBackupRequest \@op=";
+    $soap = "/opt/zextras/bin/zmsoap -z ContactBackupRequest \@op=";
     if ($stop) {
         $soap .= "stop";
-    } else {
+    }
+    else {
         $soap .= "start";
     }
 
-    # if all and server list is not provided, use current server as default value for cron job
+# if all and server list is not provided, use current server as default value for cron job
     if ( !$all && $#servers lt 0 ) {
         push @servers, $cur;
     }
@@ -531,7 +632,7 @@ sub flushCron {
 sub defaultCron {
     my $default =
         "0 3 * * * "
-      . " /opt/zimbra/bin/zmsoap -z ContactBackupRequest \@op=start"
+      . " /opt/zextras/bin/zmsoap -z ContactBackupRequest \@op=start"
       . " servers server=$cur \@by=name\n";
     print "Default schedule set\n\n";
     splice( @cron, $cronstart + 1, $cronstop - $cronstart, ($default) );
@@ -551,23 +652,23 @@ sub appendCron {
 }
 
 sub startContactBackup {
-    qx/($soap >\/opt\/zimbra\/log\/contactbackup.out &)/;
-    print "Check soap output at /opt/zimbra/log/contactbackup.out\n";
+    qx/($soap >\/opt\/zextras\/log\/contactbackup.out &)/;
+    print "Check soap output at /opt/zextras/log/contactbackup.out\n";
     exit(0);
 }
 
 sub stopContactBackup {
-    qx/($soap >\/opt\/zimbra\/log\/contactbackup.out &)/;
-    print "Check soap output at /opt/zimbra/log/contactbackup.out\n";
+    qx/($soap >\/opt\/zextras\/log\/contactbackup.out &)/;
+    print "Check soap output at /opt/zextras/log/contactbackup.out\n";
     exit(0);
 }
 ########################### Execution starts #################################
 ###### help and man #######
 $help && pod2usage( -message => "$Prog:\n", -verbose => 1 );
-$man && pod2usage( -verbose => 2 );
+$man  && pod2usage( -verbose => 2 );
 ###### localconfig and user check ########
 getLocalConfig( 'zimbra_user', 'zimbra_server_hostname',
-                'zimbra_tmp_directory' );
+    'zimbra_tmp_directory' );
 userCheck();
 ###### validate options #########
 validateOptions();

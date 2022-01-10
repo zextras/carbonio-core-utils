@@ -1,25 +1,14 @@
 #!/usr/bin/perl
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-#
+# SPDX-License-Identifier: GPL-2.0-only
 
 # This script enables and disables proxy, and sets the default values for each case
 
 use strict;
-use lib "/opt/zimbra/common/lib/perl5";
+use lib "/opt/zextras/common/lib/perl5";
 use Zimbra::Util::Common;
 use Getopt::Std;
 use IPC::Open3;
@@ -31,8 +20,8 @@ my $enabledMailProxy;
 my ($i1, $i2, $i3, $i4, $p1, $p2, $p3, $p4, $w1, $w2, $w3, $w4, $n1, $n2);
 
 my %packageServiceMap = (
-  mailbox   => "zimbra-store",
-  proxy => "zimbra-proxy",
+  mailbox   => "carbonio-appserver",
+  proxy => "carbonio-proxy",
 );
 
 my $ImapEnabled="7143:143:7993:993";
@@ -52,14 +41,14 @@ our %loaded = ();
 
 getopts('a:defhH:i:mop:rstwx:cCn:uU',\%options) or die "Unable to set options\n";
 
-our $ZMPROV = "/opt/zimbra/bin/zmprov -l 1>/dev/null";
-our $platform = qx(/opt/zimbra/libexec/get_plat_tag.sh);
+our $ZMPROV = "/opt/zextras/bin/zmprov -l 1>/dev/null";
+our $platform = qx(/opt/zextras/libexec/get_plat_tag.sh);
 chomp ($platform);
 
 my $id = getpwuid($<);
 chomp $id;
-if ($id ne "zimbra") {
-    print STDERR "Error: must be run as zimbra user\n";
+if ($id ne "zextras") {
+    print STDERR "Error: must be run as zextras user\n";
     exit (1);
 }
 
@@ -157,7 +146,7 @@ my $zimbra_server_hostname=getLocalConfig("zimbra_server_hostname");
 
 #check SSL to Upstream setting
 if (!$options{u} || !$options{U}) {
-	my @res = qx(/opt/zimbra/bin/zmprov -l gs $hostname zimbraReverseProxySSLToUpstreamEnabled\n);
+	my @res = qx(/opt/zextras/bin/zmprov -l gs $hostname zimbraReverseProxySSLToUpstreamEnabled\n);
     if ($res[1] =~ /zimbraReverseProxySSLToUpstreamEnabled:\ (.+)/) {
         $SSLToUp = $1;
 	}
@@ -192,7 +181,7 @@ if ((lc($hostname) ne lc($zimbra_server_hostname)) && !$options{r}) {
    exit 1;
 }
 
-if (!isInstalled("zimbra-store") && !isInstalled("zimbra-proxy")) {
+if (!isInstalled("carbonio-appserver") && !isInstalled("carbonio-proxy")) {
     print STDERR "Error: The store or proxy package must be installed.\n";
     exit {1};
 }
@@ -248,7 +237,7 @@ if ($options{e}) {
   ($w1,$w2,$w3,$w4) = split /:/, $WebEnabled, 4;
   ($n1,$n2) = split /:/, $AdminEnabled, 2;
 
-  if (isInstalled("zimbra-store") && isInstalled("zimbra-proxy")) {
+  if (isInstalled("carbonio-appserver") && isInstalled("carbonio-proxy")) {
             if ($options{m}) {
                print ZMPROV "ms $hostname ".
                  "zimbraImapBindPort $i1 ".
@@ -295,12 +284,12 @@ if ($options{e}) {
                  print ZMPROV "ms $hostname zimbraReverseProxySSLToUpstreamEnabled $SSLToUp\n";
             }
 
-            if (!isEnabled("zimbra-proxy")) {
+            if (!isEnabled("carbonio-proxy")) {
                  print ZMPROV "ms $hostname ".
                       "+zimbraServiceEnabled proxy\n";
             }
   } else {
-       if (isEnabled("zimbra-store") || (isInstalled("zimbra-store") && $options{o})) {
+       if (isEnabled("carbonio-appserver") || (isInstalled("carbonio-appserver") && $options{o})) {
             if ($options{m}) {
                print ZMPROV "ms $hostname ".
                  "zimbraImapBindPort $i1 ".
@@ -343,7 +332,7 @@ if ($options{e}) {
                 print ZMPROV "ms $hostname zimbraReverseProxySSLToUpstreamEnabled $SSLToUp\n";
             }
        }
-       if (isInstalled("zimbra-proxy")) {
+       if (isInstalled("carbonio-proxy")) {
             if ($options{m}) {
                 print ZMPROV "ms $hostname ".
                  "zimbraImapBindPort $i1 ".
@@ -384,7 +373,7 @@ if ($options{e}) {
                  print ZMPROV "ms $hostname zimbraReverseProxySSLToUpstreamEnabled $SSLToUp\n";
             }
 
-            if (!isEnabled("zimbra-proxy")) {
+            if (!isEnabled("carbonio-proxy")) {
                  print ZMPROV "ms $hostname ".
                       "+zimbraServiceEnabled proxy\n";
             }
@@ -412,7 +401,7 @@ if ($options{d}) {
   ($p1,$p2,$p3,$p4) = split /:/, $PopDisabled, 4;
   ($w1,$w2,$w3,$w4) = split /:/, $WebDisabled, 4;
   ($n1,$n2) = split /:/, $AdminDisabled, 2;
-  if (isInstalled("zimbra-store") && isInstalled("zimbra-proxy")) {
+  if (isInstalled("carbonio-appserver") && isInstalled("carbonio-proxy")) {
        if ($options{m}) {
           print ZMPROV "ms $hostname ".
             "zimbraImapBindPort $i1 ".
@@ -453,7 +442,7 @@ if ($options{d}) {
        }
        $enabledHTTPProxy = getLdapServerValue("zimbraReverseProxyHttpEnabled");
        $enabledMailProxy = getLdapServerValue("zimbraReverseProxyMailEnabled");
-       if ($enabledHTTPProxy eq "FALSE" && $enabledMailProxy eq "FALSE" && isEnabled("zimbra-proxy")) {
+       if ($enabledHTTPProxy eq "FALSE" && $enabledMailProxy eq "FALSE" && isEnabled("carbonio-proxy")) {
             print ZMPROV "ms $hostname ".
                "-zimbraServiceEnabled proxy\n";
        }
@@ -462,7 +451,7 @@ if ($options{d}) {
                "zimbraReverseProxyLookupTarget FALSE\n";
        }
   } else {
-       if (isEnabled("zimbra-store") || (isInstalled("zimbra-store") && $options{o})) {
+       if (isEnabled("carbonio-appserver") || (isInstalled("carbonio-appserver") && $options{o})) {
             if ($options{m}) {
                print ZMPROV "ms $hostname ".
                  "zimbraImapBindPort $i1 ".
@@ -503,7 +492,7 @@ if ($options{d}) {
                "zimbraReverseProxyLookupTarget FALSE\n";
            }
        }
-       if (isInstalled("zimbra-proxy")) {
+       if (isInstalled("carbonio-proxy")) {
             if ($options{m}) {
                  print ZMPROV "ms $hostname ".
                  "zimbraImapBindPort $i1 ".
@@ -537,7 +526,7 @@ if ($options{d}) {
             }
             $enabledHTTPProxy = getLdapServerValue("zimbraReverseProxyHttpEnabled");
             $enabledMailProxy = getLdapServerValue("zimbraReverseProxyMailEnabled");
-            if ($enabledHTTPProxy eq "FALSE" && $enabledMailProxy eq "FALSE" && isEnabled("zimbra-proxy")) {
+            if ($enabledHTTPProxy eq "FALSE" && $enabledMailProxy eq "FALSE" && isEnabled("carbonio-proxy")) {
                  print ZMPROV "ms $hostname ".
                     "-zimbraServiceEnabled proxy\n";
             }
@@ -644,7 +633,7 @@ sub checkPackage {
 
     if ($ldapurl !~ /^ldaps/i) {
         if ($ldap_starttls_supported) {
-            $mesg = $ldap->start_tls(verify => 'none', capath => "/opt/zimbra/conf/ca",) or die "start_tls: $@";
+            $mesg = $ldap->start_tls(verify => 'none', capath => "/opt/zextras/conf/ca",) or die "start_tls: $@";
             $mesg->code && die "TLS: " . $mesg->error . "\n";
         }
     }
@@ -694,12 +683,6 @@ sub isInstalled {
     } else {               
       if ($platform =~ /DEBIAN/ || $platform =~ /UBUNTU/) {
         $pkgQuery = "dpkg -s $pkg";
-      } elsif ($platform =~ /MACOSX/) {
-        my @l = sort glob ("/Library/Receipts/${pkg}*");
-        if ( $#l < 0 ) { return 0; }
-        $pkgQuery = "test -d $l[$#l]";
-      } elsif ($platform =~ /RPL/) {
-        $pkgQuery = "conary q $pkg";
       } else {
         $pkgQuery = "rpm -q $pkg";
       }
@@ -724,7 +707,7 @@ sub getLocalConfig {
   return $main::loaded{lc}{$key}
     if (exists $main::loaded{lc}{$key});
 
-  my $val = qx(/opt/zimbra/bin/zmlocalconfig -x -s -m nokey ${key} 2> /dev/null);
+  my $val = qx(/opt/zextras/bin/zmlocalconfig -x -s -m nokey ${key} 2> /dev/null);
   chomp $val;
   $main::loaded{lc}{$key} = $val;
   return $val;
@@ -737,7 +720,7 @@ sub getLocalConfig {
 sub getMailMode {
 
     my $sslToUpEnabled = shift;
-    my @res = qx(/opt/zimbra/bin/zmprov -l gs $hostname zimbraMailMode\n);
+    my @res = qx(/opt/zextras/bin/zmprov -l gs $hostname zimbraMailMode\n);
     my $mailMode = "http";
     my $proxyMailMode = "http";
 

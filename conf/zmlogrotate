@@ -1,160 +1,163 @@
-/var/log/zimbra.log {
+/var/log/carbonio.log {
     daily
     missingok
     notifempty
     create 0644 USER GROUP
+    dateext
     postrotate
       kill -HUP `cat /var/run/syslog*.pid 2> /dev/null` 2> /dev/null || true
-      su - zimbra -c "/opt/zimbra/bin/zmconfigdctl restart" > /dev/null 2>&1 || true
+      su - zextras -c "/opt/zextras/bin/zmconfigdctl restart" > /dev/null 2>&1 || true
     endscript
     compress
+    rotate 30
 }
 
-/var/log/zimbra-stats.log {
+/var/log/carbonio-stats.log {
     daily
     missingok
     notifempty
     create 0644 USER GROUP
+    dateext
     postrotate
       kill -HUP `cat /var/run/syslog*.pid 2> /dev/null` 2> /dev/null || true
-      su - zimbra -c "/opt/zimbra/bin/zmconfigdctl restart" > /dev/null 2>&1 || true
+      su - zextras -c "/opt/zextras/bin/zmconfigdctl restart" > /dev/null 2>&1 || true
     endscript
     rotate 0
 }
 
-/opt/zimbra/log/myslow.log {
+/opt/zextras/log/myslow.log {
     daily
     missingok
     copytruncate
     rotate 30
     notifempty
-    create 0644 zimbra zimbra
+    create 0644 zextras zextras
+    dateext
     compress
-    #su zimbra zimbra
+    #su zextras zextras
 }
 
-/opt/zimbra/log/logger_myslow.log {
+/opt/zextras/log/logger_myslow.log {
     daily
     missingok
     copytruncate
     notifempty
-    create 0660 zimbra zimbra
+    create 0660 zextras zextras
+    dateext
     compress
     size 1000k
     rotate 7
-    #su zimbra zimbra
+    #su zextras zextras
 } 
 
-/opt/zimbra/log/clamd.log {
+/opt/zextras/log/clamd.log {
     daily
     missingok
     copytruncate
     notifempty
-    create 0660 zimbra zimbra
+    create 0660 zextras zextras
+    dateext
     postrotate
-     kill -HUP `cat /opt/zimbra/log/clamd.pid 2> /dev/null` 2> /dev/null || true
+     kill -HUP `cat /opt/zextras/log/clamd.pid 2> /dev/null` 2> /dev/null || true
     endscript
     compress
     size 5000k
     rotate 7
-    #su zimbra zimbra
+    #su zextras zextras
 }
 
-/opt/zimbra/log/freshclam.log {
+/opt/zextras/log/freshclam.log {
     daily
     missingok
     copytruncate
     notifempty
-    create 0660 zimbra zimbra
+    create 0660 zextras zextras
+    dateext
     postrotate
-     kill -HUP `cat /opt/zimbra/log/freshclam.pid 2> /dev/null` 2> /dev/null || true
+     kill -HUP `cat /opt/zextras/log/freshclam.pid 2> /dev/null` 2> /dev/null || true
     endscript
     compress
     size 1000k
     rotate 7
-    #su zimbra zimbra
+    #su zextras zextras
 }   
 
-/opt/zimbra/log/zmlogswatch.out {
+/opt/zextras/log/zmlogswatch.out {
     daily
     missingok
     copytruncate
     notifempty
-    create 0740 zimbra zimbra
+    create 0740 zextras zextras
+    dateext
     postrotate
-      su - zimbra -c "/opt/zimbra/bin/zmlogswatchctl restart" > /dev/null 2>&1 || true
+      su - zextras -c "/opt/zextras/bin/zmlogswatchctl restart" > /dev/null 2>&1 || true
     endscript
     rotate 5
     compress
-    #su zimbra zimbra
+    #su zextras zextras
 }
 
-/opt/zimbra/log/zmswatch.out {
+/opt/zextras/log/zmswatch.out {
     daily
     missingok
     copytruncate
     notifempty
-    create 0740 zimbra zimbra
+    create 0740 zextras zextras
+    dateext
     postrotate
-      su - zimbra -c "/opt/zimbra/bin/zmswatchctl restart" > /dev/null 2>&1 || true
+      su - zextras -c "/opt/zextras/bin/zmswatchctl restart" > /dev/null 2>&1 || true
     endscript
     rotate 5
     compress
-    #su zimbra zimbra
+    #su zextras zextras
 }
 
-/opt/zimbra/log/nginx.log /opt/zimbra/log/nginx.access.log {
+/opt/zextras/log/nginx.log /opt/zextras/log/nginx.access.log {
     daily
     sharedscripts
     missingok
     notifempty
-    create 0644 zimbra zimbra
+    create 0644 zextras zextras
+    dateext
     postrotate
-      kill -USR1 `cat /opt/zimbra/log/nginx.pid 2> /dev/null` 2> /dev/null || true
+      kill -USR1 `cat /opt/zextras/log/nginx.pid 2> /dev/null` 2> /dev/null || true
     endscript
     rotate 7
     compress
     delaycompress
-    #su zimbra zimbra
+    #su zextras zextras
 }
 
-/opt/zimbra/zmstat/zmstat.out {
+/opt/zextras/zmstat/zmstat.out {
     daily
     missingok
     copytruncate
     rotate 7
     notifempty
     compress
-    #su zimbra zimbra
+    #su zextras zextras
+    dateext
 }
 
-/opt/zimbra/log/cbpolicyd.log {
+/opt/zextras/log/cbpolicyd.log {
     daily
     missingok
     rotate 7
     notifempty
     copytruncate
-    create 0644 zimbra zimbra
+    create 0644 zextras zextras
+    dateext
     compress
-    #su zimbra zimbra
+    #su zextras zextras
 }   
 
-/opt/zimbra/log/vmware-heartbeat.log {
+/opt/zextras/log/spamtrain.log {
     daily
     missingok
     copytruncate
     rotate 7
     notifempty
     compress
-    #su zimbra zimbra
-}
-
-/opt/zimbra/log/spamtrain.log {
-    daily
-    missingok
-    copytruncate
-    rotate 7
-    notifempty
-    compress
-    #su zimbra zimbra
+    #su zextras zextras
+    dateext
 }

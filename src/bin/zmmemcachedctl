@@ -1,48 +1,35 @@
 #!/bin/bash
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2008, 2009, 2010, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
 
-if [ x`whoami` != xzimbra ]; then
-    echo Error: must be run as zimbra user
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+if [ x$(whoami) != xzextras ]; then
+  echo Error: must be run as zextras user
   exit 1
 fi
 
-source `dirname $0`/zmshutil || exit 1
+source $(dirname $0)/zmshutil || exit 1
 zmsetvars
 
 servicename=memcached
-configfile=/opt/zimbra/conf/${servicename}.conf
+configfile=/opt/zextras/conf/${servicename}.conf
 pidfile=${zimbra_log_directory}/${servicename}.pid
 pid=""
 
-getpid()
-{
+getpid() {
   if [ -f ${pidfile} ]; then
     pid=$(cat ${pidfile})
   fi
 }
 
-checkrunning()
-{
+checkrunning() {
   getpid
   if [ "x$pid" = "x" ]; then
     running=0
   else
-    if ps --no-headers -p $pid -o cmd 2>/dev/null |grep memcached >/dev/null 2>&1; then
+    if ps --no-headers -p $pid -o cmd 2>/dev/null | grep memcached >/dev/null 2>&1; then
       running=1
     else
       pid=""
@@ -51,95 +38,95 @@ checkrunning()
   fi
 }
 
-case "$1" in 
-  start)
+case "$1" in
+start)
 
-    if [ ! -x /opt/zimbra/common/bin/memcached ]; then
-      echo "Error: memcached not installed"
-      exit 1
-    fi
+  if [ ! -x /opt/zextras/common/bin/memcached ]; then
+    echo "Error: memcached not installed"
+    exit 1
+  fi
 
+  checkrunning
+  echo -n "Starting ${servicename}..."
+  if [ $running = 1 ]; then
+    echo "${servicename} is already running."
+    exit 0
+  fi
+
+  addr=$(/opt/zextras/bin/zmprov -l gs ${zimbra_server_hostname} zimbraMemcachedBindAddress | awk '/^zimbraMemcachedBindAddress:/{ print $2 }')
+  addr="${addr//$'\n'/,}"
+  port=$(/opt/zextras/bin/zmprov -l gs ${zimbra_server_hostname} zimbraMemcachedBindPort | awk '/^zimbraMemcachedBindPort:/{ print $2 }')
+  if [ x"$addr" = "x" ]; then
+    /opt/zextras/common/bin/${servicename} -d -P ${pidfile} -U 0 -l 127.0.1.1,127.0.0.1,::1 -p ${port:-11211}
+  else
+    /opt/zextras/common/bin/${servicename} -d -P ${pidfile} -U 0 -l ${addr} -p ${port:-11211}
+  fi
+  for ((i = 0; i < 30; i++)); do
     checkrunning
-    echo -n "Starting ${servicename}..."
     if [ $running = 1 ]; then
-      echo "${servicename} is already running."
-      exit 0
+      break
     fi
-
-    addr=$(/opt/zimbra/bin/zmprov -l gs ${zimbra_server_hostname} zimbraMemcachedBindAddress | awk '/^zimbraMemcachedBindAddress:/{ print $2 }')
-    addr="${addr//$'\n'/,}"
-    port=$(/opt/zimbra/bin/zmprov -l gs ${zimbra_server_hostname} zimbraMemcachedBindPort | awk '/^zimbraMemcachedBindPort:/{ print $2 }')
-    if [ x"$addr" = "x" ]; then
-      /opt/zimbra/common/bin/${servicename} -d -P ${pidfile} -U 0 -p ${port:-11211}
-    else
-      /opt/zimbra/common/bin/${servicename} -d -P ${pidfile} -U 0 -l ${addr} -p ${port:-11211}
-    fi
-    for ((i=0; i < 30; i++)); do
-      checkrunning
-      if [ $running = 1 ]; then
+    sleep 1
+  done
+  if [ "x$pid" != "x" ]; then
+    echo "done."
+    exit 0
+  else
+    echo "failed."
+    exit 1
+  fi
+  ;;
+stop)
+  checkrunning
+  echo -n "Stopping ${servicename}..."
+  if [ $running = 0 ]; then
+    echo "${servicename} is not running."
+    exit 0
+  else
+    for ((i = 0; i < 30; i++)); do
+      kill -0 $pid 2>/dev/null
+      if [ $? != 0 ]; then
+        rm -rf ${pidfile}
         break
       fi
+      kill -9 $pid
       sleep 1
     done
-    if [ "x$pid" != "x" ]; then
-      echo "done."
-      exit 0
-    else
-      echo "failed."
-      exit 1
-    fi
-  ;;
-  stop)
-    checkrunning
-    echo -n "Stopping ${servicename}..."
-    if [ $running = 0 ]; then
-      echo "${servicename} is not running."
-      exit 0
-    else
-      for ((i = 0; i < 30; i++)); do
-        kill -0 $pid 2> /dev/null
-        if [ $? != 0 ]; then
-          rm -rf ${pidfile}
-          break
-        fi
-        kill -9 $pid
-        sleep 1
-      done
-    fi
-    if [ -s ${pidfile} ]; then
-      echo "failed."
-      exit 1
-    else
-      echo "done."
-    fi
-    exit 0
-  ;;
-  restart)
-    $0 stop
-    $0 start
-  ;;
-  reload)
-    checkrunning
-    if [ $running = 1 -a "x$pid" != "x" ]; then
-      echo -n "Reloading ${servicename}..."
-      kill -HUP $pid
-      echo "done."
-    fi
-    
-  ;;
-  status)
-    echo -n "${servicename} is "
-    checkrunning
-    if [ $running = 0 ]; then
-      echo "not running."
-      exit 1
-    else
-      echo "running."
-      exit 0
-    fi
-  ;;
-  *)
-    echo "$0 start|stop|restart|reload|status"
+  fi
+  if [ -s ${pidfile} ]; then
+    echo "failed."
     exit 1
+  else
+    echo "done."
+  fi
+  exit 0
+  ;;
+restart)
+  $0 stop
+  $0 start
+  ;;
+reload)
+  checkrunning
+  if [ $running = 1 -a "x$pid" != "x" ]; then
+    echo -n "Reloading ${servicename}..."
+    kill -HUP $pid
+    echo "done."
+  fi
+
+  ;;
+status)
+  echo -n "${servicename} is "
+  checkrunning
+  if [ $running = 0 ]; then
+    echo "not running."
+    exit 1
+  else
+    echo "running."
+    exit 0
+  fi
+  ;;
+*)
+  echo "$0 start|stop|restart|reload|status"
+  exit 1
   ;;
 esac

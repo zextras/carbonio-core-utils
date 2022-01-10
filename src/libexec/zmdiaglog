@@ -1,23 +1,13 @@
 #!/usr/bin/perl
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2020 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-#
+# SPDX-License-Identifier: GPL-2.0-only
+
 use strict;
 
-use lib "/opt/zimbra/common/lib/perl5";
+use lib "/opt/zextras/common/lib/perl5";
 use Zimbra::Util::Common;
 
 use Getopt::Long;
@@ -36,12 +26,12 @@ use vars qw(
 
 my $isMac = isMac();
 
-chomp( $ZMHOSTNAME = qx(/opt/zimbra/bin/zmhostname) );
+chomp( $ZMHOSTNAME = qx(/opt/zextras/bin/zmhostname) );
 
-my $zimbra_tmp_directory = "/opt/zimbra/data/tmp";
-if ( -f "/opt/zimbra/bin/zmlocalconfig" ) {
+my $zimbra_tmp_directory = "/opt/zextras/data/tmp";
+if ( -f "/opt/zextras/bin/zmlocalconfig" ) {
     $zimbra_tmp_directory =
-      qx(/opt/zimbra/bin/zmlocalconfig -x -s -m nokey zimbra_tmp_directory);
+      qx(/opt/zextras/bin/zmlocalconfig -x -s -m nokey zimbra_tmp_directory);
     chomp($zimbra_tmp_directory);
 }
 
@@ -54,10 +44,10 @@ $DLOGDIR = "zmdiaglog-$ZMHOSTNAME."
   . strftime( "%Y%m%d-%H%M%S", localtime() ) . "."
   . $$;
 $DEFAULT_TIMEOUT                    = 120;
-$PID_FILE                           = '/opt/zimbra/log/zmmailboxd_java.pid';
-$JMAP                               = '/opt/zimbra/common/bin/jmap';
-$JAVA                               = '/opt/zimbra/common/lib/jvm/java/bin/java';
-$JINFO                              = '/opt/zimbra/common/lib/jvm/java/bin/jinfo';
+$PID_FILE                           = '/opt/zextras/log/zmmailboxd_java.pid';
+$JMAP                               = '/opt/zextras/common/bin/jmap';
+$JAVA                               = '/opt/zextras/common/lib/jvm/java/bin/java';
+$JINFO                              = '/opt/zextras/common/lib/jvm/java/bin/jinfo';
 $Getopt::Std::STANDARD_HELP_VERSION = 1;
 $VERSION                            = 0.1;
 $HAVE_GCORE                         = has_cmd('gcore');
@@ -65,17 +55,17 @@ $HAVE_PSTACK                        = has_cmd('pstack');
 $HAVE_LSOF                          = has_cmd('lsof');
 $HAVE_DMESG                         = has_cmd('dmesg');
 $HAVE_NETSTAT                       = has_cmd('netstat');
-$HAVE_MYSQL                         = has_cmd('/opt/zimbra/common/bin/mysql');
+$HAVE_MYSQL                         = has_cmd('/opt/zextras/common/bin/mysql');
 $LOG_FILE                           = 'zmdiag.log';
-$ZMSTAT_CONF                        = '/opt/zimbra/conf/zmstat-chart.xml';
-$ZMDUMPENV                          = '/opt/zimbra/bin/zmdumpenv';
-$ZMLOCALCONFIG                      = '/opt/zimbra/bin/zmlocalconfig';
-$ZMPROV                             = '/opt/zimbra/bin/zmprov -l';
-$ZMMYTOP                            = '/opt/zimbra/bin/zmmytop --nocolor -b';
-$ZMINNOTOP = '/opt/zimbra/bin/zminnotop --nocolor --nonint';
-$SU        = "su - zimbra -c ";
-$SU        = "su - zimbra -c -l " if ( isMac() );
-$HAVE_NETWORK                       = has_cmd('/opt/zimbra/bin/zxsuite');
+$ZMSTAT_CONF                        = '/opt/zextras/conf/zmstat-chart.xml';
+$ZMDUMPENV                          = '/opt/zextras/bin/zmdumpenv';
+$ZMLOCALCONFIG                      = '/opt/zextras/bin/zmlocalconfig';
+$ZMPROV                             = '/opt/zextras/bin/zmprov -l';
+$ZMMYTOP                            = '/opt/zextras/bin/zmmytop --nocolor -b';
+$ZMINNOTOP = '/opt/zextras/bin/zminnotop --nocolor --nonint';
+$SU        = "su - zextras -c ";
+$SU        = "su - zextras -c -l " if ( isMac() );
+$HAVE_NETWORK                       = has_cmd('/opt/zextras/bin/zxsuite');
 
 sub logmsg($) {
     my $msg = shift;
@@ -202,7 +192,7 @@ sub get_pid() {
 
 sub invoke_thread_dump($$) {
     my ( $i, $ts ) = @_;
-    system("bash -c 'cd /opt/zimbra/bin/; ./zmthrdump -i' > threaddump.$i.$ts 2>&1");
+    system("bash -c 'cd /opt/zextras/bin/; ./zmthrdump -i' > threaddump.$i.$ts 2>&1");
 }
 
 sub collect_thread_stats($) {
@@ -256,7 +246,7 @@ zmdiaglog [-a | -c] [-d DESTINATION] [-t TIMEOUT] [-j] [-z | -Z]
     -c    - Use instead of -a to parse heap dump from JVM core dump
     -d    - Log destination (Default $DEFAULT_DEST)
     -t    - Timeout in seconds for hanging commands (Default $DEFAULT_TIMEOUT)
-    -j    - Also include the output of /opt/zimbra/libexec/zmjavawatch
+    -j    - Also include the output of /opt/zextras/libexec/zmjavawatch
     -z    - Archive data collected by zmdiaglog to a bzip2 tar archive and leave data
             collection directory intact.
     -Z    - Archive data collected by zmdiaglog to a bzip2 tar archive AND remove
@@ -267,7 +257,7 @@ EOF
 
 sub get_mysql_data() {
     if ($HAVE_MYSQL) {
-        my $mysql_cmd = "/opt/zimbra/bin/mysql";
+        my $mysql_cmd = "/opt/zextras/bin/mysql";
         logmsg "Collecting MySQL data ";
         logmsg ".";
         system("echo \"show engine innodb status\\G;\" | $SU $mysql_cmd > mysql-innodb-status.txt");
@@ -332,13 +322,13 @@ sub run() {
     if ( !-d $destination ) {
         File::Path::mkpath("$destination");
     }
-    my ( undef, undef, $uid, $gid ) = getpwnam('zimbra');
+    my ( undef, undef, $uid, $gid ) = getpwnam('zextras');
 
     chown $uid, $gid, $destination;
 
     {
         local $> = $uid;
-        print STDERR "$destination is not writable by user zimbra\n" and exit 1
+        print STDERR "$destination is not writable by user zextras\n" and exit 1
           if !-w $destination;
     }
 
@@ -511,7 +501,7 @@ sub run() {
         }
 
         if ( $options{j} ) {
-            system("/opt/zimbra/libexec/zmjavawatch > zmjavawatch.log 2>&1");
+            system("/opt/zextras/libexec/zmjavawatch > zmjavawatch.log 2>&1");
         }
         my $dumped =
           save_heap_info( $JAVA_VERSION, $destination, $mailboxd_pid, $timeout )
@@ -605,40 +595,37 @@ sub run() {
         "$SU '$ZMLOCALCONFIG -x -s' > zmlocalconfig-x-s.txt 2>&1", $timeout );
     exec_with_timeout( "$SU '$ZMLOCALCONFIG -n' > zmlocalconfig-n.txt 2>&1",
         $timeout );
-    exec_with_timeout( "$SU '/opt/zimbra/bin/zmvolume -l' > zmvolume.txt 2>&1",
+    exec_with_timeout( "$SU '/opt/zextras/bin/zmvolume -l' > zmvolume.txt 2>&1",
         $timeout );
     exec_with_timeout( "/usr/bin/crontab -l > crontab-root.txt 2>&1",
         $timeout );
     exec_with_timeout(
-        "/usr/bin/crontab -u zimbra -l > crontab-zimbra.txt 2>&1", $timeout );
-    exec_with_timeout( "du -sh /opt/zimbra/redolog > du-redolog.txt 2>&1",
+        "/usr/bin/crontab -u zextras -l > crontab-zimbra.txt 2>&1", $timeout );
+    exec_with_timeout( "du -sh /opt/zextras/redolog > du-redolog.txt 2>&1",
         $timeout );
     exec_with_timeout( "df -hT > df-hT.txt 2>&1", $timeout );
 
     mkdir("$destination/confs");
     my @conf_files = (
-        "/opt/zimbra/conf/cbpolicyd.conf",
-        "/opt/zimbra/conf/localconfig.xml",
-        "/opt/zimbra/conf/my.cnf",
-        "/opt/zimbra/common/conf/main.cf",
-        "/opt/zimbra/common/conf/master.cf",
-        "/opt/zimbra/conf/zmconfigd.cf"
+        "/opt/zextras/conf/cbpolicyd.conf",
+        "/opt/zextras/conf/localconfig.xml",
+        "/opt/zextras/conf/my.cnf",
+        "/opt/zextras/common/conf/main.cf",
+        "/opt/zextras/common/conf/master.cf",
+        "/opt/zextras/conf/zmconfigd.cf"
     );
     cp $_, "$destination/confs" for @conf_files;
 
     if ($HAVE_NETWORK) {
         mkdir("$destination/confs/network");
         my @network_conf_files = (
-            "/opt/zimbra/conf/zextras/config",
-            "/opt/zimbra/conf/zextras/oplog",
-            "/opt/zimbra/conf/zextras/cluster_config/zextras.json",
-            glob("/opt/zimbra/conf/zextras/zxadmin/*")
+            "/opt/zextras/conf/zextras/config",
+            "/opt/zextras/conf/zextras/oplog",
+            "/opt/zextras/conf/zextras/cluster_config/zextras.json",
+            glob("/opt/zextras/conf/zextras/zxadmin/*")
         );
         cp $_, "$destination/confs/network" for @network_conf_files;
     }
-
-    # Copy hidden .install_history file to a visible file
-    cp "/opt/zimbra/.install_history", "$destination/install_history";
 
     mkdir("$destination/logs");
     mkdir("$destination/stats");
@@ -646,7 +633,7 @@ sub run() {
 
     if ( !-f $ZMSTAT_CONF ) {
         logmsg "Saving ZCS statistics chart config\n";
-        open( CONF,     "$SU '/opt/zimbra/bin/zmstat-chart-config' |" );
+        open( CONF,     "$SU '/opt/zextras/bin/zmstat-chart-config' |" );
         open( CONF_OUT, ">stats/zmstat-chart.xml" );
         while (<CONF>) {
             print CONF_OUT;
@@ -663,29 +650,29 @@ sub run() {
 
     logmsg "Copying current ZCS logs\n";
     my @log_files = (
-        "/opt/zimbra/log/access_log.$today",
-        "/opt/zimbra/log/audit.log",
-        "/opt/zimbra/log/cbpolicyd.log",
-        "/opt/zimbra/log/gc.log",
-        "/opt/zimbra/log/mailbox.log",
-        "/opt/zimbra/log/sync.log",
-        "/opt/zimbra/log/$t_today.trace.log",
-        "/opt/zimbra/log/zmconfigd.log",
-        "/opt/zimbra/log/zmmailboxd.out",
-        "/var/log/zimbra.log",
-        glob("/opt/zimbra/db/data/*.err"),
-        glob("/opt/zimbra/log/hs_err_pid*"),
-        glob("/opt/zimbra/log/my*.log"),
-        glob("/opt/zimbra/log/zmsetup*.txt"),
+        "/opt/zextras/log/access_log.$today",
+        "/opt/zextras/log/audit.log",
+        "/opt/zextras/log/cbpolicyd.log",
+        "/opt/zextras/log/gc.log",
+        "/opt/zextras/log/mailbox.log",
+        "/opt/zextras/log/sync.log",
+        "/opt/zextras/log/$t_today.trace.log",
+        "/opt/zextras/log/zmconfigd.log",
+        "/opt/zextras/log/zmmailboxd.out",
+        "/var/log/carbonio.log",
+        glob("/opt/zextras/db/data/*.err"),
+        glob("/opt/zextras/log/hs_err_pid*"),
+        glob("/opt/zextras/log/my*.log"),
+        glob("/opt/zextras/log/zmsetup*.txt"),
         glob("/tmp/install.log.*"),
-        "/opt/zimbra/log/mysql-mailboxd.log"
+        "/opt/zextras/log/mysql-mailboxd.log"
     );
     cp $_, "$destination/logs" for @log_files;
 
     if ($HAVE_NETWORK) {
         mkdir("$destination/logs/network");
         my @network_log_files = (
-            glob("/opt/zimbra/log/op_*"),
+            glob("/opt/zextras/log/op_*"),
         );
         cp $_, "$destination/logs/network" for @network_log_files;
     }
@@ -696,18 +683,18 @@ sub run() {
     cp $_, "$destination" for @static_info;
 
     logmsg "Copying today's ZCS statistics\n";
-    cp $_, "$destination/stats" for glob("/opt/zimbra/zmstat/*.csv");
+    cp $_, "$destination/stats" for glob("/opt/zextras/zmstat/*.csv");
 
     my $yesterday = time() - ( 24 * 60 * 60 );
     my $yesterday_stats_dir = strftime( "%Y-%m-%d", localtime($yesterday) );
-    if ( -d "/opt/zimbra/zmstat/$yesterday_stats_dir" ) {
+    if ( -d "/opt/zextras/zmstat/$yesterday_stats_dir" ) {
         logmsg "Copying yesterday's ZCS statistics\n";
         mkdir("$destination/stats/$yesterday_stats_dir");
         my $zuser = $Zimbra::Mon::Zmstat::LC{zimbra_user};
         my ( $zuid, $zgid ) = ( getpwnam($zuser) )[ 2, 3 ];
         chown $zuid, $zgid, "$destination/stats/$yesterday_stats_dir";
         cp $_, "$destination/stats/$yesterday_stats_dir"
-          for glob("/opt/zimbra/zmstat/$yesterday_stats_dir/*");
+          for glob("/opt/zextras/zmstat/$yesterday_stats_dir/*");
     }
 
     my $systemlogfile = "/var/log/messages";
@@ -717,14 +704,14 @@ sub run() {
         cp $systemlogfile, "$destination/logs";
     }
 
-    if ( -f "/opt/zimbra/log/nginx.log" ) {
-        logmsg "Copying nginx log /opt/zimbra/log/nginx.log\n";
-        cp "/opt/zimbra/log/nginx.log", "$destination/logs";
+    if ( -f "/opt/zextras/log/nginx.log" ) {
+        logmsg "Copying nginx log /opt/zextras/log/nginx.log\n";
+        cp "/opt/zextras/log/nginx.log", "$destination/logs";
     }
 
-    if ( -f "/opt/zimbra/log/nginx.access.log" ) {
-        logmsg "Copying nginx access log /opt/zimbra/log/nginx.access.log\n";
-        cp "/opt/zimbra/log/nginx.access.log", "$destination/logs/";
+    if ( -f "/opt/zextras/log/nginx.access.log" ) {
+        logmsg "Copying nginx access log /opt/zextras/log/nginx.access.log\n";
+        cp "/opt/zextras/log/nginx.access.log", "$destination/logs/";
     }
 
     if ( -f "/etc/ld.so.conf" ) {

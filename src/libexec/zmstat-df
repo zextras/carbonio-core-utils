@@ -1,26 +1,15 @@
 #!/usr/bin/perl -w
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2009, 2010, 2011, 2013, 2014, 2015, 2016 Synacor, Inc.
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
+# SPDX-License-Identifier: GPL-2.0-only
 
 # Not a typo, /bin/df (not file-descriptors)
 
 use strict;
 use Getopt::Long;
-use lib "/opt/zimbra/common/lib/perl5";
+use lib "/opt/zextras/common/lib/perl5";
 use Zimbra::Mon::Zmstat;
 use Zimbra::Mon::Logger;
 use vars qw($LOGFH $CONSOLE $LOGFILE $ROTATE_NOW $ROTATE_DEFER);
@@ -29,11 +18,8 @@ zmstatInit();
 
 my $DISK_CRIT_THRESHOLD = getLocalConfig("zmdisklog_critical_threshold") || 95;
 my $DISK_WARN_THRESHOLD = getLocalConfig("zmdisklog_warn_threshold") || 85;
-my $hostname = qx(/opt/zimbra/bin/zmhostname);
+my $hostname = qx(/opt/zextras/bin/zmhostname);
 chomp $hostname;
-
-my $platform = qx(/opt/zimbra/libexec/get_plat_tag.sh);
-chomp $platform;
 
 my $DF = '/bin/df -k';
 my $HEADING = 'timestamp, path, disk, disk_use, disk_space, disk_pct_used';
@@ -90,7 +76,7 @@ sub usage {
 Usage: zmstat-df [options]
 Monitor disk usage
 -i, --interval: output a line every N seconds
--l, --log:      log file (default is /opt/zimbra/zmstat/df.csv)
+-l, --log:      log file (default is /opt/zextras/zmstat/df.csv)
 -c, --console:  output to stdout
 
 If logging to a file, rotation occurs when a HUP signal is sent or when
@@ -171,7 +157,7 @@ sub getLocalConfig {
     return $ENV{$key};
   }
   open CONF,
-    "/opt/zimbra/bin/zmlocalconfig -q -m shell |" or die "Can't open local config: $!";
+    "/opt/zextras/bin/zmlocalconfig -q -m shell |" or die "Can't open local config: $!";
   my @conf = <CONF>;
   close CONF;
 

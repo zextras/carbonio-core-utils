@@ -1,25 +1,14 @@
 #!/usr/bin/perl -w
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2011, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
+# SPDX-License-Identifier: GPL-2.0-only
 
 # revised 20090402
 
 use strict;
-use lib "/opt/zimbra/common/lib/perl5";
+use lib "/opt/zextras/common/lib/perl5";
 use Getopt::Long;
 use Net::LDAP;
 use Zimbra::Mon::Zmstat;
@@ -72,7 +61,7 @@ sub usage() {
 Usage: zmstat-ldap [options]
 Monitor LDAP statistics
 -i, --interval: output a line every N seconds
--l, --log:      log file (default is /opt/zimbra/zmstat/ldap.csv)
+-l, --log:      log file (default is /opt/zextras/zmstat/ldap.csv)
 -c, --console:  output to stdout
 
 If logging to a file, rotation occurs when HUP signal is sent or when
@@ -98,7 +87,7 @@ sub getZimbraLdapPassword() {
     return $pass;
 }
 
-sub getZimbraUserDN() {
+sub getZextrasUserDN() {
     my $userdn = qx(zmlocalconfig -m nokey -s zimbra_ldap_userdn);
     chomp $userdn;
     return $userdn;
@@ -141,13 +130,13 @@ $LOGFH = openLogFile($LOGFILE, $HEADING);
 my $date = getDate();
 my $hostname = getZimbraServerHostname();
 my $password = getZimbraLdapPassword();
-my $user = getZimbraUserDN();
+my $user = getZextrasUserDN();
 
 waitUntilNiceRoundSecond($interval);
 while (1) {
     my @out;
 
-    my $ldap = Net::LDAP->new('ldapi://%2fopt%2fzimbra%2fdata%2fldap%2fstate%2frun%2fldapi/');
+    my $ldap = Net::LDAP->new('ldapi://%2fopt%2fzextras%2fdata%2fldap%2fstate%2frun%2fldapi/');
     unless (defined $ldap) {
         $SEEN_ERROR or logError("Could not connect to LDAP server: $hostname");
 	sleep($interval);

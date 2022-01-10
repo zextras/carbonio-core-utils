@@ -1,24 +1,13 @@
 #!/usr/bin/env zmpython
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-#
+# SPDX-License-Identifier: GPL-2.0-only
 
 #set tempdir
 import tempfile
-tempfile.tempdir="/opt/zimbra/data/tmp"
+tempfile.tempdir="/opt/zextras/data/tmp"
 
 import sys
 import os
@@ -162,7 +151,7 @@ state.State.mState = myState
 myConfig = conf.Config()
 conf.Config.mConfig = myConfig;
 myState.getLocalConfig(myConfig)
-PropertyConfigurator.configure("/opt/zimbra/conf/zmconfigd.log4j.properties")
+PropertyConfigurator.configure("/opt/zextras/conf/zmconfigd.log4j.properties")
 Log.initLogging(myConfig)
 Ldap.initLdap(myConfig)
 

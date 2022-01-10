@@ -1,55 +1,36 @@
 #!/bin/bash
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
 
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
 
 autoTrainSystem() {
 
   timestampit "Starting spam/ham extraction from system accounts."
-  spamdir=`mktmpdir spam`
-  hamdir=`mktmpdir ham`
-  /opt/zimbra/libexec/zmspamextract ${spam_account} -o ${spamdir}
-  /opt/zimbra/libexec/zmspamextract ${ham_account} -o ${hamdir}
+  spamdir=$(mktmpdir spam)
+  hamdir=$(mktmpdir ham)
+  /opt/zextras/libexec/zmspamextract ${spam_account} -o ${spamdir}
+  /opt/zextras/libexec/zmspamextract ${ham_account} -o ${hamdir}
   timestampit "Finished extracting spam/ham from system accounts."
 
   timestampit "Starting spamassassin training."
-  /opt/zimbra/common/bin/sa-learn \
+  /opt/zextras/common/bin/sa-learn \
     --dbpath=${db_path} -L --no-sync \
     --spam ${spamdir}
 
-  /opt/zimbra/common/bin/sa-learn \
+  /opt/zextras/common/bin/sa-learn \
     --dbpath=${db_path} -L --no-sync \
     --ham ${hamdir}
 
-  /opt/zimbra/common/bin/sa-learn \
+  /opt/zextras/common/bin/sa-learn \
     --dbpath=${db_path} --sync
   timestampit "Finished spamassassin training."
 
   if [ x"$amavis_dspam_enabled" = "xtrue" ]; then
     timestampit "Starting dspam training"
-    /opt/zimbra/dspam/bin/dspam_train zimbra ${spamdir} ${hamdir}
-    #for f in ${spamdir}/*; do
-      #test -f ${f} && /opt/zimbra/dspam/bin/dspam_corpus --addspam zimbra ${f}
-    #done
-    #for f in ${hamdir}/*; do
-      #test -f ${f} && /opt/zimbra/dspam/bin/dspam_corpus zimbra ${f}
-    #done
-
-    /opt/zimbra/dspam/bin/dspam_clean -p0 $USER
+    /opt/zextras/dspam/bin/dspam_train zimbra ${spamdir} ${hamdir}
+    /opt/zextras/dspam/bin/dspam_clean -p0 $USER
     timestampit "Finished dspam training"
   fi
 
@@ -58,35 +39,35 @@ autoTrainSystem() {
 
 trainAccountFolder() {
 
-  tempdir=`mktmpdir ${MODE}`
+  tempdir=$(mktmpdir ${MODE})
   if [ "x${MODE}" = "xspam" ]; then
     FOLDER=${FOLDER:=junk}
   elif [ "x${MODE}" = "xham" ]; then
     FOLDER=${FOLDER:=inbox}
   fi
 
-  timestampit  "Starting spamassassin $MODE training for $USER using folder $FOLDER"
-  /opt/zimbra/libexec/zmspamextract -r -m $USER -o ${tempdir} -q in:${FOLDER}
+  timestampit "Starting spamassassin $MODE training for $USER using folder $FOLDER"
+  /opt/zextras/libexec/zmspamextract -r -m $USER -o ${tempdir} -q in:${FOLDER}
 
-  /opt/zimbra/common/bin/sa-learn \
+  /opt/zextras/common/bin/sa-learn \
     --dbpath=${db_path} -L --no-sync \
     --${MODE} ${tempdir}
 
-  /opt/zimbra/common/bin/sa-learn \
+  /opt/zextras/common/bin/sa-learn \
     --dbpath=${db_path} --sync
-  timestampit  "Finished spamassassin $MODE training for $USER using folder $FOLDER"
+  timestampit "Finished spamassassin $MODE training for $USER using folder $FOLDER"
 
   if [ x"$amavis_dspam_enabled" = "xtrue" ]; then
-    timestampit  "Starting dspam $MODE training for $USER using folder $FOLDER"
+    timestampit "Starting dspam $MODE training for $USER using folder $FOLDER"
     if [ $MODE == "ham" ]; then
       MODE="innocent"
     fi
 
-    /opt/zimbra/dspam/bin/dspam --user zimbra --class=${MODE} --source=corpus --mode=teft \
+    /opt/zextras/dspam/bin/dspam --user zextras --class=${MODE} --source=corpus --mode=teft \
       --feature=noise --stdout
 
-    /opt/zimbra/dspam/bin/dspam_clean -p0 $USER
-    timestampit  "Finished dspam $MODE training for $USER using folder $FOLDER"
+    /opt/zextras/dspam/bin/dspam_clean -p0 $USER
+    timestampit "Finished dspam $MODE training for $USER using folder $FOLDER"
   fi
 
   /bin/rm -rf ${tempdir}
@@ -98,7 +79,7 @@ mktmpdir() {
 }
 
 timestampit() {
-  SIMPLE_DATE=`date +%Y%m%d%H%M%S`
+  SIMPLE_DATE=$(date +%Y%m%d%H%M%S)
   echo "$SIMPLE_DATE $1"
 }
 
@@ -107,43 +88,42 @@ usage() {
   exit 1
 }
 
-if [ x`whoami` != xzimbra ]; then
-    echo Error: must be run as zimbra user
+if [ x$(whoami) != xzextras ]; then
+  echo Error: must be run as zextras user
   exit 1
 fi
 
-if [ ! -x "/opt/zimbra/common/sbin/amavisd" ]; then
-    echo "Error: SpamAssassin not installed"
-    exit 1
+if [ ! -x "/opt/zextras/common/sbin/amavisd" ]; then
+  echo "Error: SpamAssassin not installed"
+  exit 1
 fi
 
-source `dirname $0`/zmshutil || exit 1
+source $(dirname $0)/zmshutil || exit 1
 zmsetvars
 
-amavis_dspam_enabled=`/opt/zimbra/bin/zmprov -l gs ${zimbra_server_hostname} zimbraAmavisDSPAMEnabled | grep zimbraAmavisDSPAMEnabled: | awk '{print $2}'`
+amavis_dspam_enabled=$(/opt/zextras/bin/zmprov -l gs ${zimbra_server_hostname} zimbraAmavisDSPAMEnabled | grep zimbraAmavisDSPAMEnabled: | awk '{print $2}')
 amavis_dspam_enabled=$(echo $amavis_dspam_enabled | tr A-Z a-z)
 antispam_mysql_enabled=$(echo $antispam_mysql_enabled | tr A-Z a-z)
 zmtrainsa_cleanup_host=$(echo $zmtrainsa_cleanup_host | tr A-Z a-z)
 
 if [ "x${zimbra_spam_externalIsSpamAccount}" = "x" ]; then
   spam_account="-s"
-else 
+else
   spam_account="-m ${zimbra_spam_externalIsSpamAccount}"
 fi
 
 if [ "x${zimbra_spam_externalIsNotSpamAccount}" = "x" ]; then
   ham_account="-n"
-else 
+else
   ham_account="-m ${zimbra_spam_externalIsNotSpamAccount}"
 fi
 
 # Set db_path
 if [ x"$antispam_mysql_enabled" = "xtrue" ]; then
-  db_path='/opt/zimbra/data/amavisd/mysql/data'
+  db_path='/opt/zextras/data/amavisd/mysql/data'
 else
-  db_path='/opt/zimbra/data/amavisd/.spamassassin'
+  db_path='/opt/zextras/data/amavisd/.spamassassin'
 fi
-
 
 # No argument mode uses zmspamextract for auto-training.
 if [ x$1 = "x" ]; then
@@ -154,20 +134,19 @@ fi
 if [ x$1 = "x--cleanup" ]; then
   if [ x${zmtrainsa_cleanup_host} = "xtrue" ]; then
     timestampit "Starting spam/ham cleanup"
-    mydir=`mktmpdir cleanup`
-    /opt/zimbra/libexec/zmspamextract ${spam_account} -o ${mydir} -d
-    /opt/zimbra/libexec/zmspamextract ${ham_account} -o ${mydir} -d
+    mydir=$(mktmpdir cleanup)
+    /opt/zextras/libexec/zmspamextract ${spam_account} -o ${mydir} -d
+    /opt/zextras/libexec/zmspamextract ${ham_account} -o ${mydir} -d
     /bin/rm -rf ${mydir}
     timestampit "Finished spam/ham cleanup"
-  else 
+  else
     timestampit "Cleanup skipped: $zimbra_server_hostname is not a spam/ham cleanup host."
   fi
   exit
 fi
 
-
 USER=$1
-MODE=`echo $2 | tr A-Z a-z`
+MODE=$(echo $2 | tr A-Z a-z)
 FOLDER=$3
 
 if [ "x${MODE}" != "xspam" -a "x${MODE}" != "xham" ]; then
@@ -181,4 +160,3 @@ fi
 trainAccountFolder
 
 exit 0
-

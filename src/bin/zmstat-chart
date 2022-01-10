@@ -1,62 +1,51 @@
 #!/bin/bash
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2007, 2008, 2009, 2010, 2013, 2014, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
 
-source `dirname $0`/zmshutil || exit 1
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+source $(dirname $0)/zmshutil || exit 1
 zmsetvars
 
-u=`id -un`
+u=$(id -un)
 if [ $u != ${zimbra_user} ]; then
-    echo "Error: must be run as ${zimbra_user} user"
-    exit 1
+  echo "Error: must be run as ${zimbra_user} user"
+  exit 1
 fi
 
 optConf=0
-for opt in $@; do 
-    if [ $opt = "-c" -o $opt = "--conf" ]; then
-        optConf=1
-        break
-    fi
+for opt in $@; do
+  if [ $opt = "-c" -o $opt = "--conf" ]; then
+    optConf=1
+    break
+  fi
 done
 
 if [ $optConf -eq 1 ]; then
-    # If --conf option was given, use it.
-    exec zmjava -Djava.awt.headless=true com.zimbra.perf.chart.ChartUtil "$@"
+  # If --conf option was given, use it.
+  exec zmjava -Djava.awt.headless=true com.zimbra.perf.chart.ChartUtil "$@"
 else
-    # If no --conf option, look for /opt/zimbra/conf/zmstat-chart.xml and
-    # generated one if necessary.
-    conf=/opt/zimbra/conf/zmstat-chart.xml
-    confTmp=$conf.$$.tmp
-    CONF_TIME=0
-    CONFGEN_TIME=`stat -c %Z /opt/zimbra/bin/zmstat-chart-config`
-    if [ -f $conf ]; then
-        CONF_TIME=`stat -c %Z $conf`
+  # If no --conf option, look for /opt/zextras/conf/zmstat-chart.xml and
+  # generated one if necessary.
+  conf=/opt/zextras/conf/zmstat-chart.xml
+  confTmp=$conf.$$.tmp
+  CONF_TIME=0
+  CONFGEN_TIME=$(stat -c %Z /opt/zextras/bin/zmstat-chart-config)
+  if [ -f $conf ]; then
+    CONF_TIME=$(stat -c %Z $conf)
+  fi
+  if [ $CONFGEN_TIME -gt $CONF_TIME ]; then
+    zmstat-chart-config >$confTmp
+    rc=$?
+    if [ $rc -ne 0 ]; then
+      echo "Unable to generate chart configuration file $conf"
+      if [ -e $confTmp ]; then
+        rm -f $confTmp
+      fi
+      exit $rc
     fi
-    if [ $CONFGEN_TIME -gt $CONF_TIME ]; then
-        zmstat-chart-config > $confTmp
-        rc=$?
-        if [ $rc -ne 0 ]; then
-            echo "Unable to generate chart configuration file $conf"
-            if [ -e $confTmp ]; then
-                rm -f $confTmp
-            fi
-            exit $rc
-        fi
-        mv -f $confTmp $conf
-    fi
-    exec zmjava -Djava.awt.headless=true com.zimbra.perf.chart.ChartUtil --conf $conf "$@"
+    mv -f $confTmp $conf
+  fi
+  exec zmjava -Djava.awt.headless=true com.zimbra.perf.chart.ChartUtil --conf $conf "$@"
 fi

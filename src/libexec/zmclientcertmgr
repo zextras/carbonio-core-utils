@@ -1,34 +1,23 @@
 #!/bin/bash
-#
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2011, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-#
 
-if [ "$(whoami)" != "zimbra" ]; then
-  echo "$0 must be run as user zimbra"
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+if [ "$(whoami)" != "zextras" ]; then
+  echo "$0 must be run as user zextras"
   exit 1
 fi
 umask 027
 
-source /opt/zimbra/bin/zmshutil || exit 1
+source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars -f
 
 exp_thres_days=${zimbra_zmcertmgr_expiration_threshold:=30}
-exp_thres_secs=$(($exp_thres_days*24*60*60))
+exp_thres_secs=$(($exp_thres_days * 24 * 60 * 60))
 
-zimbra_domain_cert_directory=/opt/zimbra/conf/domaincerts
+zimbra_domain_cert_directory=/opt/zextras/conf/domaincerts
 
 ERROR_PREFIX="ERROR:"
 
@@ -50,7 +39,7 @@ saveConfigKey() {
   fi
 
   echo -n "** Saving $location config key $key..."
-  /opt/zimbra/bin/zmprov -m -l ${zmprov_opts} "$key" "$content" 2> /dev/null
+  /opt/zextras/bin/zmprov -m -l ${zmprov_opts} "$key" "$content" 2>/dev/null
   if [ $? = 0 ]; then
     echo "done."
   else
@@ -74,7 +63,7 @@ cleanConfigKey() {
   fi
 
   echo -n "** Clean $location config key $key..."
-  /opt/zimbra/bin/zmprov -m -l ${zmprov_opts} "$key" "" 2> /dev/null
+  /opt/zextras/bin/zmprov -m -l ${zmprov_opts} "$key" "" 2>/dev/null
   if [ $? = 0 ]; then
     echo "done."
   else
@@ -102,36 +91,39 @@ loadConfigKey() {
     return
   fi
   TMPDIR="${zimbra_tmp_directory}"
-  local tmpfile=`mktemp -t zmcertmgr.XXXXXX 2> /dev/null` || { echo "Failed to create tmpfile"; exit 1; }
+  local tmpfile=$(mktemp -t zmcertmgr.XXXXXX 2>/dev/null) || {
+    echo "Failed to create tmpfile"
+    exit 1
+  }
   if [ ! -s "$file" ]; then
     echo -n "** Retrieving $location config key $key..."
-    /opt/zimbra/bin/zmprov -m -l ${zmprov_opts} "${key}" | sed  -e 's/^${key}: //' > "$tmpfile" 2> /dev/null && mv -f "$tmpfile" "$file" 2> /dev/null
+    /opt/zextras/bin/zmprov -m -l ${zmprov_opts} "${key}" | sed -e 's/^${key}: //' >"$tmpfile" 2>/dev/null && mv -f "$tmpfile" "$file" 2>/dev/null
     if [ $? = 0 -a -s "$file" ]; then
-      chmod 400 "$file" 2> /dev/null
+      chmod 400 "$file" 2>/dev/null
       echo "done."
     else
       echo "failed."
     fi
   fi
-  rm -f "$tmpfile" 2> /dev/null
+  rm -f "$tmpfile" 2>/dev/null
 }
 
 deployCerts() {
   if [ "$1" = "-force" ]; then
     if [ -d "$zimbra_domain_cert_directory" ]; then
-      rm -rf "$zimbra_domain_cert_directory" > /dev/null 2>&1
+      rm -rf "$zimbra_domain_cert_directory" >/dev/null 2>&1
     fi
   fi
 
-  DOMAINS=$(/opt/zimbra/bin/zmprov -m -l garpd | awk '{print $1}')
+  DOMAINS=$(/opt/zextras/bin/zmprov -m -l garpd | awk '{print $1}')
   if [ $? != 0 ]; then
-    echo "Unable to retrieve list of domains with SSL certificates";
+    echo "Unable to retrieve list of domains with SSL certificates"
     exit 1
   fi
 
   for i in ${DOMAINS}; do
     echo -n "** Deploying cert for $i..."
-    getClientCertFromLdap "$i" > /dev/null 2>&1
+    getClientCertFromLdap "$i" >/dev/null 2>&1
     if [ $? = 0 ]; then
       echo "done."
     else
@@ -189,7 +181,6 @@ cleanClientCertFromLdap() {
   cleanConfigKey "zimbraReverseProxyClientCertCA" "domain" "$domain"
 }
 
-
 getClientCertFromLdap() {
   domain=$1
   if [ "$domain" = "" ]; then
@@ -198,13 +189,13 @@ getClientCertFromLdap() {
   if [ ! -d "$zimbra_domain_cert_directory" ]; then
     mkdir -p "$zimbra_domain_cert_directory"
   fi
-  chmod 755 "$zimbra_domain_cert_directory" 2> /dev/null
+  chmod 755 "$zimbra_domain_cert_directory" 2>/dev/null
   current_crt="${zimbra_domain_cert_directory}/${domain}.client.crt"
 
   loadConfigKey "zimbraReverseProxyClientCertCA" "$current_crt" "domain" "$domain"
 }
 
-usage () {
+usage() {
   rc=${1:-1}
   echo "Usage:
   $0 -h | --help
@@ -215,7 +206,7 @@ usage () {
   $0 cleancrt server
   $0 cleancrt global
 "
-  exit $rc;
+  exit $rc
 }
 
 ###Main Execution###

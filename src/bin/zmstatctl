@@ -1,23 +1,12 @@
 #!/usr/bin/perl -w
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2007, 2008, 2009, 2010, 2011, 2013, 2014, 2015, 2016 Synacor, Inc.
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
+# SPDX-License-Identifier: GPL-2.0-only
 
 use strict;
-use lib "/opt/zimbra/common/lib/perl5";
+use lib "/opt/zextras/common/lib/perl5";
 use File::Basename;
 use Zimbra::Mon::Zmstat;
 use POSIX qw(setsid);
@@ -27,10 +16,10 @@ setsid;
 zmstatInit();
 
 sub arrayContains($$) {
-    my ($arrayRef, $val) = @_;
+    my ( $arrayRef, $val ) = @_;
     foreach my $elem (@$arrayRef) {
-    	chomp($elem);
-        if ($elem eq $val) {
+        chomp($elem);
+        if ( $elem eq $val ) {
             return 1;
         }
     }
@@ -40,58 +29,65 @@ sub arrayContains($$) {
 sub getProcList() {
     my @procs;
     my @services;
-    my $all = 0;
+    my $all    = 0;
     my $server = getZimbraServerHostname();
-	if (-f "/opt/zimbra/conf/stats.conf") {
-		open F, "/opt/zimbra/conf/stats.conf";
-		@services = <F>;
-		close F;
-		chomp @services;
-		map {s/service //} @services;
-	} else {
-		if ($server) {
-			eval { @services = qx(zmprov -l gs $server zimbraServiceEnabled | grep -i zimbraServiceEnabled | sed -e 's/^zimbraServiceEnabled: //'); };
-		}
-	}
-    if (scalar(@services) < 1) {
-        print STDERR "Unable to determine ZCS service list on this host.  Assuming all.\n";
+    if ( -f "/opt/zextras/conf/stats.conf" ) {
+        open F, "/opt/zextras/conf/stats.conf";
+        @services = <F>;
+        close F;
+        chomp @services;
+        map { s/service // } @services;
+    }
+    else {
+        if ($server) {
+            eval {
+                @services =
+qx(zmprov -l gs $server zimbraServiceEnabled | grep -i zimbraServiceEnabled | sed -e 's/^zimbraServiceEnabled: //');
+            };
+        }
+    }
+    if ( scalar(@services) < 1 ) {
+        print STDERR
+          "Unable to determine ZCS service list on this host.  Assuming all.\n";
         $all = 1;
     }
 
-    if ($all || arrayContains(\@services, 'mailbox')) {
-        push(@procs, 'mailbox', 'mysql');
+    if ( $all || arrayContains( \@services, 'mailbox' ) ) {
+        push( @procs, 'mailbox', 'mysql' );
     }
-    if ($all || arrayContains(\@services, 'convertd')) {
-        push(@procs, 'convertd');
+    if ( $all || arrayContains( \@services, 'convertd' ) ) {
+        push( @procs, 'convertd' );
     }
-    if ($all || arrayContains(\@services, 'proxy')) {
-        push(@procs, 'nginx');
+    if ( $all || arrayContains( \@services, 'proxy' ) ) {
+        push( @procs, 'nginx' );
     }
-    if ($all || arrayContains(\@services, 'ldap')) {
-        push(@procs, 'ldap');
+    if ( $all || arrayContains( \@services, 'ldap' ) ) {
+        push( @procs, 'ldap' );
     }
-    if ($all || arrayContains(\@services, 'mta')) {
-        push(@procs, 'mta');
+    if ( $all || arrayContains( \@services, 'mta' ) ) {
+        push( @procs, 'mta' );
     }
-    if ($all || arrayContains(\@services, 'antispam')) {
-        push(@procs, 'amavisd');
+    if ( $all || arrayContains( \@services, 'antispam' ) ) {
+        push( @procs, 'amavisd' );
     }
-    if ($all || arrayContains(\@services, 'antivirus')) {
-        push(@procs, 'clam');
+    if ( $all || arrayContains( \@services, 'antivirus' ) ) {
+        push( @procs, 'clam' );
     }
-    return join(' ', @procs);
+    return join( ' ', @procs );
 }
 
 sub getPidFiles() {
     my @pids;
     my $piddir = getPidFileDir();
-    if (-e $piddir) {
-        opendir(DIR, $piddir) || die "Unable to opendir $piddir: $!";
+    if ( -e $piddir ) {
+        opendir( DIR, $piddir ) || die "Unable to opendir $piddir: $!";
         my @pidfiles = readdir(DIR);
         foreach my $file (@pidfiles) {
-        	next if ($file =~ /zmstat-fd-real/); # can't kill/test: running as root
-            if ($file =~ /\.pid$/) {
-                push(@pids, "$piddir/$file");
+            next
+              if ( $file =~ /zmstat-fd-real/ )
+              ;    # can't kill/test: running as root
+            if ( $file =~ /\.pid$/ ) {
+                push( @pids, "$piddir/$file" );
             }
         }
         closedir(DIR);
@@ -107,149 +103,161 @@ _USAGE_
     exit(1);
 }
 
-
-
 #
 # main
 #
 
 my @TOOL_ALL = (
-    'zmstat-proc',
-    'zmstat-cpu',
-    'zmstat-vm',
-    'zmstat-io -x',
-    'zmstat-df',
-    'zmstat-io',
-    'zmstat-fd',
-    'zmstat-allprocs',
+    'zmstat-proc', 'zmstat-cpu', 'zmstat-vm', 'zmstat-io -x',
+    'zmstat-df',   'zmstat-io',  'zmstat-fd', 'zmstat-allprocs',
 );
 
-my $TOOL_MYSQL = 'zmstat-mysql';
+my $TOOL_MYSQL    = 'zmstat-mysql';
 my $TOOL_CONVERTD = 'zmstat-convertd';
-my $TOOL_NGINX = 'zmstat-nginx';
+my $TOOL_NGINX    = 'zmstat-nginx';
 my $TOOL_MTAQUEUE = 'zmstat-mtaqueue';
-my $TOOL_LDAP = 'zmstat-ldap';
+my $TOOL_LDAP     = 'zmstat-ldap';
 
 my $cmd = $ARGV[0];
-if (defined($cmd)) {
+if ( defined($cmd) ) {
 
-    if ($cmd eq 'stop' || $cmd eq 'restart') {
+    if ( $cmd eq 'stop' || $cmd eq 'restart' ) {
         my @pids = getPidFiles();
         foreach my $pidFile (@pids) {
             my $pid = readPidFile($pidFile);
             if ($pid) {
                 print "Terminating process $pid\n";
-                if (!kill(0, $pid)) {
+                if ( !kill( 0, $pid ) ) {
                     unlink($pidFile);
-                } elsif (kill(15, $pid) == 1) {  # SIGTERM
+                }
+                elsif ( kill( 15, $pid ) == 1 ) {    # SIGTERM
                     unlink($pidFile);
                 }
             }
         }
-        if ($cmd eq 'stop') {
-            exit(0);  # always return success to calling script
+        if ( $cmd eq 'stop' ) {
+            exit(0);    # always return success to calling script
         }
     }
-    if ($cmd eq 'start' || $cmd eq 'restart') {
-        my $procs = getProcList();
+    if ( $cmd eq 'start' || $cmd eq 'restart' ) {
+        my $procs   = getProcList();
         my $doNginx = $procs =~ /\bnginx\b/;
-        my $doMysql = (-x "/opt/zimbra/common/sbin/mysqld" && -l "/opt/zimbra/mailboxd") ? 1 : 0;
-        my $doMtaQueue = (-x "/opt/zimbra/common/sbin/postqueue" && $procs =~ /\bmta\b/) ? 1 : 0;
-	my $doLdap = -x "/opt/zimbra/common/libexec/slapd" ? 1 : 0;
-        my $outfile = getZmstatRoot() . "/zmstat.out";
+        my $doMysql =
+          ( -x "/opt/zextras/common/sbin/mysqld" && -l "/opt/zextras/mailboxd" )
+          ? 1
+          : 0;
+        my $doMtaQueue =
+          ( -x "/opt/zextras/common/sbin/postqueue" && $procs =~ /\bmta\b/ )
+          ? 1
+          : 0;
+        my $doLdap    = -x "/opt/zextras/common/libexec/slapd" ? 1 : 0;
+        my $outfile   = getZmstatRoot() . "/zmstat.out";
         my $scriptDir = dirname($0);
         my $parentDir = dirname($scriptDir);
-        my $toolpath = "$parentDir/libexec";
-        my @pids = getPidFiles();
-        if (scalar(@pids) == 0 ) {
-          foreach my $tool (@TOOL_ALL) {
-              my $cmd = "$toolpath/$tool";
-              print "Invoking: $cmd\n";
-              system("$cmd >> $outfile 2>&1 &");
-          }
-          if ($doMysql) {
-              my $cmd = "$toolpath/$TOOL_MYSQL";
-              print "Invoking: $cmd\n";
-              system("$cmd >> $outfile 2>&1 &");
-          }
-          # if "convertd" is not in proc list (not an enabled service), don't try starting zmstat-convertd
-          if ($procs =~ /convertd/) {
-              # doMysql implies that convertd is also on the system
-              $cmd = "$toolpath/$TOOL_CONVERTD";
-              print "Invoking: $cmd\n";
-              system("$cmd >> $outfile 2>&1 &");
-          }
-          if ($doMtaQueue) {
-              my $cmd = "$toolpath/$TOOL_MTAQUEUE";
-              print "Invoking: $cmd\n";
-              system("$cmd >> $outfile 2>&1 &");
-          }
-          if ($doNginx) {
-              my $cmd = "$toolpath/$TOOL_NGINX";
-              print "Invoking: $cmd\n";
-              system("$cmd >> $outfile 2>&1 &");
-          }
-          if ($doLdap) {
-              my $cmd = "$toolpath/$TOOL_LDAP";
-              print "Invoking: $cmd\n";
-              system("$cmd >> $outfile 2>&1 &");
-          }
-        } else {
-          my %procs;
-          foreach my $pidFile (@pids) {
-            my $pid = readPidFile($pidFile);
-            my $proc = $pidFile;
-            $proc =~ s/\.pid//;
-            $proc =~ s/.*pid\///;
-            if (kill(0, $pid)) {
-              print "$proc already running, skipping.\n";
-              if ($proc eq "zmstat-mysql" || $proc eq "zmstat-convertd" || $proc eq "zmstat-mtaqueue" ||
-                  $proc eq "zmstat-nginx" || $proc eq "zmstat-ldap") {
-                $procs{$proc}=1;
-              } else {
-                if ($proc eq "zmstat-io-x") {
-                  $proc = "zmstat-io -x";
-                }
-                @TOOL_ALL = grep !/^($proc)$/, @TOOL_ALL;
-              }
+        my $toolpath  = "$parentDir/libexec";
+        my @pids      = getPidFiles();
+
+        if ( scalar(@pids) == 0 ) {
+            foreach my $tool (@TOOL_ALL) {
+                my $cmd = "$toolpath/$tool";
+                print "Invoking: $cmd\n";
+                system("$cmd >> $outfile 2>&1 &");
             }
-          }
-          foreach my $tool (@TOOL_ALL) {
-              my $cmd = "$toolpath/$tool";
-              print "Invoking: $cmd\n";
-              system("$cmd >> $outfile 2>&1 &");
-          }
-          if ($doMysql && !$procs{"zmstat-mysql"}) {
-              my $cmd = "$toolpath/$TOOL_MYSQL";
-              print "Invoking: $cmd\n";
-              system("$cmd >> $outfile 2>&1 &");
-          }              
-          # if "convertd" is not in proc list (not an enabled service), don't try starting zmstat-convertd
-          if ($procs =~ /convertd/ && !$procs{"zmstat-convertd"}) {
-              # doMysql implies that convertd is also on the system
-              $cmd = "$toolpath/$TOOL_CONVERTD";
-              print "Invoking: $cmd\n";
-              system("$cmd >> $outfile 2>&1 &");
-          }
-          if ($doMtaQueue && !$procs{"zmstat-mtaqueue"}) {
-              my $cmd = "$toolpath/$TOOL_MTAQUEUE";
-              print "Invoking: $cmd\n";
-              system("$cmd >> $outfile 2>&1 &");
-          }
-          if ($doNginx && !$procs{"zmstat-nginx"}) {
-              my $cmd = "$toolpath/$TOOL_NGINX";
-              print "Invoking: $cmd\n";
-              system("$cmd >> $outfile 2>&1 &");
-          }
-          if ($doLdap && !$procs{"zmstat-ldap"}) {
-              my $cmd = "$toolpath/$TOOL_LDAP";
-              print "Invoking: $cmd\n";
-              system("$cmd >> $outfile 2>&1 &");
-          }
+            if ($doMysql) {
+                my $cmd = "$toolpath/$TOOL_MYSQL";
+                print "Invoking: $cmd\n";
+                system("$cmd >> $outfile 2>&1 &");
+            }
+
+# if "convertd" is not in proc list (not an enabled service), don't try starting zmstat-convertd
+            if ( $procs =~ /convertd/ ) {
+
+                # doMysql implies that convertd is also on the system
+                $cmd = "$toolpath/$TOOL_CONVERTD";
+                print "Invoking: $cmd\n";
+                system("$cmd >> $outfile 2>&1 &");
+            }
+            if ($doMtaQueue) {
+                my $cmd = "$toolpath/$TOOL_MTAQUEUE";
+                print "Invoking: $cmd\n";
+                system("$cmd >> $outfile 2>&1 &");
+            }
+            if ($doNginx) {
+                my $cmd = "$toolpath/$TOOL_NGINX";
+                print "Invoking: $cmd\n";
+                system("$cmd >> $outfile 2>&1 &");
+            }
+            if ($doLdap) {
+                my $cmd = "$toolpath/$TOOL_LDAP";
+                print "Invoking: $cmd\n";
+                system("$cmd >> $outfile 2>&1 &");
+            }
         }
-    } elsif ($cmd eq 'status') {
+        else {
+            my %procs;
+            foreach my $pidFile (@pids) {
+                my $pid  = readPidFile($pidFile);
+                my $proc = $pidFile;
+                $proc =~ s/\.pid//;
+                $proc =~ s/.*pid\///;
+                if ( kill( 0, $pid ) ) {
+                    print "$proc already running, skipping.\n";
+                    if (   $proc eq "zmstat-mysql"
+                        || $proc eq "zmstat-convertd"
+                        || $proc eq "zmstat-mtaqueue"
+                        || $proc eq "zmstat-nginx"
+                        || $proc eq "zmstat-ldap" )
+                    {
+                        $procs{$proc} = 1;
+                    }
+                    else {
+                        if ( $proc eq "zmstat-io-x" ) {
+                            $proc = "zmstat-io -x";
+                        }
+                        @TOOL_ALL = grep !/^($proc)$/, @TOOL_ALL;
+                    }
+                }
+            }
+            foreach my $tool (@TOOL_ALL) {
+                my $cmd = "$toolpath/$tool";
+                print "Invoking: $cmd\n";
+                system("$cmd >> $outfile 2>&1 &");
+            }
+            if ( $doMysql && !$procs{"zmstat-mysql"} ) {
+                my $cmd = "$toolpath/$TOOL_MYSQL";
+                print "Invoking: $cmd\n";
+                system("$cmd >> $outfile 2>&1 &");
+            }
+
+# if "convertd" is not in proc list (not an enabled service), don't try starting zmstat-convertd
+            if ( $procs =~ /convertd/ && !$procs{"zmstat-convertd"} ) {
+
+                # doMysql implies that convertd is also on the system
+                $cmd = "$toolpath/$TOOL_CONVERTD";
+                print "Invoking: $cmd\n";
+                system("$cmd >> $outfile 2>&1 &");
+            }
+            if ( $doMtaQueue && !$procs{"zmstat-mtaqueue"} ) {
+                my $cmd = "$toolpath/$TOOL_MTAQUEUE";
+                print "Invoking: $cmd\n";
+                system("$cmd >> $outfile 2>&1 &");
+            }
+            if ( $doNginx && !$procs{"zmstat-nginx"} ) {
+                my $cmd = "$toolpath/$TOOL_NGINX";
+                print "Invoking: $cmd\n";
+                system("$cmd >> $outfile 2>&1 &");
+            }
+            if ( $doLdap && !$procs{"zmstat-ldap"} ) {
+                my $cmd = "$toolpath/$TOOL_LDAP";
+                print "Invoking: $cmd\n";
+                system("$cmd >> $outfile 2>&1 &");
+            }
+        }
+    }
+    elsif ( $cmd eq 'status' ) {
         my @pids = getPidFiles();
-        if (scalar(@pids) == 0) {
+        if ( scalar(@pids) == 0 ) {
+
             # zmstat must not be running if there is no pid file
             # Must exit with code 1 in this case
             exit(1);
@@ -258,30 +266,34 @@ if (defined($cmd)) {
         foreach my $pidFile (@pids) {
             my $pid = readPidFile($pidFile);
             if ($pid) {
-                if (!kill(0, $pid)) {
+                if ( !kill( 0, $pid ) ) {
                     print STDERR "process $pid in $pidFile not running\n";
                     $numDeadProcs++;
-                } else {
+                }
+                else {
                     $pidFile =~ m#/.*/(.*?)\.pid#;
                     print STDERR "Running: $1\n";
                 }
             }
         }
-        exit($numDeadProcs > 0 ? 1 : 0);
-    } elsif ($cmd eq 'rotate') {
+        exit( $numDeadProcs > 0 ? 1 : 0 );
+    }
+    elsif ( $cmd eq 'rotate' ) {
         my @pids = getPidFiles();
-        exit 1 if (@pids == 0);
+        exit 1 if ( @pids == 0 );
         foreach my $pidFile (@pids) {
             my $pid = readPidFile($pidFile);
             if ($pid) {
                 print "Sending HUP to process $pid\n";
-                my $rc = kill(1, $pid);  # SIGHUP
+                my $rc = kill( 1, $pid );    # SIGHUP
                 print "PID $pid was not running\n" if !$rc;
             }
         }
-    } else {
+    }
+    else {
         usage();
     }
-} else {
+}
+else {
     usage();
 }

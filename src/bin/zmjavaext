@@ -1,61 +1,50 @@
 #!/bin/bash
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2006, 2007, 2008, 2009, 2010, 2013, 2014, 2016 Synacor, Inc.
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
+# SPDX-License-Identifier: GPL-2.0-only
 
 # Much faster; just call zmlocalconfig once
-source `dirname $0`/zmshutil || exit 1
+source $(dirname $0)/zmshutil || exit 1
 zmsetvars -f
 
 if [ -d ${zimbra_java_home}/jre ]; then
-    JRE_EXT_DIR=${zimbra_java_home}/jre/lib/ext
+  JRE_EXT_DIR=${zimbra_java_home}/jre/lib/ext
 else
-    #JRE_EXT_DIR=/System/Library/Frameworks/JavaVM.framework/Versions/1.5/Home/lib/ext
-    JRE_EXT_DIR=${zimbra_java_home}/lib/ext
+  #JRE_EXT_DIR=/System/Library/Frameworks/JavaVM.framework/Versions/1.5/Home/lib/ext
+  JRE_EXT_DIR=${zimbra_java_home}/lib/ext
 fi
 
 if [ -f ".hotspot_compiler" ]; then
-  cd /opt/zimbra
+  cd /opt/zextras
 fi
-case "`uname`" in
-CYGWIN*) PATHSEP=";";;
-*) PATHSEP=":";;
+case "$(uname)" in
+CYGWIN*) PATHSEP=";" ;;
+*) PATHSEP=":" ;;
 esac
 
-ZIMBRA_EXTENSIONS="backup clamscanner network zimbra-license zimbrahsm zimbrasync"
-ZIMBRA_EXT_DIR="/opt/zimbra/lib/ext-common"
+ZIMBRA_EXTENSIONS="backup clamscanner network carbonio-license zimbrahsm zimbrasync"
+ZIMBRA_EXT_DIR="/opt/zextras/lib/ext-common"
 for i in $ZIMBRA_EXTENSIONS; do
-  if [ -d "/opt/zimbra/lib/ext/$i" ]; then
-   ZIMBRA_EXT_DIR="${ZIMBRA_EXT_DIR}${PATHSEP}/opt/zimbra/lib/ext/$i"
+  if [ -d "/opt/zextras/lib/ext/$i" ]; then
+    ZIMBRA_EXT_DIR="${ZIMBRA_EXT_DIR}${PATHSEP}/opt/zextras/lib/ext/$i"
   fi
-done 
+done
 
-java_options="-XX:ErrorFile=/opt/zimbra/log"
+java_options="-XX:ErrorFile=/opt/zextras/log"
 
 if [ x${zimbra_zmjava_java_library_path} = "x" ]; then
-  zimbra_zmjava_java_library_path=/opt/zimbra/lib
-fi  
+  zimbra_zmjava_java_library_path=/opt/zextras/lib
+fi
 
 if [ x${zimbra_zmjava_java_ext_dirs} = "x" ]; then
-  zimbra_zmjava_java_ext_dirs=${JRE_EXT_DIR}${PATHSEP}/opt/zimbra/lib/jars${PATHSEP}${ZIMBRA_EXT_DIR}
-fi  
+  zimbra_zmjava_java_ext_dirs=${JRE_EXT_DIR}${PATHSEP}/opt/zextras/lib/jars${PATHSEP}${ZIMBRA_EXT_DIR}
+fi
 
 exec ${zimbra_java_home}/bin/java ${java_options} \
-     -client ${zimbra_zmjava_options} \
-     -Dzimbra.home=/opt/zimbra \
-     -Djava.library.path=${zimbra_zmjava_java_library_path} \
-     -Djava.ext.dirs=${zimbra_zmjava_java_ext_dirs} \
-     "$@"
+  -client ${zimbra_zmjava_options} \
+  -Dzimbra.home=/opt/zextras \
+  -Djava.library.path=${zimbra_zmjava_java_library_path} \
+  -Djava.ext.dirs=${zimbra_zmjava_java_ext_dirs} \
+  "$@"

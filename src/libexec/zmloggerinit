@@ -1,35 +1,24 @@
 #!/bin/bash
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2005, 2006, 2007, 2009, 2010, 2013, 2014, 2016 Synacor, Inc.
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
+# SPDX-License-Identifier: GPL-2.0-only
 
 #
-if [ x`whoami` != "xzimbra" ]; then
-  echo "Error: must be run as user zimbra"
+if [ x$(whoami) != "xzextras" ]; then
+  echo "Error: must be run as user zextras"
   exit 1
 fi
 
 umask 027
-source /opt/zimbra/bin/zmshutil || exit 1
+source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
 # Get the root directory for the logger db data and construct directory name to move old data to
-logger_data_dir_base="`dirname ${logger_data_directory}`"
-backup_logger_dir="`dirname ${logger_data_dir_base}`/`basename ${logger_data_dir_base}`-`date +%Y%m%d.%H%M`"
-tmp_logger_dir="`dirname ${logger_data_dir_base}`/`basename ${logger_data_dir_base}`-tmp"
+logger_data_dir_base="$(dirname ${logger_data_directory})"
+backup_logger_dir="$(dirname ${logger_data_dir_base})/$(basename ${logger_data_dir_base})-$(date +%Y%m%d.%H%M)"
+tmp_logger_dir="$(dirname ${logger_data_dir_base})/$(basename ${logger_data_dir_base})-tmp"
 
 # Make the switchout action as atomic as possible.  So, prep new dir structures in "tmp" root logger data dir first.
 mkdir -p ${tmp_logger_dir}/data/rrds ${tmp_logger_dir}/work

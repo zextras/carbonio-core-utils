@@ -1,20 +1,9 @@
 #!/usr/bin/perl
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2013, 2014, 2015, 2016 Synacor, Inc.
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
+# SPDX-License-Identifier: GPL-2.0-only
 
 use strict;
 #
@@ -24,39 +13,35 @@ use strict;
 # is allowed - specially beware of any shell special characters.
 #
 my %SIMPLE_COMMANDS = (
-   "start mailbox"    => "/opt/zimbra/bin/zmstorectl start",
-   "start ldap"       => "/opt/zimbra/bin/ldap start",
-   "start mta"        => "/opt/zimbra/bin/zmmtactl start",
-   "start antispam"   => "/opt/zimbra/bin/zmantispamctl start",
-   "start antivirus"  => "/opt/zimbra/bin/zmantivirusctl start",
-   "start snmp"       => "/opt/zimbra/bin/zmswatchctl start",
-   "start spell"      => "/opt/zimbra/bin/zmspellctl start",
-   "stop mailbox"     => "/opt/zimbra/bin/zmstorectl stop",
-   "stop ldap"        => "/opt/zimbra/bin/ldap stop",
-   "stop mta"         => "/opt/zimbra/bin/zmmtactl stop",
-   "stop antispam"    => "/opt/zimbra/bin/zmantispamctl stop",
-   "stop antivirus"   => "/opt/zimbra/bin/zmantivirusctl stop",
-   "stop snmp"        => "/opt/zimbra/bin/zmswatchctl stop",
-   "stop spell"       => "/opt/zimbra/bin/zmspellctl stop",
-   "status"           => "/opt/zimbra/bin/zmcontrol status",
-   "startup"          => "/opt/zimbra/bin/zmcontrol startup",
-   "shutdown"         => "/opt/zimbra/bin/zmcontrol shutdown",
-   "msgtrace"         => "/opt/zimbra/bin/zmmsgtrace",
-   "flushqueue"       => "/opt/zimbra/common/sbin/postqueue -f",
-   "showqueue"        => "/opt/zimbra/common/sbin/postqueue -p",
-   "zmserverips"      => "/opt/zimbra/libexec/zmserverips",
-   "zmupdateauthkeys" => "/opt/zimbra/bin/zmupdateauthkeys",
-   "slapcat"          => "/opt/zimbra/common/sbin/slapcat -F /opt/zimbra/data/ldap/config -b ''",
-   "zmqstat all"      => "sudo /opt/zimbra/libexec/zmqstat",
-   "zmqstat incoming" => "sudo /opt/zimbra/libexec/zmqstat incoming",
-   "zmqstat hold"     => "sudo /opt/zimbra/libexec/zmqstat hold",
-   "zmqstat active"   => "sudo /opt/zimbra/libexec/zmqstat active",
-   "zmqstat deferred" => "sudo /opt/zimbra/libexec/zmqstat deferred",
-   "zmqstat corrupt"  => "sudo /opt/zimbra/libexec/zmqstat corrupt",
-   "zmcollectconfigfiles" => "tar cv /opt/zimbra/conf | gzip -cf",
-   "zmcollectldapzimbra" => "/opt/zimbra/common/sbin/slapcat -F /opt/zimbra/data/ldap/config -b '' -s cn=zimbra | gzip -cf",
-   "zmschedulebackup" => "/opt/zimbra/bin/zmschedulebackup",
-   "downloadcsr"      => "cat /opt/zimbra/ssl/zimbra/commercial/commercial.csr"
+   "start mailbox"    => "/opt/zextras/bin/zmstorectl start",
+   "start ldap"       => "/opt/zextras/bin/ldap start",
+   "start mta"        => "/opt/zextras/bin/zmmtactl start",
+   "start antispam"   => "/opt/zextras/bin/zmantispamctl start",
+   "start antivirus"  => "/opt/zextras/bin/zmantivirusctl start",
+   "stop mailbox"     => "/opt/zextras/bin/zmstorectl stop",
+   "stop ldap"        => "/opt/zextras/bin/ldap stop",
+   "stop mta"         => "/opt/zextras/bin/zmmtactl stop",
+   "stop antispam"    => "/opt/zextras/bin/zmantispamctl stop",
+   "stop antivirus"   => "/opt/zextras/bin/zmantivirusctl stop",
+   "status"           => "/opt/zextras/bin/zmcontrol status",
+   "startup"          => "/opt/zextras/bin/zmcontrol startup",
+   "shutdown"         => "/opt/zextras/bin/zmcontrol shutdown",
+   "msgtrace"         => "/opt/zextras/bin/zmmsgtrace",
+   "flushqueue"       => "/opt/zextras/common/sbin/postqueue -f",
+   "showqueue"        => "/opt/zextras/common/sbin/postqueue -p",
+   "zmserverips"      => "/opt/zextras/libexec/zmserverips",
+   "zmupdateauthkeys" => "/opt/zextras/bin/zmupdateauthkeys",
+   "slapcat"          => "/opt/zextras/common/sbin/slapcat -F /opt/zextras/data/ldap/config -b ''",
+   "zmqstat all"      => "sudo /opt/zextras/libexec/zmqstat",
+   "zmqstat incoming" => "sudo /opt/zextras/libexec/zmqstat incoming",
+   "zmqstat hold"     => "sudo /opt/zextras/libexec/zmqstat hold",
+   "zmqstat active"   => "sudo /opt/zextras/libexec/zmqstat active",
+   "zmqstat deferred" => "sudo /opt/zextras/libexec/zmqstat deferred",
+   "zmqstat corrupt"  => "sudo /opt/zextras/libexec/zmqstat corrupt",
+   "zmcollectconfigfiles" => "tar cv /opt/zextras/conf | gzip -cf",
+   "zmcollectldapzimbra" => "/opt/zextras/common/sbin/slapcat -F /opt/zextras/data/ldap/config -b '' -s cn=zimbra | gzip -cf",
+   "zmschedulebackup" => "/opt/zextras/bin/zmschedulebackup",
+   "downloadcsr"      => "cat /opt/zextras/ssl/carbonio/commercial/commercial.csr"
 );
 
 
@@ -77,15 +62,15 @@ my $REGEX_POSTFIX_QID = qr{(?:${SF_QID_CHAR}{6,}+|${LF_QID_TIME_CHAR}{10,}z${LF_
 my %REGEX_CHECKED_COMMANDS = (
   "zmqaction" => {
     regex => qr{(hold|release|requeue|delete)\s+(incoming|deferred|corrupt|active|maildrop|hold)\s+(?:(?:${REGEX_POSTFIX_QID},)*+${REGEX_POSTFIX_QID}|ALL)},
-    program => "/opt/zimbra/libexec/zmqaction"},
+    program => "/opt/zextras/libexec/zmqaction"},
   "zmbackupldap" => {
     regex => '[a-zA-Z0-9\\/\\.\\-_:@ ]*',
     # typcial backup destination path:
     # alphanumeric, slash, dot, dash, underscore, colon, at, space
-    program => "/opt/zimbra/libexec/zmbackupldap"},
+    program => "/opt/zextras/libexec/zmbackupldap"},
   "zmcertmgr" => {
     regex => '(viewdeployedcrt|viewstagedcrt|createcsr|createcrt|getcrt|deploycrt|viewcsr|verifycrt|verifycrtkey|verifycrtchain)\s?[a-zA-Z0-9\\/\\.\\-\\\_:@\\,\\=\\\'\\"\\* ]*',
-    program => "/opt/zimbra/bin/zmcertmgr"},
+    program => "/opt/zextras/bin/zmcertmgr"},
   "clusvcadm" => {
     regex => '[a-zA-Z0-9\\/\\.\\-_:@ ]*',
     # alphanumeric, slash, dot, dash, underscore, colon, at, space
@@ -93,10 +78,10 @@ my %REGEX_CHECKED_COMMANDS = (
   "zmclustat" => {
     regex => '[a-zA-Z0-9\\/\\.\\-_:@ ]*',
     # alphanumeric, slash, dot, dash, underscore, colon, at, space
-    program => "sudo /opt/zimbra-cluster/bin/zmclustat"},
+    program => "sudo /opt/cluster/bin/zmclustat"},
    "zmloggerhostmap"  => {
      regex => '[a-zA-Z0-9\\/\\.\\-_:@ ]*',
-     program=>"/opt/zimbra/bin/zmloggerhostmap",},
+     program=>"/opt/zextras/bin/zmloggerhostmap",},
    "rsync" => {
      regex => '[\'"a-zA-Z0-9\\/\\.\\-_:@= ]*',
      program => "rsync"},
@@ -111,8 +96,8 @@ sub trim($) {
   return $val;
 }
 
-my $thishost = trim(qx(/opt/zimbra/bin/zmlocalconfig -m nokey zimbra_server_hostname));
-my $enable_logging = uc(trim(qx(/opt/zimbra/bin/zmlocalconfig -m nokey zimbra_zmrcd_logging_enabled 2> /dev/null)));
+my $thishost = trim(qx(/opt/zextras/bin/zmlocalconfig -m nokey zimbra_server_hostname));
+my $enable_logging = uc(trim(qx(/opt/zextras/bin/zmlocalconfig -m nokey zimbra_zmrcd_logging_enabled 2> /dev/null)));
 $enable_logging = "FALSE" unless $enable_logging;
 
 
@@ -215,13 +200,13 @@ sub getHostsByService {
   my @hosts = ();
 
   if (!$gothosts) {
-    open CMD, "/opt/zimbra/bin/zmprov -l gas |" or return undef;
+    open CMD, "/opt/zextras/bin/zmprov -l gas |" or return undef;
     my @hl = <CMD>;
     close CMD;
     foreach my $h (@hl) {
       $h = trim($h);
       alarm(120);
-      open CMD, "/opt/zimbra/bin/zmprov -l gs $h | grep zimbraServiceEnabled | sed -e 's/zimbraServiceEnabled: //'|" or return undef;
+      open CMD, "/opt/zextras/bin/zmprov -l gs $h | grep zimbraServiceEnabled | sed -e 's/zimbraServiceEnabled: //'|" or return undef;
       my @sl = <CMD>;
       close CMD;
       foreach my $s (@sl) {
@@ -287,7 +272,7 @@ sub isRsyncCmd {
     my @parts = split(/\s+/, $cmd);
     my $prog = $parts[0];
     if ($prog =~ /rsync$/) {
-      if (($prog ne 'rsync') && ($prog ne '/opt/zimbra/common/bin/rsync')) {
+      if (($prog ne 'rsync') && ($prog ne '/opt/zextras/common/bin/rsync')) {
         logError("command '$prog' not allowed");
         exit 1;
       }
@@ -322,7 +307,7 @@ sub handleALRM {
 $| = 1;
 
 $SIG{ALRM} = \&handleALRM;
-open(LOG, ">>/opt/zimbra/log/zmrcd.log")
+open(LOG, ">>/opt/zextras/log/zmrcd.log")
   if ($enable_logging eq "TRUE");
 
 # special case for rsync over ssh from a remote host

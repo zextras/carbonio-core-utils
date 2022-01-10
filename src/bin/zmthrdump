@@ -1,38 +1,30 @@
 #!/usr/bin/perl -w
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2008, 2009, 2010, 2011, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-#
+# SPDX-License-Identifier: GPL-2.0-only
+
 use strict;
 use Getopt::Std;
 
-my $pid_file = '/opt/zimbra/log/zmmailboxd_java.pid';
-my $log_file = '/opt/zimbra/log/zmmailboxd.out';
+my $pid_file  = '/opt/zextras/log/zmmailboxd_java.pid';
+my $log_file  = '/opt/zextras/log/zmmailboxd.out';
 my $outhandle = \*STDOUT;
-my $timeout = 25;
+my $timeout   = 25;
 my $pid;
 my $tail;
 
 my %opts = ();
-getopts('hip:f:o:t:', \%opts);
+getopts( 'hip:f:o:t:', \%opts );
 
 $SIG{'ALRM'} = sub {
-    print STDERR "Timed out (${timeout}s) waiting for thread dump to complete.  Aborting!\n";
-    kill(15, $tail) if (defined $tail);
+    print STDERR
+"Timed out (${timeout}s) waiting for thread dump to complete.  Aborting!\n";
+    kill( 15, $tail ) if ( defined $tail );
     close(TAIL);
     close($outhandle);
+
     # remove the incomplete output file
     unlink $opts{'o'} if defined $opts{'o'};
     exit;
@@ -40,7 +32,7 @@ $SIG{'ALRM'} = sub {
 
 sub usage() {
     print STDERR <<"EOF";
-Run as the zimbra user.
+Run as the zextras user.
 Usage: zmthrdump [-h] [-i] [-t timeout] [-p pid] [-f file] [-o out-file]
 
     -h        prints this help message
@@ -57,71 +49,78 @@ EOF
 
 my $append_ts = $opts{'i'};
 
-usage() if ($opts{'h'});
+usage() if ( $opts{'h'} );
 
 my $id = getpwuid($<);
 chomp $id;
 
-$log_file = $opts{'f'} if (exists $opts{'f'} && defined $opts{'f'});
-usage() if (exists $opts{'f'} && !defined $opts{'f'});
+$log_file = $opts{'f'} if ( exists $opts{'f'} && defined $opts{'f'} );
+usage() if ( exists $opts{'f'} && !defined $opts{'f'} );
 
-die "-f requires a filename argument" if (!defined($log_file));
-if (! -f $log_file) {
+die "-f requires a filename argument" if ( !defined($log_file) );
+if ( !-f $log_file ) {
     print STDERR "zmthrdump: $log_file: file not found\n";
     exit 1;
 }
 
-if (exists $opts{'t'} && defined $opts{'t'}) {
+if ( exists $opts{'t'} && defined $opts{'t'} ) {
     $timeout = $opts{'t'};
-    usage() if (!defined($timeout) || $timeout !~ /^\d+$/);
-} elsif (exists $opts{'t'}) {
+    usage() if ( !defined($timeout) || $timeout !~ /^\d+$/ );
+}
+elsif ( exists $opts{'t'} ) {
     usage();
 }
 
-if (exists $opts{'o'} && defined $opts{'o'}) {
-    open(OUTHANDLE, "+>$opts{'o'}") || die "$opts{'o'}: $!";
+if ( exists $opts{'o'} && defined $opts{'o'} ) {
+    open( OUTHANDLE, "+>$opts{'o'}" ) || die "$opts{'o'}: $!";
     $outhandle = \*OUTHANDLE;
-} elsif (exists $opts{'o'}) {
+}
+elsif ( exists $opts{'o'} ) {
     usage();
 }
 
-if (exists $opts{'p'}) {
+if ( exists $opts{'p'} ) {
     $pid = $opts{'p'};
-    usage() if (!defined($pid) || $pid !~ /^\d+$/);
-} else {
-    open(PID, "<$pid_file") || die "$pid_file: $!";
+    usage() if ( !defined($pid) || $pid !~ /^\d+$/ );
+}
+else {
+    open( PID, "<$pid_file" ) || die "$pid_file: $!";
     $pid = <PID>;
     close(PID);
     chomp($pid);
 }
 
-if (!kill(0, $pid)) {
-	print STDERR "zmthrdump: pid $pid not found\n";
-	exit 1;
+if ( !kill( 0, $pid ) ) {
+    print STDERR "zmthrdump: pid $pid not found\n";
+    exit 1;
 }
 
-my $ts = scalar(localtime);
+my $ts  = scalar(localtime);
 my $msg = "zmthrdump: Requested thread dump [PID $pid] at $ts\n";
 if ($append_ts) {
-    open(LOG, ">>$log_file") || die "$log_file: unable to append: $!";
+    open( LOG, ">>$log_file" ) || die "$log_file: unable to append: $!";
     print LOG "\n$msg";
     close(LOG);
 }
 
 print $outhandle "$msg";
 my $printing = 0;
-my $done = 0;
+my $done     = 0;
 
-if ( -x "/opt/zimbra/common/bin/jstack" ) {
-  $tail = open(TAIL, "/opt/zimbra/common/bin/jstack -l $pid|") || die "jstack: $!";
-} else {
-  $tail = open(TAIL, "tail -F $log_file |") || die "$log_file: unable to tail: $!";
-  if (!fork()) {
-	  # there seems to be a race condition if we don't wait for tail to start running
-	  select(undef, undef, undef, 1.0);
-	  kill(3, $pid) || die "$pid: $!";
-	  exit(0);
-  }
+if ( -x "/opt/zextras/common/bin/jstack" ) {
+    $tail = open( TAIL, "/opt/zextras/common/bin/jstack -l $pid|" )
+      || die "jstack: $!";
+}
+else {
+    $tail = open( TAIL, "tail -F $log_file |" )
+      || die "$log_file: unable to tail: $!";
+    if ( !fork() ) {
+
+ # there seems to be a race condition if we don't wait for tail to start running
+        select( undef, undef, undef, 1.0 );
+        kill( 3, $pid ) || die "$pid: $!";
+        exit(0);
+    }
 }
 
 while (<TAIL>) {

@@ -1,20 +1,10 @@
 #!/usr/bin/perl
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2008, 2009, 2010, 2012, 2013, 2014, 2016 Synacor, Inc.
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
+# SPDX-License-Identifier: GPL-2.0-only
+
 use strict;
 use warnings;
 use Getopt::Long;
@@ -39,7 +29,7 @@ You must run this script on the 'primary' server (the one that LDAP will be runn
 
   Optional:
      PRIMARY_HOSTNAME - hostname of the 'primary' server (defaults to `hostname`)
-     REMOTE_JAVA_HOME - on the 'secondary' server, the path to JAVA (defaults to '/opt/zimbra/java')
+     REMOTE_JAVA_HOME - on the 'secondary' server, the path to JAVA (defaults to '/opt/zextras/java')
      ENABLE_IM - if set, enable IM on both boxes (defaults to no)
 
 
@@ -69,7 +59,7 @@ if (!defined $PRIMARY) {
 }
 if (!defined $REMOTE_JAVA_HOME) {
   #/usr/lib/jvm/java-1.5.0-sun/
-  $REMOTE_JAVA_HOME = "/opt/zimbra/java";
+  $REMOTE_JAVA_HOME = "/opt/zextras/java";
 }
 if (!defined $PRIMARY || !defined $SECONDARY || !defined $REMOTE_USER || !defined $REMOTE_JAVA_HOME) {
   usage();
@@ -96,7 +86,7 @@ sub loc($) {
 sub remote($) {
   my $cmd = shift();
   print "REMOTE: $cmd\n";
-  $cmd = "ssh $SECONDARY PATH=\$PATH:~/bin:/usr/local/bin:/opt/zimbra/bin:/opt/zimbra/openldap/bin:/opt/zimbra/java/bin:/opt/zimbra/snmp/bin:/bin:/sbin:/usr/bin:/usr/sbin LD_LIBRARY_PATH=/opt/zimbra/lib: ZIMBRA_HOME=/opt/zimbra ZIMBRA_HOSTNAME=$SECONDARY JAVA_HOME=$REMOTE_JAVA_HOME ZIMBRA_USE_JETTY=1 $cmd";
+  $cmd = "ssh $SECONDARY PATH=\$PATH:~/bin:/usr/local/bin:/opt/zextras/bin:/opt/zextras/openldap/bin:/opt/zextras/java/bin:/opt/zextras/snmp/bin:/bin:/sbin:/usr/bin:/usr/sbin LD_LIBRARY_PATH=/opt/zextras/lib: ZIMBRA_HOME=/opt/zextras ZIMBRA_HOSTNAME=$SECONDARY JAVA_HOME=$REMOTE_JAVA_HOME ZIMBRA_USE_JETTY=1 $cmd";
   my $ret = `$cmd`;
   print $ret;
   return $ret;
@@ -142,8 +132,8 @@ loc "zmprov -l mc default zimbraMailHostPool $prim_zid zimbraMailHostPool $sec_z
 loc "zmlocalconfig -e zimbra_user=$REMOTE_USER";
 remote "zmlocalconfig -e zimbra_user=$REMOTE_USER";
 
-loc "/opt/zimbra/bin/zmupdateauthkeys";
-remote "/opt/zimbra/bin/zmupdateauthkeys";
+loc "/opt/zextras/bin/zmupdateauthkeys";
+remote "/opt/zextras/bin/zmupdateauthkeys";
 
 loc "zmprov -l ms $PRIMARY zimbraRemoteManagementUser $REMOTE_USER";
 loc "zmprov -l ms $SECONDARY zimbraRemoteManagementUser $REMOTE_USER";

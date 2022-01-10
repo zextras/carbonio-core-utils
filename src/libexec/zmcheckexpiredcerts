@@ -1,21 +1,9 @@
 #!/usr/bin/perl
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2009, 2010, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
 
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
 
 use strict;
 BEGIN {
@@ -37,7 +25,7 @@ unless ( GetOptions("verbose" => \$verbose,
 usage() if $help;
 
 my $report = [];
-my $cmd = "/opt/zimbra/bin/zmcertmgr checkcrtexpiration -days $days";
+my $cmd = "/opt/zextras/bin/zmcertmgr checkcrtexpiration -days $days";
 unless (open(CERTMGR, "$cmd|")) {
   logError("Unabled to execute zmcertmgr: $!");
   exit -1;
@@ -58,7 +46,7 @@ sub getLocalConfig {
     return $ENV{$key};
   }
   open CONF,
-    "/opt/zimbra/bin/zmlocalconfig -q -m shell |" or die "Can't open local config: $!";
+    "/opt/zextras/bin/zmlocalconfig -q -m shell |" or die "Can't open local config: $!";
   my @conf = <CONF>;
   close CONF;
 
@@ -124,7 +112,7 @@ sub getLdapServerConfigValue {
   $rfh = new FileHandle;
   $wfh = new FileHandle;
   $efh = new FileHandle;
-  $cmd = "/opt/zimbra/bin/zmprov -l gs $server $attrib";
+  $cmd = "/opt/zextras/bin/zmprov -l gs $server $attrib";
   my $pid = open3($wfh,$rfh,$efh, $cmd);
   unless(defined($pid)) {
     return undef;
@@ -153,7 +141,7 @@ sub getLdapGlobalConfigValue {
   $rfh = new FileHandle;
   $wfh = new FileHandle;
   $efh = new FileHandle;
-  $cmd = "/opt/zimbra/bin/zmprov -l gcf $attrib";
+  $cmd = "/opt/zextras/bin/zmprov -l gcf $attrib";
   my $pid = open3($wfh,$rfh,$efh, $cmd);
   unless(defined($pid)) {
     return undef;

@@ -1,25 +1,15 @@
 #!/usr/bin/perl -w
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2008, 2009, 2010, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
+# SPDX-License-Identifier: GPL-2.0-only
+
 use strict;
 use vars qw($PROCFS @STATLIST $LOGFILE $CONSOLE $interval $LOGFH
             $ROTATE_NOW $ROTATE_DEFER $date $HAS_IO_ACCT);
 use Getopt::Long;
-use lib "/opt/zimbra/common/lib/perl5";
+use lib "/opt/zextras/common/lib/perl5";
 use Zimbra::Mon::Zmstat;
 use Zimbra::Mon::Logger;
 use Data::Dumper;
@@ -101,7 +91,7 @@ sub collect_stats($$$) {
 }
 
 sub get_convertd_pid {
-    open(PID, "</opt/zimbra/log/convertd.pid") || die "cannot open convertd.pid: $!";
+    open(PID, "</opt/zextras/log/convertd.pid") || die "cannot open convertd.pid: $!";
     chomp(my $pid = <PID>);
     close(PID);
     $pid;
@@ -204,7 +194,7 @@ sub usage {
 Usage: zmstat-convertd [options]
 Monitor convertd cpu and I/O statistics
 -i, --interval: output a line every N seconds
--l, --log:      log file (default is /opt/zimbra/zmstat/convertd.csv)
+-l, --log:      log file (default is /opt/zextras/zmstat/convertd.csv)
 -c, --console:  output to stdout
 
 If logging to a file, rotation occurs when a HUP signal is sent or when

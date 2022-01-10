@@ -1,19 +1,9 @@
 #!/usr/bin/perl
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2011, 2012, 2013, 2014, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
+# SPDX-License-Identifier: GPL-2.0-only
 
 =head1 NAME
 
@@ -36,28 +26,28 @@ zmmsgtrace [options] [<mail-syslog-file>...]
     --man                         display the entire man page
 
   Where:
-    <mail-syslog-file> defaults to "/var/log/zimbra.log"
+    <mail-syslog-file> defaults to "/var/log/carbonio.log"
 
   Files ending in '.gz', '.bz' or '.bz2' will be read using gzip or
   bunzip2.
 
 =head1 EXAMPLE
 
-Show a trace of all messages in '/var/log/zimbra.log':
+Show a trace of all messages in '/var/log/carbonio.log':
 
   $ zmmsgtrace
 
-Show a trace of all messages in '/var/log/zimbra.log' by sender
+Show a trace of all messages in '/var/log/carbonio.log' by sender
 matching the word 'phil':
 
   $ zmmsgtrace -s phil
 
 Show a trace of messages sent by 'phil.pearl' between '20110217' and
-'20110221' in '/var/log/zimbra.log.1.gz' and '/var/log/zimbra.log':
+'20110221' in '/var/log/carbonio.log.1.gz' and '/var/log/carbonio.log':
 
   # note: a '.' (period) in a regex matches any character
   $ cd /var/log
-  $ zmmsgtrace zimbra.log.1.gz zimbra.log \
+  $ zmmsgtrace carbonio.log.1.gz carbonio.log \
       -sender 'phil\.pearl' -srchost localhost -time 20110217,20110221
 
 Find any email sent by an email address starting with 'p' to anyone at
@@ -74,7 +64,7 @@ Find any email sent by an email address starting with 'p' to anyone at
 This utility, zmmsgtrace, is intended to act as a replacement for the
 original zmmsgtrace utility that was removed from ZCS distribution
 starting with ZCS 6.  This utility relies on a (centralized sys)log
-host that hold mail log (aka zimbra.log) files which contain log
+host that hold mail log (aka carbonio.log) files which contain log
 entries for amavis and postfix for the ZCS platform.
 
 This utility reads a lot of data into memory so beware of running this
@@ -131,7 +121,7 @@ use Pod::Usage qw(pod2usage);
 use Time::localtime qw(localtime);
 
 my $DEBUG   = 0;                       # GLOBAL set by process_options()
-my $LOGFILE = "/var/log/zimbra.log";
+my $LOGFILE = "/var/log/carbonio.log";
 my $VERSION = "1.05";
 my $Prog    = basename($0);
 

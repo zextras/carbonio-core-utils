@@ -1,21 +1,12 @@
 #!/usr/bin/perl
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
+# SPDX-License-Identifier: GPL-2.0-only
+
 use strict;
-use lib '/opt/zimbra/common/lib/perl5';
+use lib '/opt/zextras/common/lib/perl5';
 use Zimbra::Util::Common;
 
 use File::Path;
@@ -32,29 +23,24 @@ if ( $id ne "root" ) {
   exit 1;
 }
 
-my $platform=qx(/opt/zimbra/libexec/get_plat_tag.sh);
+my $platform=qx(/opt/zextras/libexec/get_plat_tag.sh);
 chomp($platform);
 
 my $zimbra_tmp_directory=getLocalConfig("zimbra_tmp_directory");
 
-my ($uid,$gid) = (getpwnam('zimbra'))[2,3];
+my ($uid,$gid) = (getpwnam('zextras'))[2,3];
 if ( !-d $zimbra_tmp_directory ) {
   File::Path::mkpath("$zimbra_tmp_directory");
   chown $uid, $gid, $zimbra_tmp_directory;
 }
 
-my $logfile = "-/var/log/zimbra.log";
-my $statsfile = "-/var/log/zimbra-stats.log";
+my $logfile = "-/var/log/carbonio.log";
+my $statsfile = "-/var/log/carbonio-stats.log";
 my $LOCALHOST ||= (gethostbyname(Sys::Hostname::hostname))[0];
-
-if ( $platform =~ /MACOSX/ ) {
-  $logfile="/var/log/zimbra.log";
-  $statsfile="/var/log/zimbra-stats.log";
-}
 
 my $junk;
 my $TYPE;
-my $LOGHOST=qx(su - zimbra -c '/opt/zimbra/bin/zmprov -m -l gacf zimbraLogHostname');
+my $LOGHOST=qx(su - zextras -c '/opt/zextras/bin/zmprov -m -l gacf zimbraLogHostname');
 
 if ( $LOGHOST eq "" ) {
   $TYPE="local";
@@ -115,63 +101,32 @@ sub updateSyslogNG {
   my $flocal=0;
   while (<SYSFH>) {
     if ($_ !~ /zimbra/ || $_ =~ /not filter\(zimbra/) {
-      if( $platform =~ "SLES" || $platform eq "SuSEES10" ) {
-        if ($flocal) {
-          $flocal=0;
-          if ($_ =~ /, local7\); };/) {
-            $_ =~ s/, local7\); };/, local7) and not/;
-            print TMPFH $_;
-            print TMPFH "                               filter(f_iptables) and not filter(zimbra_local0) and not filter(zimbra_local1)\n";
-            print TMPFH "                               and not filter(zimbra_auth) and not filter(zimbra_mail); };\n";
-            next;
-          }
-        }
-        if ($_ =~ /^filter f_local/) {
-          $flocal=1;
-        }
-        if ($_ =~ /^filter f_messages/) {
-          if ($_ =~ /not filter\(f_iptables\); };/) {
-            $_ =~ s/filter\(f_iptables\); };/filter\(f_iptables) and/;
-            print TMPFH $_;
-            print TMPFH "                               not filter(zimbra_local0) and not filter(zimbra_local1) and not\n";
-            print TMPFH "                               filter(zimbra_auth) and not filter(zimbra_mail); };\n";
-            next;
-          }
-        }
-      }
       print TMPFH $_;
     }
   }
   close(SYSFH);
   my $zsrc = "zimbra_src";
-  if ( $platform eq "SLES11_64" || $platform eq "SLES11" || $platform eq "SuSEES10" || $platform eq "SLES10_64" ) {
-    #use native src on SLES11_64
-    $zsrc="src";
-  } elsif ( $platform eq "RHEL5" || $platform eq "RHEL5_64" || $platform eq "CentOS5" || $platform eq "CentOS5_64") {
-    $zsrc="s_sys";
-  } else {
-    print TMPFH "source zimbra_src {  unix-stream(\"/dev/log\" keep-alive(yes) max-connections(128)); }; # zimbra\n";
-  }
-  print TMPFH "filter zimbra_local0 { facility(local0); }; # zimbra\n";
-  print TMPFH "filter zimbra_local1 { facility(local1); }; # zimbra\n";
-  print TMPFH "filter zimbra_auth { facility(auth); }; # zimbra\n";
-  print TMPFH "filter zimbra_mail { facility(mail); }; # zimbra\n";
+  print TMPFH "source zimbra_src {  unix-stream(\"/dev/log\" keep-alive(yes) max-connections(128)); }; # zextras\n";
+  print TMPFH "filter zimbra_local0 { facility(local0); }; # zextras\n";
+  print TMPFH "filter zimbra_local1 { facility(local1); }; # zextras\n";
+  print TMPFH "filter zimbra_auth { facility(auth); }; # zextras\n";
+  print TMPFH "filter zimbra_mail { facility(mail); }; # zextras\n";
   if ( $TYPE eq "local" ) {
-    print TMPFH "destination zimbra_mail { file(\"/var/log/zimbra.log\" owner(\"zimbra\")); }; # zimbra\n";
-    print TMPFH "destination zimbra_local1 { file(\"/var/log/zimbra-stats.log\" owner(\"zimbra\")); }; # zimbra\n";
-    print TMPFH "destination zimbra_local0 { file(\"/var/log/zimbra.log\" owner(\"zimbra\")); }; # zimbra\n";
-    print TMPFH "destination zimbra_auth { file(\"/var/log/zimbra.log\" owner(\"zimbra\")); }; # zimbra\n";
+    print TMPFH "destination zimbra_mail { file(\"/var/log/carbonio.log\" owner(\"zextras\")); }; # zextras\n";
+    print TMPFH "destination zimbra_local1 { file(\"/var/log/carbonio-stats.log\" owner(\"zextras\")); }; # zextras\n";
+    print TMPFH "destination zimbra_local0 { file(\"/var/log/carbonio.log\" owner(\"zextras\")); }; # zextras\n";
+    print TMPFH "destination zimbra_auth { file(\"/var/log/carbonio.log\" owner(\"zextras\")); }; # zextras\n";
   } else {
     my $remoteIp=inet_ntoa(scalar(gethostbyname($LOGHOST)));
-    print TMPFH "destination zimbra_mail { udp(\"$remoteIp\" port(514) ); file(\"/var/log/zimbra.log\" owner(\"zimbra\")); }; # zimbra\n";
-    print TMPFH "destination zimbra_local1 { udp(\"$remoteIp\" port(514) ); file(\"/var/log/zimbra-stats.log\" owner(\"zimbra\")); }; # zimbra\n";
-    print TMPFH "destination zimbra_local0 { udp(\"$remoteIp\" port(514) ); file(\"/var/log/zimbra.log\" owner(\"zimbra\")); }; # zimbra\n";
-    print TMPFH "destination zimbra_auth { udp(\"$remoteIp\" port(514) ); file(\"/var/log/zimbra.log\" owner(\"zimbra\")); }; # zimbra\n";
+    print TMPFH "destination zimbra_mail { udp(\"$remoteIp\" port(514) ); file(\"/var/log/carbonio.log\" owner(\"zextras\")); }; # zextras\n";
+    print TMPFH "destination zimbra_local1 { udp(\"$remoteIp\" port(514) ); file(\"/var/log/carbonio-stats.log\" owner(\"zextras\")); }; # zextras\n";
+    print TMPFH "destination zimbra_local0 { udp(\"$remoteIp\" port(514) ); file(\"/var/log/carbonio.log\" owner(\"zextras\")); }; # zextras\n";
+    print TMPFH "destination zimbra_auth { udp(\"$remoteIp\" port(514) ); file(\"/var/log/carbonio.log\" owner(\"zextras\")); }; # zextras\n";
   }
-  print TMPFH "log { source($zsrc); filter(zimbra_mail); destination(zimbra_mail); }; # zimbra\n";
-  print TMPFH "log { source($zsrc); filter(zimbra_local0); destination(zimbra_local0); }; # zimbra\n";
-  print TMPFH "log { source($zsrc); filter(zimbra_local1); destination(zimbra_local1); }; # zimbra\n";
-  print TMPFH "log { source($zsrc); filter(zimbra_auth); destination(zimbra_auth); }; # zimbra\n";
+  print TMPFH "log { source($zsrc); filter(zimbra_mail); destination(zimbra_mail); }; # zextras\n";
+  print TMPFH "log { source($zsrc); filter(zimbra_local0); destination(zimbra_local0); }; # zextras\n";
+  print TMPFH "log { source($zsrc); filter(zimbra_local1); destination(zimbra_local1); }; # zextras\n";
+  print TMPFH "log { source($zsrc); filter(zimbra_auth); destination(zimbra_auth); }; # zextras\n";
 
   close(TMPFH);
 
@@ -193,31 +148,28 @@ sub updateSyslogNG {
     }
   };
   mv($tmpfile, $syslogconf);
-  if ( -f "/etc/logrotate.d/zimbra" ) {
+  if ( -f "/etc/logrotate.d/carbonio" ) {
     local $^I="~";
-    local @ARGV="/etc/logrotate.d/zimbra";
+    local @ARGV="/etc/logrotate.d/carbonio";
     while (<>) {
       s/syslogd/syslog-ng/;
-      s/USER/zimbra/;
-      s/GROUP/zimbra/;
-      if ($platform eq "SLES11_64") {
-        s/#su zimbra zimbra/su zimbra zimbra/;
-      }
+      s/USER/zextras/;
+      s/GROUP/zextras/;
 
       print;
     }
   }
-  if ( !-f "/var/log/zimbra.log") {
-    open(my $tlog, ">/var/log/zimbra.log");
+  if ( !-f "/var/log/carbonio.log") {
+    open(my $tlog, ">/var/log/carbonio.log");
   }
-  if ( !-f "/var/log/zimbra-stats.log") {
-    open(my $tlog, ">/var/log/zimbra-stats.log");
+  if ( !-f "/var/log/carbonio-stats.log") {
+    open(my $tlog, ">/var/log/carbonio-stats.log");
   }
-  chown $uid,$gid,"/var/log/zimbra.log";
-  chown $uid,$gid,"/var/log/zimbra-stats.log";
-  chmod 0644, "/var/log/zimbra.log", "/var/log/zimbra-stats.log";
-  if ( -f "/etc/logrotate.d/zimbra~" ){
-    unlink("/etc/logrotate.d/zimbra~" );
+  chown $uid,$gid,"/var/log/carbonio.log";
+  chown $uid,$gid,"/var/log/carbonio-stats.log";
+  chmod 0644, "/var/log/carbonio.log", "/var/log/carbonio-stats.log";
+  if ( -f "/etc/logrotate.d/carbonio~" ){
+    unlink("/etc/logrotate.d/carbonio~" );
   }
   print "done.\n"
 }
@@ -268,7 +220,7 @@ sub updateSyslog {
       }
       if ($rsyslog == 1 ) {
         s/;mail.none//g;
-        if ($platform =~ /RHEL6/ || $platform =~ /RHEL7/ || $platform =~ /RHEL8/) {
+        if ($platform =~ /RHEL8/) {
           s/^\*\.info/\*\.info;local0.none;local1.none;mail.none;auth.none/;
         }
         s/^\*\.\*;auth,authpriv.none/\*\.\*;auth,authpriv.none;local0.none;local1.none;mail.none/;
@@ -297,36 +249,33 @@ sub updateSyslog {
 
   cp($tmpfile,$syslogconf);
 
-  if ( !-f "/var/log/zimbra.log") {
-    open(my $tlog, ">/var/log/zimbra.log");
+  if ( !-f "/var/log/carbonio.log") {
+    open(my $tlog, ">/var/log/carbonio.log");
   }
-  if ( !-f "/var/log/zimbra-stats.log") {
-    open(my $tlog, ">/var/log/zimbra-stats.log");
+  if ( !-f "/var/log/carbonio-stats.log") {
+    open(my $tlog, ">/var/log/carbonio-stats.log");
   }
-  chown $uid,$gid,"/var/log/zimbra.log";
-  chown $uid,$gid,"/var/log/zimbra-stats.log";
-  chmod 0644,"/var/log/zimbra.log","/var/log/zimbra-stats.log";
+  chown $uid,$gid,"/var/log/carbonio.log";
+  chown $uid,$gid,"/var/log/carbonio-stats.log";
+  chmod 0644,"/var/log/carbonio.log","/var/log/carbonio-stats.log";
 
-  if ( -f "/etc/logrotate.d/zimbra" ) {
+  if ( -f "/etc/logrotate.d/carbonio" ) {
     local $^I="~";
-    local @ARGV=("/etc/logrotate.d/zimbra");
+    local @ARGV=("/etc/logrotate.d/carbonio");
     while (<>) {
       if ( $rsyslog == 1 ) {
         s/syslogd\*.pid/rsyslogd.pid/g;
-        if ($platform eq "RHEL7_64") {
-      		s/#su zimbra zimbra/su zimbra zimbra/;
-      	}
 	if ($platform eq "RHEL8_64") {
 		s/syslog\*.pid/rsyslogd.pid/g;
 	}
       }
-      s/USER/zimbra/;
-      s/GROUP/zimbra/;
+      s/USER/zextras/;
+      s/GROUP/zextras/;
       print;
     }
   }
-  if ( -f "/etc/logrotate.d/zimbra~" ){
-    unlink("/etc/logrotate.d/zimbra~" );
+  if ( -f "/etc/logrotate.d/carbonio~" ){
+    unlink("/etc/logrotate.d/carbonio~" );
   }
   print "done.\n";
 }
@@ -395,44 +344,44 @@ sub updateRsyslogd {
   close(ZFH);
 
 
-  if ( !-f "/var/log/zimbra.log") {
-    open(my $tlog, ">/var/log/zimbra.log");
+  if ( !-f "/var/log/carbonio.log") {
+    open(my $tlog, ">/var/log/carbonio.log");
   }
-  if ( !-f "/var/log/zimbra-stats.log") {
-    open(my $tlog, ">/var/log/zimbra-stats.log");
+  if ( !-f "/var/log/carbonio-stats.log") {
+    open(my $tlog, ">/var/log/carbonio-stats.log");
   }
-  if ($platform eq "UBUNTU10_64" || $platform eq "UBUNTU12_64" || $platform eq "UBUNTU14_64" || $platform eq "UBUNTU16_64" || $platform eq "UBUNTU18_64" || $platform eq "UBUNTU20_64" ) {
+  if ($platform eq "UBUNTU18_64" || $platform eq "UBUNTU20_64" ) {
     my $junk;
     ($junk, $junk, $uid, $junk) = getpwnam("syslog");
     $gid = getgrnam("adm");
-    chown $uid,$gid,"/var/log/zimbra.log";
-    chown $uid,$gid,"/var/log/zimbra-stats.log";
+    chown $uid,$gid,"/var/log/carbonio.log";
+    chown $uid,$gid,"/var/log/carbonio-stats.log";
   } else {
-    chown $uid,$gid,"/var/log/zimbra.log";
-    chown $uid,$gid,"/var/log/zimbra-stats.log";
+    chown $uid,$gid,"/var/log/carbonio.log";
+    chown $uid,$gid,"/var/log/carbonio-stats.log";
   }
-  chmod 0644,"/var/log/zimbra.log","/var/log/zimbra-stats.log";
+  chmod 0644,"/var/log/carbonio.log","/var/log/carbonio-stats.log";
 
-  if ( -f "/etc/logrotate.d/zimbra" ) {
+  if ( -f "/etc/logrotate.d/carbonio" ) {
     local $^I="~";
-    local @ARGV=("/etc/logrotate.d/zimbra");
+    local @ARGV=("/etc/logrotate.d/carbonio");
     while (<>) {
       s/kill\s+\-HUP\s+.+syslog\*\.pid.+\/dev\/null/\/usr\/sbin\/service rsyslog restart >\/dev\/null/g;
-      if ($platform eq "UBUNTU10_64" || $platform eq "UBUNTU12_64" || $platform eq "UBUNTU14_64" || $platform eq "UBUNTU16_64" || $platform eq "UBUNTU18_64" || $platform eq "UBUNTU20_64" ) {
+      if ($platform eq "UBUNTU18_64" || $platform eq "UBUNTU20_64" ) {
         s/USER/syslog/;
         s/GROUP/adm/;
       } else {
-        s/USER/zimbra/;
-        s/GROUP/zimbra/;
+        s/USER/zextras/;
+        s/GROUP/zextras/;
       }
-      if ($platform eq "UBUNTU14_64" || $platform eq "UBUNTU16_64" || $platform eq "UBUNTU18_64" || $platform eq "UBUNTU20_64") {
-      	s/#su zimbra zimbra/su zimbra zimbra/;
+      if ($platform eq "UBUNTU18_64" || $platform eq "UBUNTU20_64") {
+      	s/#su zextras zextras/su zextras zextras/;
       }
       print;
     }
   }
-  if ( -f "/etc/logrotate.d/zimbra~" ){
-    unlink("/etc/logrotate.d/zimbra~" );
+  if ( -f "/etc/logrotate.d/carbonio~" ){
+    unlink("/etc/logrotate.d/carbonio~" );
   }
   print "done.\n";
 }
@@ -446,7 +395,7 @@ if ( -f "/etc/syslog-ng/syslog-ng.conf" ||
   $edited=1;
 }
 
-if ( (-f "/etc/rsyslog.conf" && -d "/etc/rsyslog.d") && $edited == 0 && ($platform eq "UBUNTU10_64" || $platform eq "UBUNTU12_64" || $platform eq "UBUNTU14_64" || $platform eq "UBUNTU16_64" || $platform eq "UBUNTU18_64" || $platform eq "UBUNTU20_64" )) {
+if ( (-f "/etc/rsyslog.conf" && -d "/etc/rsyslog.d") && $edited == 0 && ($platform eq "UBUNTU18_64" || $platform eq "UBUNTU20_64" )) {
   &updateRsyslogd;
   $edited=1;
 }
@@ -461,11 +410,6 @@ if ( !$edited ) {
   exit 1;
 }
 
-if ( $platform eq "SLES11_64" ) {
-  qx(/etc/init.d/syslog restart > /dev/null 2>&1);
-  exit 0;
-}
-
 if ($platform =~ /UBUNTU/ && -f "/etc/rsyslog.conf" ) {
   if ( -e "/usr/sbin/service" ) {
     qx(/usr/sbin/service rsyslog restart);
@@ -475,15 +419,7 @@ if ($platform =~ /UBUNTU/ && -f "/etc/rsyslog.conf" ) {
     exit 1;
   }
 }
-if ( $platform =~ /RHEL6/ ) {
-  if ( -e "/etc/init.d/rsyslog" ) {
-    qx(/etc/init.d/rsyslog restart> /dev/null 2>&1);
-    exit 0;
-  } else {
-    print "Unable to restart rsyslog.  Please do it manually.\n";
-    exit 1;
-  }
-} elsif ( $platform =~ /RHEL7/ || $platform =~ /RHEL8/ ) {
+if ( $platform =~ /RHEL8/ ) {
   if ( -e "/usr/lib/systemd/system/rsyslog.service" ) {
     qx(/usr/bin/systemctl restart rsyslog.service >/dev/null 2>&1);
     exit 0;
@@ -502,7 +438,7 @@ sub getLocalConfig {
   return $main::loaded{lc}{$key}
     if (exists $main::loaded{lc}{$key});
 
-  my $val = qx(/opt/zimbra/bin/zmlocalconfig -x -s -m nokey ${key} 2> /dev/null);
+  my $val = qx(/opt/zextras/bin/zmlocalconfig -x -s -m nokey ${key} 2> /dev/null);
   chomp $val;
   $main::loaded{lc}{$key} = $val;
   return $val;

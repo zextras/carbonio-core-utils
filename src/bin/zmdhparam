@@ -1,20 +1,9 @@
 #!/usr/bin/perl
+
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-#
+# SPDX-License-Identifier: GPL-2.0-only
 
 =head1 NAME
 
@@ -50,7 +39,7 @@ checked.
 
 Once B<zimbraSSLDHParam> is updated, B<zmconfigd> is responsible for
 watching for the changed value and then subsequently writing out the
-new value to I</opt/zimbra/conf/dhparam.pem>.
+new value to I</opt/zextras/conf/dhparam.pem>.
 
 New DH parameters will only take affect once the services that use
 them (Proxy/MTA/LDAP) are restarted.
@@ -71,7 +60,7 @@ them (Proxy/MTA/LDAP) are restarted.
       or Opts->usage( -exitval => 1, -verbose => 0 );
 
     my $cmd = $prog->Command;
-    my $rc = eval { $prog->$cmd(@ARGV); };
+    my $rc  = eval { $prog->$cmd(@ARGV); };
     chomp($@);
     die("$prog: ERROR $cmd(@ARGV) failed:\n $@\n") if $@;
 
@@ -194,14 +183,14 @@ them (Proxy/MTA/LDAP) are restarted.
         my %args    = @_;
         my %default = (
             Debug => delete $args{debug} || 0,
-            Prog => delete $args{prog},
+            Prog  => delete $args{prog},
         );
 
         my $self = bless( {%default}, ref($class) || $class );
         my @args = @_;
 
         # hardcoded defaults
-        my $home = $self->Home("/opt/zimbra");
+        my $home = $self->Home("/opt/zextras");
         my $ozcb = "$home/common/bin";
 
         $self->Openssl( "$ozcb/openssl", "$home/openssl/bin/openssl" );
@@ -354,9 +343,9 @@ them (Proxy/MTA/LDAP) are restarted.
         my ( $data, $indhp ) = ( "", 0 );
         while ( my $l = <$ifh> ) {
             $l =~ s/\r?\n?$/\n/;
-            ++$indhp if ( $l =~ /BEGIN DH PARAMETERS/ );
+            ++$indhp    if ( $l =~ /BEGIN DH PARAMETERS/ );
             $data .= $l if ($indhp);
-            last if ( $l =~ /END DH PARAMETERS/ );
+            last        if ( $l =~ /END DH PARAMETERS/ );
         }
         _dpr("getFromFile: data:\n$data\n") if $self->Debug > 1;
         return $data;
@@ -380,7 +369,7 @@ them (Proxy/MTA/LDAP) are restarted.
     sub getNewDHParam {
         my ( $self, $file ) = @_;
         return join( "",
-            $self->run( $self->Openssl, "dhparam",  "-out", $file, $self->New )
+            $self->run( $self->Openssl, "dhparam", "-out", $file, $self->New )
         );
     }
 
@@ -462,7 +451,7 @@ them (Proxy/MTA/LDAP) are restarted.
         $self->out("saving '$key' via zmprov @args\n");
         my @err = $self->Debug ? () : "2>/dev/null";
         my @out = $self->run( $self->Zmprov, @args, $key, $file, @err );
-        my $rc = $? >> 8;
+        my $rc  = $? >> 8;
         return $rc == 0 ? 1 : undef;
     }
 
@@ -539,7 +528,7 @@ them (Proxy/MTA/LDAP) are restarted.
             push( @err, "a command must be specified" );
         }
         elsif ( exists $commands{ $ARGV[0] } ) {
-            $cmd = $opt{command} = shift @ARGV;
+            $cmd  = $opt{command} = shift @ARGV;
             $opts = $commands{$cmd}->{opts} if ( $commands{$cmd}->{opts} );
         }
 
@@ -589,7 +578,7 @@ them (Proxy/MTA/LDAP) are restarted.
     sub new {
         my ( $class, @attrs ) = @_;
 
-        my $lc = "/opt/zimbra/bin/zmlocalconfig";
+        my $lc = "/opt/zextras/bin/zmlocalconfig";
         die("unable to execute '$lc': $!\n") unless ( -x $lc );
 
         my @cmd = ( $lc, qw(-s -q -m shell) );

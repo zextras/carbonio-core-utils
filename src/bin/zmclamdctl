@@ -1,46 +1,35 @@
 #!/bin/bash
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
 
-if [ x`whoami` != xzimbra ]; then
-  echo Error: must be run as zimbra user
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+if [ x$(whoami) != xzextras ]; then
+  echo Error: must be run as zextras user
   exit 1
 fi
 
-if [ ! -x "/opt/zimbra/common/sbin/clamd" ]; then
+if [ ! -x "/opt/zextras/common/sbin/clamd" ]; then
   exit 0
 fi
 
-source `dirname $0`/zmshutil || exit 1
+source $(dirname $0)/zmshutil || exit 1
 zmsetvars
 
 pidfile=${zimbra_log_directory}/clamd.pid
 
-if [ ! -d "/opt/zimbra/data/clamav/db" ]; then
-    mkdir -p /opt/zimbra/data/clamav/db
+if [ ! -d "/opt/zextras/data/clamav/db" ]; then
+  mkdir -p /opt/zextras/data/clamav/db
 fi
 
 rewriteconfig() {
-  /opt/zimbra/libexec/configrewrite antivirus > /dev/null 2>&1
+  /opt/zextras/libexec/configrewrite antivirus >/dev/null 2>&1
 }
 
 getpid() {
   if [ -f $pidfile ]; then
-    cpid=`cat $pidfile`
+    cpid=$(cat $pidfile)
   fi
 }
 
@@ -63,112 +52,101 @@ checkrunning() {
 pskillall() {
   ps_cmd="/bin/ps ax -o pid,ppid,command"
   killsig="$1"
-  pname=`echo "$2" | sed -e 's%/%\\\/%g'`
-  plist=`${ps_cmd} | awk '{ if ( $3 ~ /'${pname}'/ ) { print $1 " " $2 } }' | sort -nr -k2 -k1 | awk '{ print $1 }'`
-  for p in ${plist}
-  do
+  pname=$(echo "$2" | sed -e 's%/%\\\/%g')
+  plist=$(${ps_cmd} | awk '{ if ( $3 ~ /'${pname}'/ ) { print $1 " " $2 } }' | sort -nr -k2 -k1 | awk '{ print $1 }')
+  for p in ${plist}; do
     kill ${killsig} ${p}
   done
 }
-
 
 #
 # Main
 #
 case "$1" in
-  'start')
-   if [ ! -f /opt/zimbra/data/clamav/db/daily.cvd ]; then
-      # Start with the files we ship.
-      cp -f /opt/zimbra/data/clamav/init/daily.cvd.init \
-        /opt/zimbra/data/clamav/db/daily.cvd
-      cp -f /opt/zimbra/data/clamav/init/main.cvd.init \
-        /opt/zimbra/data/clamav/db/main.cvd
-      cp -f /opt/zimbra/data/clamav/init/bytecode.cvd.init \
-        /opt/zimbra/data/clamav/db/bytecode.cvd
-    fi
-    if [ x$2 = "x" ]; then
-      rewriteconfig
-    fi
+'start')
+  if [ x$2 = "x" ]; then
+    rewriteconfig
+  fi
 
-    checkrunning
-    echo -n "Starting clamd..."
-    if [ $running = 1 ]; then
-      echo "clamd is already running.";
-    else
-      /opt/zimbra/common/sbin/clamd \
-        --config-file=/opt/zimbra/conf/clamd.conf \
-          >> ${zimbra_log_directory}/clamd.log 2>&1 &
+  checkrunning
+  echo -n "Starting clamd..."
+  if [ $running = 1 ]; then
+    echo "clamd is already running."
+  else
+    /opt/zextras/common/sbin/clamd \
+      --config-file=/opt/zextras/conf/clamd.conf \
+      >>${zimbra_log_directory}/clamd.log 2>&1 &
 
-      for ((i = 0; i < 12; i++)); do
-        checkrunning
-        if [ $running = 1 ]; then
-          echo "done."
+    for ((i = 0; i < 12; i++)); do
+      checkrunning
+      if [ $running = 1 ]; then
+        echo "done."
         exit 0
-        fi
-        sleep 5
-      done
+      fi
+      sleep 5
+    done
+    echo "failed."
+    exit 1
+  fi
+  exit 0
+  ;;
+
+'kill')
+  if [ -f /opt/zextras/log/clamd.pid ]; then
+    cpid=$(cat /opt/zextras/log/clamd.pid)
+    kill -9 "$cpid" 2>/dev/null
+  fi
+  pskillall -9 /opt/zextras/common/sbin/clamd
+  exit 0
+  ;;
+
+'stop')
+  checkrunning
+  echo -n "Stopping clamd..."
+  if [ $running = 0 ]; then
+    echo "clamd is not running."
+  else
+    if [ x"$cpid" != "x" ]; then
+      kill -TERM "$cpid" 2>/dev/null
+    fi
+    for ((i = 0; i < 30; i++)); do
+      sleep 2
+      kill -0 $cpid 2>/dev/null
+      if [ $? != 0 ]; then
+        rm -f ${pidfile}
+        break
+      fi
+      kill $cpid
+    done
+    if [ -s ${pidfile} ]; then
       echo "failed."
       exit 1
+    else
+      echo "done."
     fi
-    exit 0
-   ;;
-  
-  'kill')
-    if [ -f /opt/zimbra/log/clamd.pid ]; then
-      cpid=`cat /opt/zimbra/log/clamd.pid`
-      kill -9 "$cpid" 2> /dev/null
-    fi
-    pskillall -9 /opt/zimbra/common/sbin/clamd
-    exit 0
-   ;;
+  fi
+  exit 0
+  ;;
 
-  'stop')
-    checkrunning
-    echo -n "Stopping clamd..."
-    if [ $running = 0 ]; then
-      echo "clamd is not running.";
-    else
-      if [ x"$cpid" != "x" ]; then
-        kill -TERM "$cpid" 2> /dev/null
-      fi
-      for ((i = 0; i < 30; i++)); do
-        sleep 2
-        kill -0 $cpid 2> /dev/null
-        if [ $? != 0 ]; then
-          rm -f ${pidfile}
-          break
-        fi
-        kill $cpid
-      done
-      if [ -s ${pidfile} ]; then
-        echo "failed."
-        exit 1
-      else
-        echo "done."
-      fi
-    fi
+'restart' | 'reload')
+  $0 stop
+  $0 start $2
+  ;;
+
+'status')
+  checkrunning
+  echo -n "clamd is "
+  if [ $running = 1 ]; then
+    echo "running."
     exit 0
-  ;;
-  
-  'restart'|'reload')
-    $0 stop
-    $0 start $2
-  ;;
-  
-  'status')
-    checkrunning
-    echo -n "clamd is "
-    if [ $running = 1 ]; then
-      echo "running."
-      exit 0
-    else
-      echo "not runnning."
-      exit 1
-    fi
-  ;;
-  
-  *)
-    echo "Usage: $0 start|stop|kill|restart|status"
+  else
+    echo "not runnning."
     exit 1
+  fi
+  ;;
+
+*)
+  echo "Usage: $0 start|stop|kill|restart|status"
+  exit 1
   ;;
 esac

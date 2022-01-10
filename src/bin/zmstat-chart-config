@@ -1,19 +1,9 @@
 #!/usr/bin/perl -w
 #
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2007, 2008, 2009, 2010, 2012, 2013, 2014, 2016 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
+# SPDX-License-Identifier: GPL-2.0-only
 #
 
 use strict;
@@ -22,37 +12,37 @@ use Zimbra::Mon::Zmstat;
 zmstatInit();
 
 my $isLinux = isLinux();
-my $isMac = isMac();
+my $isMac   = isMac();
 
 my $mtaqstatCsv = 'mtaqueue.csv';
-my $cpustatCsv = 'cpu.csv';
-my $fdstatCsv = 'fd.csv';
-my $dfstatCsv = 'df.csv';
-my $pstatCsv = 'proc.csv';
+my $cpustatCsv  = 'cpu.csv';
+my $fdstatCsv   = 'fd.csv';
+my $dfstatCsv   = 'df.csv';
+my $pstatCsv    = 'proc.csv';
 my $allpstatCsv = "allprocs.csv";
-my $vmstatCsv = 'vm.csv';
-my $iostatxCsv = 'io-x.csv';
-my $iostatCsv = 'io.csv';
+my $vmstatCsv   = 'vm.csv';
+my $iostatxCsv  = 'io-x.csv';
+my $iostatCsv   = 'io.csv';
 my $mailboxdCsv = 'mailboxd.csv';
 my $convertdCsv = 'convertd.csv';
-my $nginxCsv = 'nginx.csv';
-my $mysqlCsv = 'mysql.csv';
-my $soapCsv = 'soap.csv';
-my $ldapCsv = 'ldap.csv';
+my $nginxCsv    = 'nginx.csv';
+my $mysqlCsv    = 'mysql.csv';
+my $soapCsv     = 'soap.csv';
+my $ldapCsv     = 'ldap.csv';
 my $sqlstatsCsv = 'sql.csv';
 
-my @DEVICE_LIST;        # list of device names (e.g. "sda", "sdb")
-my %DEVICE_PARTITIONS;  # $DEVICE_PARTITIONS{device} = arrayref of partitions
-my %DEVICE_MOUNTPOINTS; # $DEVICE_MOUNTPOINTS{device} = arrayref of mountpoints
-my %MOUNTS;             # $MOUNTS{partition} = mountpoint
+my @DEVICE_LIST;         # list of device names (e.g. "sda", "sdb")
+my %DEVICE_PARTITIONS;   # $DEVICE_PARTITIONS{device} = arrayref of partitions
+my %DEVICE_MOUNTPOINTS;  # $DEVICE_MOUNTPOINTS{device} = arrayref of mountpoints
+my %MOUNTS;              # $MOUNTS{partition} = mountpoint
 
 my $ZIMBRA_HOSTNAME;
 my @ENABLED_PROCS;
-my $HAS_MTA = 0;
+my $HAS_MTA     = 0;
 my $HAS_MAILBOX = 0;
 
-
 sub filenameSafe($) {
+
     # Some device/partitions look like cciss/c0d0p1 and can't be used
     # as prefix of the file name.  Replace '/' with '_'.
     my $dev = shift;
@@ -61,13 +51,14 @@ sub filenameSafe($) {
 }
 
 sub memPoolCsvName($) {
-    my $name = shift;  # name of JVM memory pool, e.g. "PS Perm Gen"
+    my $name = shift;    # name of JVM memory pool, e.g. "PS Perm Gen"
     $name = lc($name);
     $name =~ s/ /_/g;
     return "mpool_$name";
 }
 
 sub getDiskInfo() {
+
     # Get device list.
 
     if ($isMac) {
@@ -75,32 +66,35 @@ sub getDiskInfo() {
         chomp($devs);
         $devs =~ s/^\s+//;
         $devs =~ s/\s+$//;
-        @DEVICE_LIST = split(/\s+/, $devs);
-    } else {
+        @DEVICE_LIST = split( /\s+/, $devs );
+    }
+    else {
         my $iostat = '/usr/bin/iostat';
-        if (! -e $iostat) {
+        if ( !-e $iostat ) {
             $iostat = '/usr/sbin/iostat';
-            if (! -e $iostat) {
-                print STDERR "No iostat installed on this host; Skipping IO charts\n";
+            if ( !-e $iostat ) {
+                print STDERR
+                  "No iostat installed on this host; Skipping IO charts\n";
                 return;
             }
         }
         my $cmd = "$iostat -d -x";
-        if (!open(IOSTAT, "$cmd |")) {
+        if ( !open( IOSTAT, "$cmd |" ) ) {
             print STDERR "Unable to execute $cmd; Skipping IO charts\n";
             return;
         }
         my $line = '';
-        while ($line !~ /^Device/) {
-            $line = readLine(*IOSTAT, 1);
+        while ( $line !~ /^Device/ ) {
+            $line = readLine( *IOSTAT, 1 );
         }
-        while (defined($line = readLine(*IOSTAT, 1))) {
-            if ($line =~ /^\s*([^\s]+)\s+/) {
+        while ( defined( $line = readLine( *IOSTAT, 1 ) ) ) {
+            if ( $line =~ /^\s*([^\s]+)\s+/ ) {
                 my $dev = $1;
-                push(@DEVICE_LIST, $dev);
+                push( @DEVICE_LIST, $dev );
             }
         }
         close(IOSTAT);
+
         # make sure there are no duplicate items in DEVICE_LIST
         # see bug 32973
         my %devices_tmp;
@@ -109,46 +103,49 @@ sub getDiskInfo() {
         }
         @DEVICE_LIST = keys %devices_tmp;
     }
-    if (scalar(@DEVICE_LIST) < 1) {
+    if ( scalar(@DEVICE_LIST) < 1 ) {
         print STDERR "Unable to find any disk device; Skipping IO charts\n";
         return;
     }
 
     # Get partition and mountpoint list.
 
-    if (open(MOUNT, "mount |")) {
+    if ( open( MOUNT, "mount |" ) ) {
         my $line;
-        while (defined($line = readLine(*MOUNT, 1))) {
-            if ($line =~ /^\/dev\/([^\s+]+) on ([^\s+]+)/) {
-                my ($partition, $mountpoint) = ($1, $2);
+        while ( defined( $line = readLine( *MOUNT, 1 ) ) ) {
+            if ( $line =~ /^\/dev\/([^\s+]+) on ([^\s+]+)/ ) {
+                my ( $partition, $mountpoint ) = ( $1, $2 );
                 my %partitions_seen;
                 foreach my $dev (@DEVICE_LIST) {
-                    if ($partition =~ /^$dev/) {
+                    if ( $partition =~ /^$dev/ ) {
+
                         # make sure to avoid duplicates
                         # see bug 32973
-                        next if (exists $partitions_seen{$partition});
+                        next if ( exists $partitions_seen{$partition} );
 
                         $MOUNTS{$partition} = $mountpoint;
                         my $partitionList = $DEVICE_PARTITIONS{$dev};
-                        if (!defined($partitionList)) {
+                        if ( !defined($partitionList) ) {
                             $partitionList = [];
                             $DEVICE_PARTITIONS{$dev} = $partitionList;
                         }
-                        push(@$partitionList, $partition);
+                        push( @$partitionList, $partition );
                         my $mountpointList = $DEVICE_MOUNTPOINTS{$dev};
-                        if (!defined($mountpointList)) {
+                        if ( !defined($mountpointList) ) {
                             $mountpointList = [];
                             $DEVICE_MOUNTPOINTS{$dev} = $mountpointList;
                         }
-                        push(@$mountpointList, $mountpoint);
+                        push( @$mountpointList, $mountpoint );
                         $partitions_seen{$partition} = 1;
                     }
                 }
             }
         }
         close(MOUNT);
-    } else {
-        print STDERR "Unable to get list of mounted volumes; Skipping IO charts\n";
+    }
+    else {
+        print STDERR
+          "Unable to get list of mounted volumes; Skipping IO charts\n";
         return;
     }
 }
@@ -157,40 +154,41 @@ sub getHostAndProcsInfo() {
     $ZIMBRA_HOSTNAME = getZimbraServerHostname();
 
     my $svc;
-    my @enabledServices = qx(zmprov -l gs $ZIMBRA_HOSTNAME | grep zimbraServiceEnabled);
+    my @enabledServices =
+      qx(zmprov -l gs $ZIMBRA_HOSTNAME | grep zimbraServiceEnabled);
     foreach $svc (@enabledServices) {
-        if ($svc =~ /mailbox/) {
-            push(@ENABLED_PROCS, 'mailbox');
-            push(@ENABLED_PROCS, 'mysql');
+        if ( $svc =~ /mailbox/ ) {
+            push( @ENABLED_PROCS, 'mailbox' );
+            push( @ENABLED_PROCS, 'mysql' );
             $HAS_MAILBOX = 1;
             last;
         }
     }
 
     foreach $svc (@enabledServices) {
-        if ($svc =~ /ldap/) {
-            push(@ENABLED_PROCS, 'ldap');
+        if ( $svc =~ /ldap/ ) {
+            push( @ENABLED_PROCS, 'ldap' );
             last;
         }
     }
 
     foreach $svc (@enabledServices) {
-        if ($svc =~ /mta/) {
-            push(@ENABLED_PROCS, 'postfix');
+        if ( $svc =~ /mta/ ) {
+            push( @ENABLED_PROCS, 'postfix' );
             $HAS_MTA = 1;
             last;
         }
     }
 
     foreach $svc (@enabledServices) {
-        if ($svc =~ /antispam/ || $svc =~ /antivirus/) {
-            push(@ENABLED_PROCS, 'amavis');
-            push(@ENABLED_PROCS, 'clam');
+        if ( $svc =~ /antispam/ || $svc =~ /antivirus/ ) {
+            push( @ENABLED_PROCS, 'amavis' );
+            push( @ENABLED_PROCS, 'clam' );
             last;
         }
     }
 
-    push(@ENABLED_PROCS, 'stats');
+    push( @ENABLED_PROCS, 'stats' );
 }
 
 sub mtaConfig() {
@@ -224,6 +222,7 @@ sub getFDstatConfig() {
   </chart>
 _HERE_
 }
+
 sub cpuPstatConfig() {
     print <<_HERE_;
   <!-- CPU Stats -->
@@ -249,8 +248,9 @@ _HERE_
 
     my $numCPUs = qx(egrep '^cpu[0-9]+' /proc/stat 2> /dev/null | wc -l);
     chomp($numCPUs);
-    if ($numCPUs > 1) {
-        my @categories = ('user', 'nice', 'sys', 'idle', 'iowait', 'irq', 'softirq');
+    if ( $numCPUs > 1 ) {
+        my @categories =
+          ( 'user', 'nice', 'sys', 'idle', 'iowait', 'irq', 'softirq' );
         foreach my $category (@categories) {
             my $i;
             print <<_HERE_;
@@ -263,7 +263,7 @@ _HERE_
          showRaw="false"
          showMovingAvg="true">
 _HERE_
-            for ($i = 0; $i < $numCPUs; $i++) {
+            for ( $i = 0 ; $i < $numCPUs ; $i++ ) {
                 print qq[    <plot data="cpu$i:$category" legend="cpu$i"/>\n];
             }
             print "  </chart>\n\n";
@@ -320,13 +320,14 @@ _HERE_
 }
 
 sub vmstatConfig() {
-    my ($colFree, $colPageIn, $colPageOut, $colActive, $colInactive);
+    my ( $colFree, $colPageIn, $colPageOut, $colActive, $colInactive );
     if ($isMac) {
-        ($colFree, $colPageIn, $colPageOut, $colActive, $colInactive) =
-            ('free', 'pageins', 'pageout', 'active', 'inac');
-    } else {
-        ($colFree, $colPageIn, $colPageOut, $colActive, $colInactive) =
-            ('free', 'si', 'so', 'Active', 'Inactive');
+        ( $colFree, $colPageIn, $colPageOut, $colActive, $colInactive ) =
+          ( 'free', 'pageins', 'pageout', 'active', 'inac' );
+    }
+    else {
+        ( $colFree, $colPageIn, $colPageOut, $colActive, $colInactive ) =
+          ( 'free', 'si', 'so', 'Active', 'Inactive' );
     }
     print <<_HERE_;
   <!-- vmstat -->
@@ -359,7 +360,7 @@ sub vmstatConfig() {
 
 _HERE_
 
-    if (!$isMac) {
+    if ( !$isMac ) {
         print <<_HERE_;
   <chart title="Host $ZIMBRA_HOSTNAME: Context Switches"
          category="CPU"
@@ -394,7 +395,7 @@ sub iostatConfig() {
   <!-- IO stats -->
 
 _HERE_
-    if (!$isMac) {
+    if ( !$isMac ) {
         print <<_HERE_;
   <chart title="Host $ZIMBRA_HOSTNAME: Disk Utilization (Top 10 avg)"
          category="IO"
@@ -426,12 +427,13 @@ _HERE_
          showRaw="false"
          showMovingAvg="true">
 _HERE_
-        if (!$isMac) {
+        if ( !$isMac ) {
             print <<_HERE_;
     <plot data="$dev:rkB/s" legend="$dev read"/>
     <plot data="$dev:wkB/s" legend="$dev write"/>
 _HERE_
-        } else {
+        }
+        else {
             print <<_HERE_;
     <plot data="$dev:kB/s" legend="$dev read/write"/>
 _HERE_
@@ -450,12 +452,13 @@ _HERE_
          showRaw="false"
          showMovingAvg="true">
 _HERE_
-        if (!$isMac) {
+        if ( !$isMac ) {
             print <<_HERE_;
     <plot data="$dev:r/s" legend="$dev read"/>
     <plot data="$dev:w/s" legend="$dev write"/>
 _HERE_
-        } else {
+        }
+        else {
             print <<_HERE_;
     <plot data="$dev:tps" legend="$dev read/write"/>
 _HERE_
@@ -463,12 +466,12 @@ _HERE_
         print "  </chart>\n\n";
     }
 
-    if (!$isMac) {
+    if ( !$isMac ) {
         foreach $dev (@DEVICE_LIST) {
             my $partitionList = $DEVICE_PARTITIONS{$dev};
             foreach my $partition (@$partitionList) {
                 my $mountpoint = $MOUNTS{$partition};
-                my $partFile = filenameSafe($partition);
+                my $partFile   = filenameSafe($partition);
                 print <<_HERE_;
   <chart title="Host $ZIMBRA_HOSTNAME: Disk Partition Throughput: /dev/$partition mounted on $mountpoint"
          category="IO"
@@ -488,7 +491,7 @@ _HERE_
             my $partitionList = $DEVICE_PARTITIONS{$dev};
             foreach my $partition (@$partitionList) {
                 my $mountpoint = $MOUNTS{$partition};
-                my $partFile = filenameSafe($partition);
+                my $partFile   = filenameSafe($partition);
                 print <<_HERE_;
   <chart title="Host $ZIMBRA_HOSTNAME: Disk Partition IOPs: /dev/$partition mounted on $mountpoint"
          category="IO"
@@ -500,7 +503,6 @@ _HERE_
     <plot data="$partition:tps" legend="$partition tps"/>
   </chart>
 _HERE_
-  
 
             }
         }
@@ -790,6 +792,7 @@ sub convertdConfig() {
 
 _HERE_
 }
+
 sub allpstatsConfig() {
     print <<_HERE_;
   <!-- allprocs Stats -->
@@ -901,19 +904,24 @@ _HERE_
 
     my %JVM_MEMPOOLS = (
         'YOUNGGEN' => [
-            'PS Eden Space', 'PS Survivor Space',
-            'Par Eden Space', 'Par Survivor Space',
-            'Eden Space', 'Survivor Space'
+            'PS Eden Space',
+            'PS Survivor Space',
+            'Par Eden Space',
+            'Par Survivor Space',
+            'Eden Space',
+            'Survivor Space'
         ],
         'OLDGEN' => [
             'PS Old Gen', 'CMS Old Gen', 'Tenured Gen', 'Train Gen'
-            # Train Gen is gone in JDK 1.6
+
+              # Train Gen is gone in JDK 1.6
         ],
         'PERMGEN' => [
             'PS Perm Gen',
             'Perm Gen',
             'CMS Perm Gen',
-            'Code Cache',  # throw this in here too even though it's not a perm gen
+            'Code Cache'
+            ,    # throw this in here too even though it's not a perm gen
             'Perm Gen [shared-ro]', 'Perm Gen [shared-rw]'
         ]
     );
@@ -929,7 +937,7 @@ _HERE_
          yAxis="MB">
     <plot data="heap_used" legend="total" divisor="1m"/>
 _HERE_
-    foreach $genname ('OLDGEN', 'YOUNGGEN') {
+    foreach $genname ( 'OLDGEN', 'YOUNGGEN' ) {
         my $pools = $JVM_MEMPOOLS{$genname};
         foreach $pool (@$pools) {
             my $csvname = memPoolCsvName($pool);
@@ -949,7 +957,7 @@ _HERE_
          yAxis="MB">
     <plot data="heap_free" legend="total free" divisor="1m"/>
 _HERE_
-    foreach $genname ('OLDGEN', 'YOUNGGEN') {
+    foreach $genname ( 'OLDGEN', 'YOUNGGEN' ) {
         my $pools = $JVM_MEMPOOLS{$genname};
         foreach $pool (@$pools) {
             my $csvname = memPoolCsvName($pool);
@@ -1036,7 +1044,7 @@ _HERE_
 }
 
 sub mobileSyncConfig() {
-print <<_HERE_;
+    print <<_HERE_;
   <!-- mobile sync stats -->
   <chart title="Host $ZIMBRA_HOSTNAME: MobileSync: SyncState cache Hit Rate"
          category="mobile"
@@ -1116,7 +1124,7 @@ if ($HAS_MTA) {
 cpuPstatConfig();
 vmstatConfig();
 iostatConfig();
-if (!$isMac) {
+if ( !$isMac ) {
     getFDstatConfig();
     allpstatsConfig();
 }

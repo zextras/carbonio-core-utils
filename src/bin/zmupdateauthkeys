@@ -1,104 +1,95 @@
 #!/bin/bash
-# 
-# ***** BEGIN LICENSE BLOCK *****
-# Zimbra Collaboration Suite Server
-# Copyright (C) 2005, 2006, 2007, 2009, 2010, 2011, 2013, 2014, 2015, 2016 Synacor, Inc.
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software Foundation,
-# version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
-# ***** END LICENSE BLOCK *****
-# 
 
-source `dirname $0`/../bin/zmshutil || exit 1
+# SPDX-FileCopyrightText: 2022 Synacor, Inc.
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+source $(dirname $0)/../bin/zmshutil || exit 1
 
 zmsetvars
 
 getPubKey() {
-	server=$1
-	echo "Fetching key for ${s}"
-	pubkey=`${zmprov} gs ${server} 2> /dev/null \
-		| grep $keyattr | sed -e "s/^${keyattr}: //"`
+  server=$1
+  echo "Fetching key for ${s}"
+  pubkey=$(${zmprov} gs ${server} 2>/dev/null |
+    grep $keyattr | sed -e "s/^${keyattr}: //")
 }
 
 replacePubKey() {
-	server=$1
-	key=$2
-	echo "Updating keys for $server"
-	keyhost=`echo ${key} | awk '{print $3}'`
+  server=$1
+  key=$2
+  echo "Updating keys for $server"
+  keyhost=$(echo ${key} | awk '{print $3}')
 
-	echo "${authkeys}" > ${tempkeysfile}
-	cat /dev/null > ${tempkeysfile}.new
+  echo "${authkeys}" >${tempkeysfile}
+  cat /dev/null >${tempkeysfile}.new
 
-	while read keyline; do
-		linehost=`echo ${keyline} | awk '{print $4}'`
-		if [ x$linehost != x$keyhost ]; then
-			echo "${keyline}" >> ${tempkeysfile}.new
-		fi
-	done < ${tempkeysfile}
+  while read keyline; do
+    linehost=$(echo ${keyline} | awk '{print $4}')
+    if [ x$linehost != x$keyhost ]; then
+      echo "${keyline}" >>${tempkeysfile}.new
+    fi
+  done <${tempkeysfile}
 
-	#Don't change the indentation on these lines
+  #Don't change the indentation on these lines
 
-	authkeys=`cat ${tempkeysfile}.new`
+  authkeys=$(cat ${tempkeysfile}.new)
 
-	authkeys="${authkeys}
-command=\"/opt/zimbra/libexec/zmrcd\" ${key}"
-	
-	/bin/rm -f ${tempkeysfile} ${tempkeysfile}.new
+  authkeys="${authkeys}
+command=\"/opt/zextras/libexec/zmrcd\" ${key}"
+
+  /bin/rm -f ${tempkeysfile} ${tempkeysfile}.new
 }
 
 updateAllServers() {
   for s in ${servers}; do
     echo "Updating authkeys on remote server $s"
-    echo "HOST:$s zmupdateauthkeys" | /opt/zimbra/libexec/zmrc $s
+    echo "HOST:$s zmupdateauthkeys" | /opt/zextras/libexec/zmrc $s
   done
 }
 
-# Get all the public keys from ldap, and replace them in 
-# /opt/zimbra/.ssh/authorized_keys
+# Get all the public keys from ldap, and replace them in
+# /opt/zextras/.ssh/authorized_keys
 
 keyattr="zimbraSshPublicKey"
 
-zmprov="/opt/zimbra/bin/zmprov -m -l"
+zmprov="/opt/zextras/bin/zmprov -m -l"
 
-authkeysfile="/opt/zimbra/.ssh/authorized_keys"
+authkeysfile="/opt/zextras/.ssh/authorized_keys"
 
 if [ ! -d ${zimbra_tmp_directory} ]; then
-  mkdir -p ${zimbra_tmp_directory} > /dev/null 2>&1
+  mkdir -p ${zimbra_tmp_directory} >/dev/null 2>&1
 fi
 
-tempkeysfile=`mktemp -t auth_keys.XXXXXX 2> /dev/null` || { echo "Failed to create tmpfile"; exit 1; }
+tempkeysfile=$(mktemp -t auth_keys.XXXXXX 2>/dev/null) || {
+  echo "Failed to create tmpfile"
+  exit 1
+}
 
 if [ -f $authkeysfile ]; then
-	authkeys=`cat ${authkeysfile}`
+  authkeys=$(cat ${authkeysfile})
 fi
 
 #echo "Authorized keys: ${authkeys}"
 
-servers=`${zmprov} gas`
+servers=$(${zmprov} gas)
 
 #
 if [ x$1 == "x-a" ]; then
- updateAllServers
+  updateAllServers
 fi
 
 for s in ${servers}; do
-	echo "Updating keys for ${s}"
-	getPubKey ${s}
-	if [ "x$pubkey" != "x" ]; then
-		replacePubKey ${s} "${pubkey}"
-	else
-		echo "Key for ${s} NOT FOUND"
-	fi
+  echo "Updating keys for ${s}"
+  getPubKey ${s}
+  if [ "x$pubkey" != "x" ]; then
+    replacePubKey ${s} "${pubkey}"
+  else
+    echo "Key for ${s} NOT FOUND"
+  fi
 done
 
 echo "Updating ${authkeysfile}"
-echo "${authkeys}" > ${tempkeysfile} && mv ${tempkeysfile} ${authkeysfile}
+echo "${authkeys}" >${tempkeysfile} && mv ${tempkeysfile} ${authkeysfile}
 chmod 644 ${authkeysfile}
-
