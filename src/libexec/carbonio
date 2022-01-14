@@ -5,6 +5,23 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+# Init file for Carbonio
+#
+# chkconfig: 345 99 01
+# description: Carbonio Services
+#
+#
+
+### BEGIN INIT INFO
+# Provides: carbonio
+# Required-Start: $network $remote_fs $syslog $time cron
+# Required-Stop: $network $remote_fs $syslog $time
+# Default-Start: 3 5
+# Default-Stop: 0 1 6
+# Short-Description: Carbonio Services
+# Description: Loads all the services required by your Carbonio installation
+### END INIT INFO
+
 command()
 {
 	if [ -f /opt/zextras/redolog/redo.log ]; then
