@@ -17,9 +17,9 @@ if ($desthost eq "") {
 }
 
 if ($#ARGV >= 0) {
-	$cmd = "echo @ARGV | ssh -T -i ${keyfile} -o StrictHostKeyChecking=no zimbra\@${desthost}";
+	$cmd = "echo @ARGV | ssh -T -i ${keyfile} -o StrictHostKeyChecking=no zextras\@${desthost}";
 } else {
-	$cmd = "ssh -T -i ${keyfile} -o StrictHostKeyChecking=no zimbra\@${desthost}";
+	$cmd = "ssh -T -i ${keyfile} -o StrictHostKeyChecking=no zextras\@${desthost}";
 }
 
 open P, "$cmd |";
