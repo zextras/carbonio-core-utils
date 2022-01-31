@@ -40,7 +40,6 @@ checkrunning() {
 
 case "$1" in
 start)
-  /opt/zextras/libexec/zmsnmpinit
   checkrunning
   echo -n "Starting swatch..."
   if [ $running = 1 ]; then

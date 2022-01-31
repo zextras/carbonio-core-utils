@@ -104,7 +104,6 @@ if (!$usersonly) {
   updateLocalConfig("ldap_host");
   updateLocalConfig("av_notify_user");
   updateLocalConfig("av_notify_domain");
-  updateLocalConfig("snmp_trap_host");
   updateLocalConfig("smtp_source");
   updateLocalConfig("smtp_destination");
   updateLocalConfig("zimbra_server_hostname");
@@ -127,13 +126,6 @@ if (!$usersonly) {
     $c{ldap_port} = getLocalConfig("ldap_port");
     print "Reinitializing the mta config...";
     $rc = runCommand("/opt/zextras/libexec/zmmtainit $c{ldap_host} $c{ldap_port}");
-    print (($rc==0) ? "done.\n" : "failed.\n");
-  }
-
-  # Reinitialize swatchrc
-  if (index($c{zimbraServiceEnabled}, "snmp") != -1) {
-    print "Reinitializing the snmp config...";
-    $rc = runCommand("/opt/zextras/libexec/zmsnmpinit");
     print (($rc==0) ? "done.\n" : "failed.\n");
   }
 

@@ -92,11 +92,9 @@ for i in master.cf master.cf.in bysender bysender.lmdb tag_as_foreign.re tag_as_
   fi
 done
 
-for i in snmp.conf main.cf; do
-  if [ -f /opt/zextras/common/conf/${i} ]; then
-    chown -f ${root_user}:${root_group} /opt/zextras/common/conf/${i}
-  fi
-done
+if [ -f /opt/zextras/common/conf/main.cf ]; then
+  chown -f ${root_user}:${root_group} /opt/zextras/common/conf/main.cf
+fi
 
 if [ -d /opt/zextras ]; then
   chown ${root_user}:${root_group} /opt/zextras
@@ -138,10 +136,6 @@ if [ -d /opt/zextras ]; then
     if [ "$(cat /selinux/enforce 2>/dev/null)" = "1" ]; then
       # make sure ssh keys are in home dir selinux type
       chcon -R -v -u system_u -t user_home_t /opt/zextras/.ssh/
-      if [ -f /opt/zextras/common/lib/apache2/modules/libphp5.so ]; then
-        # allow text relocation for these problem files
-        chcon -t textrel_shlib_t /opt/zextras/common/lib/apache2/modules/libphp5.so
-      fi
       # Fix Zimbra upgrades selinux perms
       restorecon -R /etc/security
     fi
@@ -183,32 +177,9 @@ if [ -d /opt/zextras ]; then
     chown -R ${zimbra_user}:${zextras_group} /opt/zextras/wiki
   fi
 
-  if [ -d /opt/zextras/convertd ]; then
-    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/convertd
-    chmod 755 /opt/zextras/convertd
-    if [ -d /opt/zextras/convertd/bin ]; then
-      chown -R ${root_user}:${root_group} /opt/zextras/convertd/bin
-      chmod 755 /opt/zextras/convertd/bin
-    fi
-    if [ -d /opt/zextras/convertd/lib ]; then
-      chown -R ${root_user}:${root_group} /opt/zextras/convertd/lib
-      chmod 755 /opt/zextras/convertd/lib
-    fi
-    if [ ! -d /opt/zextras/convertd/convert ]; then
-      mkdir -p /opt/zextras/convertd/convert
-      chown ${zimbra_user}:${zextras_group} /opt/zextras/convertd/convert
-      chmod 700 /opt/zextras/convertd/convert
-    fi
-  fi
-
   if [ -d /opt/zextras/conf ]; then
     printMsg "Fixing ownership and permissions on /opt/zextras/conf"
     chown -R ${zimbra_user}:${zextras_group} /opt/zextras/conf
-
-    if [ -f /opt/zextras/conf/ZCSLicense.xml ]; then
-      chown ${zimbra_user}:${zextras_group} /opt/zextras/conf/ZCSLicense.xml
-      chmod 440 /opt/zextras/conf/ZCSLicense.xml
-    fi
 
     if [ -f /opt/zextras/conf/localconfig.xml ]; then
       chown ${zimbra_user}:${zextras_group} /opt/zextras/conf/localconfig.xml
@@ -299,17 +270,6 @@ if [ -d /opt/zextras ]; then
   fi
   chmod 755 /opt/zextras/data
   chown ${zimbra_user}:${zextras_group} /opt/zextras/data
-
-  if [ -d /opt/zextras/extensions-network-extra ]; then
-    chmod 755 /opt/zextras/extensions-network-extra
-    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/extensions-network-extra
-  fi
-
-  if [ -d /opt/zextras/extensions-extra ]; then
-    chmod 755 /opt/zextras/extensions-extra
-    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/extensions-extra
-  fi
-
 fi
 
 # fix the temp directory
@@ -439,10 +399,6 @@ fi
 if [ -L /opt/zextras/jetty ]; then
   printMsg "Fixing ownership and permissions on /opt/zextras/jetty"
 
-  if [ ! -d "/opt/zextras/data/tmp/libreoffice" ]; then
-    mkdir -p /opt/zextras/data/tmp/libreoffice
-    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/data/tmp/libreoffice
-  fi
   chown ${root_user}:${root_group} /opt/zextras/jetty-* 2>/dev/null
   for i in \
     keystore mailboxd.{der,pem} jetty.xml{,.in} service.web.xml.in \
