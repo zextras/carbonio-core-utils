@@ -362,6 +362,11 @@ sub doStartup {
 }
 
 sub doShutdown {
+    if( time() - (stat("/opt/zextras/conf/dhparam.pem"))[9] > 1314871) {
+        Zimbra::Mon::Logger::Log( "info",
+            "Creating new dhparam key before shuting down services" );
+        system("/opt/zextras/bin/zmdhparam set -new 2048 > /dev/null 2>&1");
+    }
     Zimbra::Mon::Logger::Log( "info",
         "Stopping services initiated by zmcontrol" );
     print "Host $localHostName\n";
