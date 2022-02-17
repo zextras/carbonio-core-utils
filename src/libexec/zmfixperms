@@ -19,8 +19,8 @@ root_group=root
 postfix_owner=postfix
 postfix_suid_group=postdrop
 
-syslog_user=zextras
-syslog_group=zextras
+syslog_user=syslog
+syslog_group=adm
 
 zimbra_user=zextras
 zextras_group=zextras
