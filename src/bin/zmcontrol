@@ -340,6 +340,7 @@ sub doStartup {
         {
             print "\tStarting $_ webapp...";
         }
+        elsif ( $_ eq "service-discover" ){ next; }
         else {
             print "\tStarting $_...";
         }
