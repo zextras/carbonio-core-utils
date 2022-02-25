@@ -232,7 +232,7 @@ sub doStatus {
               ($rc) ? "Stopped" : "Running";
         }elsif ( $_ eq "service-discover" ){
             my $ret = `systemctl is-active service-discover.service >/dev/null 2>&1 && echo 1 || echo 0`;
-            $stat = sprintf "\t%-20s %10s\n", $_, ($rc) ? "Running" : "Stopped";
+            $stat = sprintf "\t%-20s %10s\n", $_, ($ret) ? "Running" : "Stopped";
         }
         else {
             $stat = sprintf "\t%-20s %10s\n", $_, ($rc) ? "Stopped" : "Running";
