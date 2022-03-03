@@ -230,6 +230,9 @@ sub doStatus {
             my $bit = "$_ webapp";
             $stat = sprintf "\t%-20s %10s\n", $bit,
               ($rc) ? "Stopped" : "Running";
+        }elsif ( $_ eq "service-discover" ){
+            $rc = system("systemctl is-active service-discover.service >/dev/null 2>&1");
+            $stat = sprintf "\t%-20s %10s\n", $_, ($rc) ? "Stopped" : "Running";
         }
         else {
             $stat = sprintf "\t%-20s %10s\n", $_, ($rc) ? "Stopped" : "Running";
@@ -337,6 +340,7 @@ sub doStartup {
         {
             print "\tStarting $_ webapp...";
         }
+        elsif ( $_ eq "service-discover" ){ next; }
         else {
             print "\tStarting $_...";
         }
