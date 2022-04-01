@@ -24,8 +24,6 @@ use vars qw(
   $ZMDUMPENV $ZMLOCALCONFIG $ZMPROV $ZMHOSTNAME $SU $HAVE_NETSTAT $HAVE_MYSQL $ZMMYTOP $ZMINNOTOP $HAVE_NETWORK
 );
 
-my $isMac = isMac();
-
 chomp( $ZMHOSTNAME = qx(/opt/zextras/bin/zmhostname) );
 
 my $zimbra_tmp_directory = "/opt/zextras/data/tmp";
@@ -64,7 +62,6 @@ $ZMPROV                             = '/opt/zextras/bin/zmprov -l';
 $ZMMYTOP                            = '/opt/zextras/bin/zmmytop --nocolor -b';
 $ZMINNOTOP = '/opt/zextras/bin/zminnotop --nocolor --nonint';
 $SU        = "su - zextras -c ";
-$SU        = "su - zextras -c -l " if ( isMac() );
 $HAVE_NETWORK                       = has_cmd('/opt/zextras/bin/zxsuite');
 
 sub logmsg($) {
@@ -351,18 +348,9 @@ sub run() {
 
             invoke_thread_dump( $i, $TS );
             my $top_cmd = "top -bc -n1 > top.$i.$TS 2>&1";
-            if ($isMac) {
-                $top_cmd = "top -o cpu -l 2 | \
-                                awk 'BEGIN { sample = 0 } \
-                                    { \
-                                        if ( \$0 ~ /^Processes: / ) { sample++; } \
-                                        if ( sample ==2 ) { print \$0 } \
-                                    }' > top.$i.$TS 2>&1";
-            }
             system($top_cmd);
             system("/bin/ps -auxw > ps.$i.$TS 2>&1");
             my $netstat = "netstat -anp > netstat.$i.$TS 2>&1";
-            $netstat = "netstat -an > netstat.$i.$TS 2>&1" if ($isMac);
             system($netstat);
 
             my $stats = collect_thread_stats($mailboxd_pid);
@@ -518,18 +506,9 @@ sub run() {
             logmsg "Collecting top/ps/netstat: $i of 10\n";
             my $TS = strftime( "%H-%M-%S", localtime() );
             my $top_cmd = "top -bc -n1 > top.$i.$TS 2>&1";
-            if ($isMac) {
-                $top_cmd = "top -o cpu -l 2 | \
-                                awk 'BEGIN { sample = 0 } \
-                                    { \
-                                        if ( \$0 ~ /^Processes: / ) { sample++; } \
-                                        if ( sample ==2 ) { print \$0 } \
-                                    }' > top.$i.$TS 2>&1";
-            }
             system($top_cmd);
             system("/bin/ps -auxw > ps.$i.$TS 2>&1");
             my $netstat = "netstat -anp > netstat.$i.$TS 2>&1";
-            $netstat = "netstat -an > netstat.$i.$TS 2>&1" if ($isMac);
             system($netstat);
             sleep(5);
         }
@@ -698,7 +677,6 @@ sub run() {
     }
 
     my $systemlogfile = "/var/log/messages";
-    $systemlogfile = "/var/log/system.log" if ( isMac() );
     if ( -f $systemlogfile ) {
         logmsg "Copying system log $systemlogfile\n";
         cp $systemlogfile, "$destination/logs";

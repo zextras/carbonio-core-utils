@@ -11,9 +11,6 @@ use Zimbra::Mon::Zmstat;
 
 zmstatInit();
 
-my $isLinux = isLinux();
-my $isMac   = isMac();
-
 my $mtaqstatCsv = 'mtaqueue.csv';
 my $cpustatCsv  = 'cpu.csv';
 my $fdstatCsv   = 'fd.csv';
@@ -61,48 +58,40 @@ sub getDiskInfo() {
 
     # Get device list.
 
-    if ($isMac) {
-        my $devs = qx(iostat -d | head -1);
-        chomp($devs);
-        $devs =~ s/^\s+//;
-        $devs =~ s/\s+$//;
-        @DEVICE_LIST = split( /\s+/, $devs );
-    }
-    else {
-        my $iostat = '/usr/bin/iostat';
+    my $iostat = '/usr/bin/iostat';
+    if ( !-e $iostat ) {
+        $iostat = '/usr/sbin/iostat';
         if ( !-e $iostat ) {
-            $iostat = '/usr/sbin/iostat';
-            if ( !-e $iostat ) {
-                print STDERR
-                  "No iostat installed on this host; Skipping IO charts\n";
-                return;
-            }
-        }
-        my $cmd = "$iostat -d -x";
-        if ( !open( IOSTAT, "$cmd |" ) ) {
-            print STDERR "Unable to execute $cmd; Skipping IO charts\n";
+            print STDERR
+              "No iostat installed on this host; Skipping IO charts\n";
             return;
         }
-        my $line = '';
-        while ( $line !~ /^Device/ ) {
-            $line = readLine( *IOSTAT, 1 );
-        }
-        while ( defined( $line = readLine( *IOSTAT, 1 ) ) ) {
-            if ( $line =~ /^\s*([^\s]+)\s+/ ) {
-                my $dev = $1;
-                push( @DEVICE_LIST, $dev );
-            }
-        }
-        close(IOSTAT);
-
-        # make sure there are no duplicate items in DEVICE_LIST
-        # see bug 32973
-        my %devices_tmp;
-        for (@DEVICE_LIST) {
-            $devices_tmp{$_} = 1;
-        }
-        @DEVICE_LIST = keys %devices_tmp;
     }
+    my $cmd = "$iostat -d -x";
+    if ( !open( IOSTAT, "$cmd |" ) ) {
+        print STDERR "Unable to execute $cmd; Skipping IO charts\n";
+        return;
+    }
+    my $line = '';
+    while ( $line !~ /^Device/ ) {
+        $line = readLine( *IOSTAT, 1 );
+    }
+    while ( defined( $line = readLine( *IOSTAT, 1 ) ) ) {
+        if ( $line =~ /^\s*([^\s]+)\s+/ ) {
+            my $dev = $1;
+            push( @DEVICE_LIST, $dev );
+        }
+    }
+    close(IOSTAT);
+
+    # make sure there are no duplicate items in DEVICE_LIST
+    # see bug 32973
+    my %devices_tmp;
+    for (@DEVICE_LIST) {
+        $devices_tmp{$_} = 1;
+    }
+    @DEVICE_LIST = keys %devices_tmp;
+
     if ( scalar(@DEVICE_LIST) < 1 ) {
         print STDERR "Unable to find any disk device; Skipping IO charts\n";
         return;
@@ -321,14 +310,9 @@ _HERE_
 
 sub vmstatConfig() {
     my ( $colFree, $colPageIn, $colPageOut, $colActive, $colInactive );
-    if ($isMac) {
-        ( $colFree, $colPageIn, $colPageOut, $colActive, $colInactive ) =
-          ( 'free', 'pageins', 'pageout', 'active', 'inac' );
-    }
-    else {
-        ( $colFree, $colPageIn, $colPageOut, $colActive, $colInactive ) =
-          ( 'free', 'si', 'so', 'Active', 'Inactive' );
-    }
+    ( $colFree, $colPageIn, $colPageOut, $colActive, $colInactive ) =
+      ( 'free', 'si', 'so', 'Active', 'Inactive' );
+
     print <<_HERE_;
   <!-- vmstat -->
 
@@ -360,8 +344,7 @@ sub vmstatConfig() {
 
 _HERE_
 
-    if ( !$isMac ) {
-        print <<_HERE_;
+    print <<_HERE_;
   <chart title="Host $ZIMBRA_HOSTNAME: Context Switches"
          category="CPU"
          infile="$vmstatCsv"
@@ -385,7 +368,7 @@ _HERE_
   </chart>
 
 _HERE_
-    }
+
 }
 
 sub iostatConfig() {
@@ -395,8 +378,7 @@ sub iostatConfig() {
   <!-- IO stats -->
 
 _HERE_
-    if ( !$isMac ) {
-        print <<_HERE_;
+    print <<_HERE_;
   <chart title="Host $ZIMBRA_HOSTNAME: Disk Utilization (Top 10 avg)"
          category="IO"
          infile="$iostatxCsv"
@@ -410,11 +392,10 @@ _HERE_
          showMovingAvg="true">
 _HERE_
 
-        foreach $dev (@DEVICE_LIST) {
-            print qq[    <plot data="$dev:%util" legend="$dev"/>\n];
-        }
-        print "  </chart>\n\n";
+    foreach $dev (@DEVICE_LIST) {
+        print qq[    <plot data="$dev:%util" legend="$dev"/>\n];
     }
+    print "  </chart>\n\n";
 
     foreach $dev (@DEVICE_LIST) {
         my $devFile = filenameSafe($dev);
@@ -427,17 +408,11 @@ _HERE_
          showRaw="false"
          showMovingAvg="true">
 _HERE_
-        if ( !$isMac ) {
-            print <<_HERE_;
+        print <<_HERE_;
     <plot data="$dev:rkB/s" legend="$dev read"/>
     <plot data="$dev:wkB/s" legend="$dev write"/>
 _HERE_
-        }
-        else {
-            print <<_HERE_;
-    <plot data="$dev:kB/s" legend="$dev read/write"/>
-_HERE_
-        }
+
         print "  </chart>\n\n";
     }
 
@@ -452,27 +427,20 @@ _HERE_
          showRaw="false"
          showMovingAvg="true">
 _HERE_
-        if ( !$isMac ) {
-            print <<_HERE_;
+        print <<_HERE_;
     <plot data="$dev:r/s" legend="$dev read"/>
     <plot data="$dev:w/s" legend="$dev write"/>
 _HERE_
-        }
-        else {
-            print <<_HERE_;
-    <plot data="$dev:tps" legend="$dev read/write"/>
-_HERE_
-        }
+
         print "  </chart>\n\n";
     }
 
-    if ( !$isMac ) {
-        foreach $dev (@DEVICE_LIST) {
-            my $partitionList = $DEVICE_PARTITIONS{$dev};
-            foreach my $partition (@$partitionList) {
-                my $mountpoint = $MOUNTS{$partition};
-                my $partFile   = filenameSafe($partition);
-                print <<_HERE_;
+    foreach $dev (@DEVICE_LIST) {
+        my $partitionList = $DEVICE_PARTITIONS{$dev};
+        foreach my $partition (@$partitionList) {
+            my $mountpoint = $MOUNTS{$partition};
+            my $partFile   = filenameSafe($partition);
+            print <<_HERE_;
   <chart title="Host $ZIMBRA_HOSTNAME: Disk Partition Throughput: /dev/$partition mounted on $mountpoint"
          category="IO"
          infile="$iostatCsv"
@@ -485,14 +453,14 @@ _HERE_
   </chart>
 
 _HERE_
-            }
         }
-        foreach $dev (@DEVICE_LIST) {
-            my $partitionList = $DEVICE_PARTITIONS{$dev};
-            foreach my $partition (@$partitionList) {
-                my $mountpoint = $MOUNTS{$partition};
-                my $partFile   = filenameSafe($partition);
-                print <<_HERE_;
+    }
+    foreach $dev (@DEVICE_LIST) {
+        my $partitionList = $DEVICE_PARTITIONS{$dev};
+        foreach my $partition (@$partitionList) {
+            my $mountpoint = $MOUNTS{$partition};
+            my $partFile   = filenameSafe($partition);
+            print <<_HERE_;
   <chart title="Host $ZIMBRA_HOSTNAME: Disk Partition IOPs: /dev/$partition mounted on $mountpoint"
          category="IO"
          infile="$iostatCsv"
@@ -504,9 +472,9 @@ _HERE_
   </chart>
 _HERE_
 
-            }
         }
-        print <<_HERE_;
+    }
+    print <<_HERE_;
   <chart title="Host $ZIMBRA_HOSTNAME: Disk Usage"
          category="IO"
          height="400"
@@ -516,7 +484,7 @@ _HERE_
     <groupplot data="disk_pct_used" groupBy="path" />
   </chart>
 _HERE_
-    }
+
 }
 
 sub mailboxdConfig() {
@@ -1124,15 +1092,14 @@ if ($HAS_MTA) {
 cpuPstatConfig();
 vmstatConfig();
 iostatConfig();
-if ( !$isMac ) {
-    getFDstatConfig();
-    allpstatsConfig();
-}
+getFDstatConfig();
+allpstatsConfig();
+
 if ($HAS_MAILBOX) {
     mailboxdConfig();
     gcConfig();
     heapConfig();
-    convertdConfig() if !$isMac;
+    convertdConfig();
     nginxConfig();
     ldapConfig();
     mobileSyncConfig();
