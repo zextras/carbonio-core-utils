@@ -36,61 +36,53 @@ use Zimbra::Mon::Logger;
 
 zmstatInit();
 
-my $isMac = isMac();
-my $VMSTAT = !$isMac ? '/usr/bin/vmstat -n -S K' : '/usr/bin/vm_stat';
+my $VMSTAT  = '/usr/bin/vmstat -n -S K';
 my $MEMINFO = '/proc/meminfo';
 my $LOADAVG = '/proc/loadavg';
 my @VMSTAT_FIELDS;
 my @MEMINFO_FIELDS;
 
-my ($CONSOLE, $LOGFH, $LOGFILE, $HEADING, $ROTATE_DEFER, $ROTATE_NOW);
+my ( $CONSOLE, $LOGFH, $LOGFILE, $HEADING, $ROTATE_DEFER, $ROTATE_NOW );
 
 sub getHeading() {
-    if ($isMac) {
-        return 'timestamp, free, active, inac, wire, faults, ' .
-               'copy, zerofill, reactive, pageins, pageout';
-    }
     my $line;
-    open(VMSTAT_H, "$VMSTAT |") or die "Can't run $VMSTAT: $!";
+    open( VMSTAT_H, "$VMSTAT |" ) or die "Can't run $VMSTAT: $!";
     <VMSTAT_H>;
     $line = <VMSTAT_H>;
     chomp($line);
     $line =~ s/^\s+//;
-    @VMSTAT_FIELDS = split(/\s+/, $line);
+    @VMSTAT_FIELDS = split( /\s+/, $line );
     close(VMSTAT_H);
-    open(MEMINFO_H, "< $MEMINFO") or die "Can't open $MEMINFO: $!";
-    while (defined($line = <MEMINFO_H>)) {
-        my @fields = split(/[:\s]+/, $line);
-        push(@MEMINFO_FIELDS, $fields[0]);
+    open( MEMINFO_H, "< $MEMINFO" ) or die "Can't open $MEMINFO: $!";
+
+    while ( defined( $line = <MEMINFO_H> ) ) {
+        my @fields = split( /[:\s]+/, $line );
+        push( @MEMINFO_FIELDS, $fields[0] );
     }
     close(MEMINFO_H);
-    return join(', ', 'timestamp', @VMSTAT_FIELDS, @MEMINFO_FIELDS, "loadavg");
+    return
+      join( ', ', 'timestamp', @VMSTAT_FIELDS, @MEMINFO_FIELDS, "loadavg" );
 }
 
 sub getMeminfo() {
-    if ($isMac) {
-        return '';
-    }
     my %meminfo;
-    open(MEMINFO, "< $MEMINFO") or die "Can't open $MEMINFO: $!";
+    open( MEMINFO, "< $MEMINFO" ) or die "Can't open $MEMINFO: $!";
     my $line;
-    while (defined($line = <MEMINFO>)) {
-        my @fields = split(/[:\s]+/, $line);
-        $meminfo{$fields[0]} = $fields[1];
+    while ( defined( $line = <MEMINFO> ) ) {
+        my @fields = split( /[:\s]+/, $line );
+        $meminfo{ $fields[0] } = $fields[1];
     }
     close(MEMINFO);
     my @vals;
     foreach my $key (@MEMINFO_FIELDS) {
-        push(@vals, $meminfo{$key} || 0);
+        push( @vals, $meminfo{$key} || 0 );
     }
-    return join(', ', @vals);
+    return join( ', ', @vals );
 }
+
 sub getLoadInfo() {
-    if ($isMac) {
-        return '';
-    }
     my %meminfo;
-    open(LOADAVG, "< $LOADAVG") or die "Can't open $LOADAVG: $!";
+    open( LOADAVG, "< $LOADAVG" ) or die "Can't open $LOADAVG: $!";
     my $line = <LOADAVG>;
     $line =~ /^(\S+)\s+/;
     my $load = $1;
@@ -99,11 +91,14 @@ sub getLoadInfo() {
 }
 
 my $stat_pid;
+
 sub runVMSTAT($) {
     my $interval = shift;
-    my $fh = new FileHandle;
-    my $cmd = "$VMSTAT $interval";
-    $stat_pid = open($fh, "$cmd |") || die "Unable to execute command \"$cmd\": $!";
+    my $fh       = new FileHandle;
+    my $cmd      = "$VMSTAT $interval";
+    $stat_pid = open( $fh, "$cmd |" )
+      || die "Unable to execute command \"$cmd\": $!";
+
     # Skip over the first three lines.
     $fh->getline();
     $fh->getline();
@@ -127,37 +122,37 @@ _USAGE_
 }
 
 sub sighup {
-    if (!$CONSOLE) {
-        if (!$ROTATE_DEFER) {
-            $LOGFH = rotateLogFile($LOGFH, $LOGFILE, $HEADING);
-        } else {
+    if ( !$CONSOLE ) {
+        if ( !$ROTATE_DEFER ) {
+            $LOGFH = rotateLogFile( $LOGFH, $LOGFILE, $HEADING );
+        }
+        else {
             $ROTATE_NOW = 1;
         }
     }
 }
 
-
-
 #
 # main
 #
 
-$| = 1; # Flush immediately
+$| = 1;    # Flush immediately
 
-my $interval = getZmstatInterval();
+my $interval  = getZmstatInterval();
 my $opts_good = GetOptions(
     'interval=i' => \$interval,
-    'log=s' => \$LOGFILE,
-    'console' => \$CONSOLE,
-    );
-if (!$opts_good) {
+    'log=s'      => \$LOGFILE,
+    'console'    => \$CONSOLE,
+);
+if ( !$opts_good ) {
     print STDERR "\n";
     usage();
 }
 
-if (!defined($LOGFILE) || $LOGFILE eq '') {
+if ( !defined($LOGFILE) || $LOGFILE eq '' ) {
     $LOGFILE = getLogFilePath('vm.csv');
-} elsif ($LOGFILE eq '-') {
+}
+elsif ( $LOGFILE eq '-' ) {
     $CONSOLE = 1;
 }
 if ($CONSOLE) {
@@ -169,20 +164,22 @@ createPidFile('zmstat-vm.pid');
 $SIG{HUP} = \&sighup;
 
 $HEADING = getHeading();
-$LOGFH = openLogFile($LOGFILE, $HEADING);
+$LOGFH   = openLogFile( $LOGFILE, $HEADING );
 
 my $date = getDate();
 waitUntilNiceRoundSecond($interval);
 my $vmstatFH = runVMSTAT($interval);
+
 sub sigterm {
-	kill(15,$stat_pid) if $stat_pid;
-	close($vmstatFH) if $vmstatFH;
-	exit(0);
+    kill( 15, $stat_pid ) if $stat_pid;
+    close($vmstatFH)      if $vmstatFH;
+    exit(0);
 }
 $SIG{TERM} = \&sigterm;
 while (1) {
     my $line;
-    while (!defined($line = readLine($vmstatFH, 1))) {
+    while ( !defined( $line = readLine( $vmstatFH, 1 ) ) ) {
+
         # Restart vmstat if it got killed for some reason.
         waitUntilNiceRoundSecond($interval);
         close($vmstatFH);
@@ -190,69 +187,41 @@ while (1) {
     }
     $line =~ s/^\s+//;    # remove leading whitespaces
     $line =~ s/\s+$//;    # remove trailing whitespaces
-    # Skip the two-line heading (plus the system-wide totals line) that Mac OSX vm_stat prints every 20 iterations.
-    if ($line !~ /^\d/) {
-        # If the line does not start with a numeric value, we've hit the first header line.  So, skip these
-        # three lines
-        $line = readLine($vmstatFH, 1);
-        $line = readLine($vmstatFH, 1);
-        $line = readLine($vmstatFH, 1);
+     # Skip the two-line heading (plus the system-wide totals line) that Mac OSX vm_stat prints every 20 iterations.
+    if ( $line !~ /^\d/ ) {
+
+# If the line does not start with a numeric value, we've hit the first header line.  So, skip these
+# three lines
+        $line = readLine( $vmstatFH, 1 );
+        $line = readLine( $vmstatFH, 1 );
+        $line = readLine( $vmstatFH, 1 );
         $line =~ s/^\s+//;
         $line =~ s/\s+$//;
     }
 
-    if (!$isMac) {
-        $line =~ s/\s+/, /g;  # space separated --> comma separated
-        $line .= ', ' . getMeminfo();
-        $line .= ', ' . getLoadInfo();
-    } else {
-        my @vals = split(/\s+/, $line);
-        my $len = scalar(@vals);
-        my $i;
-        for ($i = 0; $i < $len; $i++) {
-            if ($i == 4) {
-                next;  # leave "faults" column alone
-            }
-            my $pages = $vals[$i];
-            #
-            # Mac OSX vm_stat converts large counter values to human readable number formatting (using "K", "M", ...).
-            # We need to normalized these values to strictly numeric values to perform math operations.
-            #
-            if ( $pages =~ /^\d+g$/i ) {
-                $pages =~ s/g//i;
-                $pages = $pages * 1000000000;
-            } elsif ( $pages =~ /^\d+m$/i ) {
-                $pages =~ s/m//i;
-                $pages = $pages * 1000000;
-            } elsif ( $pages =~ /^\d+k$/i ) {
-                $pages =~ s/k//i;
-                $pages = $pages * 1000;
-            } elsif ( $pages !~ /^\d+$/ ) {
-                print STDERR "Non-numeric value encountered: $pages.  This should never happen!\n";
-            }
-            
-            $vals[$i] = $pages * 4;  # page = 4KB; we want KB
-        }
-        $line = join(', ', @vals);
-    }
+    $line =~ s/\s+/, /g;    # space separated --> comma separated
+    $line .= ', ' . getMeminfo();
+    $line .= ', ' . getLoadInfo();
 
-    my $tstamp = getTstamp();
+    my $tstamp   = getTstamp();
     my $currDate = getDate();
-    if ($currDate ne $date) {
-        $LOGFH = rotateLogFile($LOGFH, $LOGFILE, $HEADING, $date);
-        $date = $currDate;
+    if ( $currDate ne $date ) {
+        $LOGFH = rotateLogFile( $LOGFH, $LOGFILE, $HEADING, $date );
+        $date  = $currDate;
     }
 
     # Don't allow rotation in signal handler while we're writing.
     $ROTATE_DEFER = 1;
     $LOGFH->print("$tstamp, $line\n");
-    Zimbra::Mon::Logger::LogStats( "info", "zmstat vm.csv: ${HEADING}:: $tstamp, $line"); 
+    Zimbra::Mon::Logger::LogStats( "info",
+        "zmstat vm.csv: ${HEADING}:: $tstamp, $line" );
     $LOGFH->flush();
     $ROTATE_DEFER = 0;
     if ($ROTATE_NOW) {
+
         # Signal handler delegated rotation to main.
         $ROTATE_NOW = 0;
-        $LOGFH = rotateLogFile($LOGFH, $LOGFILE, $HEADING);
+        $LOGFH      = rotateLogFile( $LOGFH, $LOGFILE, $HEADING );
     }
 }
 close($vmstatFH);

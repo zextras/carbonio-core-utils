@@ -1,4 +1,4 @@
-#!/usr/bin/env zmpython
+#!/opt/zextras/bin/zmpython
 
 # SPDX-FileCopyrightText: 2022 Synacor, Inc.
 # SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
