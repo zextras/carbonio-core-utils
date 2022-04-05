@@ -247,10 +247,10 @@ if [ -d /opt/zextras ]; then
     fi
   fi
 
-  if [ -d /opt/zextras/docs ]; then
-    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/docs
-    find /opt/zextras/docs -type d -exec chmod 755 {} \;
-    find /opt/zextras/docs -type f -exec chmod 444 {} \;
+  if [ -d /opt/zextras/documentation ]; then
+    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/documentation
+    find /opt/zextras/documentation -type d -exec chmod 755 {} \;
+    find /opt/zextras/documentation -type f -exec chmod 444 {} \;
   fi
 
   for i in /opt/zextras/zimlets*; do
