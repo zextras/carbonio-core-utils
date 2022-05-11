@@ -113,6 +113,9 @@ while (1) {
         $date = $currDate;
     }
 
+    # Run the postfix-prometheus script to collect stats for prometheus
+    system("bash -c /opt/zextras/libexec/postfix-prometheus > /dev/null 2>&1 &");
+
     # Don't allow rotation in signal handler while we're writing.
     $ROTATE_DEFER = 1;
     $LOGFH->print("$tstamp, $kb, $msgs\n");
