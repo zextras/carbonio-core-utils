@@ -150,7 +150,9 @@ sub prepare_last_extraction_timestamp {
 
 #write stats data to stat file
 sub write_stats {
+    my $umask = umask(0777-0644);
     open(FH, '>', $STATS_DIR . '/' . $STATS_FILE) or die $!;
+    umask($umask);
     print FH $LOG_BUFFER;
     close FH;
 }
