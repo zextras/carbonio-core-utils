@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
+# shellcheck disable=SC1091
+# shellcheck disable=SC2068
+# shellcheck disable=SC2086
+# shellcheck disable=SC2294
+
+if [ "$(whoami)" != "zextras" ]; then
+  echo "Please run as zextras user"
+  exit 1
+fi
+
+source /opt/zextras/bin/zmshutil || exit 1
+
+zal_path="/opt/zextras/lib/ext/carbonio/zal.jar"
+zextras_path="/opt/zextras/lib/ext/carbonio/carbonio.jar"
+carbonio_jars="/opt/zextras/lib/jars/*"
+
+call_cli() {
+  if [ ! -f "${zal_path}" ] || [ ! -f "${zextras_path}" ]; then
+    echo "Zextras Suite is not installed"
+    exit 1
+  else
+    eval /opt/zextras/bin/zmjava \
+      -cp "${carbonio_jars}:${zal_path}:${zextras_path}" \
+      -Xmx128m org.openzal.zal.tools.ConsoleBoot com.zextras.zxcli.ZxSuiteCLI \
+      --columns "$(tput cols)" \
+      $@
+  fi
+}
+
+call_mailbox() {
+  shift
+  eval /opt/zextras/bin/zmjava com.zimbra.cs.zclient.ZMailboxUtil $@
+}
+
+call_prov() {
+  shift
+  eval /opt/zextras/bin/zmjava com.zimbra.cs.account.ProvUtil $@
+}
+
+process_args() {
+  case "${1}" in
+    mailbox)
+      call_mailbox ${@}
+      ;;
+    prov)
+      call_prov ${@}
+      ;;
+    *)
+      call_cli ${@}
+      ;;
+  esac
+}
+
+if [ $# = 0 ] && [ ! -p /dev/stdin ]; then
+  call_cli
+elif [ $# -ge 1 ]; then
+  process_args ${@}
+else
+  while IFS= read -r array; do
+    process_args $array
+  done
+fi
