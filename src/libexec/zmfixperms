@@ -46,23 +46,23 @@ usage() {
 
 for opt in "$@"; do
   case "$opt" in
-  -verbose | --verbose | -v)
-    verbose=yes
-    shift
-    ;;
-  -help | --help | -h | --h)
-    usage
-    shift
-    ;;
-  -extended | --extended | -e)
-    extended=yes
-    shift
-    ;;
-  *)
-    echo "Unknown option $opt"
-    usage
-    shift
-    ;;
+    -verbose | --verbose | -v)
+      verbose=yes
+      shift
+      ;;
+    -help | --help | -h | --h)
+      usage
+      shift
+      ;;
+    -extended | --extended | -e)
+      extended=yes
+      shift
+      ;;
+    *)
+      echo "Unknown option $opt"
+      usage
+      shift
+      ;;
   esac
 done
 
@@ -141,9 +141,21 @@ if [ -d /opt/zextras ]; then
     fi
   fi
 
+  # Required by HSM features
+  if [ -d /opt/zextras/cache ]; then
+    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/cache
+    chmod 755 /opt/zextras/cache/* 2>/dev/null
+  fi
+
   if [ -d /opt/zextras/contrib ]; then
     chown -R ${root_user}:${root_group} /opt/zextras/contrib
     chmod 755 /opt/zextras/contrib/* 2>/dev/null
+  fi
+
+  # Required by HSM features
+  if [ -d /opt/zextras/incoming ]; then
+    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/incoming
+    chmod 755 /opt/zextras/incoming/* 2>/dev/null
   fi
 
   if [ -d /opt/zextras/libexec ]; then
