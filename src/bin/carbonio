@@ -16,7 +16,7 @@ fi
 source /opt/zextras/bin/zmshutil || exit 1
 
 zal_path="/opt/zextras/lib/ext/carbonio/zal.jar"
-zextras_path="/opt/zextras/lib/ext/carbonio/zextras.jar"
+zextras_path="/opt/zextras/lib/ext/carbonio/carbonio.jar"
 carbonio_jars="/opt/zextras/lib/jars/*"
 
 call_cli() {
@@ -25,7 +25,7 @@ call_cli() {
   else
      exec /opt/zextras/bin/zmjava \
       -cp "${carbonio_jars}:${zal_path}:${zextras_path}" \
-      -Xmx128m org.openzal.zal.tools.ConsoleBoot com.zextras.zxcli.ZxSuiteCLI \
+      -Xmx128m org.openzal.zal.tools.ConsoleBoot com.zextras.cli.AdvancedCLI \
       --columns "$(tput cols)" \
       $@
   fi
