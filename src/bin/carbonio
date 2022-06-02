@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
+# shellcheck disable=SC1091
+# shellcheck disable=SC2068
+
+if [ "$(whoami)" != "zextras" ]; then
+  echo "Please run as zextras user"
+  exit 1
+fi
+
+source /opt/zextras/bin/zmshutil || exit 1
+
+zal_path="/opt/zextras/lib/ext/carbonio/zal.jar"
+zextras_path="/opt/zextras/lib/ext/carbonio/carbonio.jar"
+carbonio_jars="/opt/zextras/lib/jars/*"
+
+call_cli() {
+  if [ ! -f "${zal_path}" ] || [ ! -f "${zextras_path}" ]; then
+    exec /opt/zextras/bin/zmjava com.zimbra.cs.account.ProvUtil $@
+  else
+    exec /opt/zextras/bin/zmjava \
+      -cp "${carbonio_jars}:${zal_path}:${zextras_path}" \
+      -Xmx128m org.openzal.zal.tools.ConsoleBoot com.zextras.cli.AdvancedCLI \
+      --columns "$(tput cols)" \
+      $@
+  fi
+}
+
+call_cli $@
