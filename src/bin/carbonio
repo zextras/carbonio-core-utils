@@ -6,7 +6,6 @@
 
 # shellcheck disable=SC1091
 # shellcheck disable=SC2068
-# shellcheck disable=SC2086
 
 if [ "$(whoami)" != "zextras" ]; then
   echo "Please run as zextras user"
@@ -21,9 +20,9 @@ carbonio_jars="/opt/zextras/lib/jars/*"
 
 call_cli() {
   if [ ! -f "${zal_path}" ] || [ ! -f "${zextras_path}" ]; then
-     exec /opt/zextras/bin/zmjava com.zimbra.cs.account.ProvUtil $@
+    exec /opt/zextras/bin/zmjava com.zimbra.cs.account.ProvUtil $@
   else
-     exec /opt/zextras/bin/zmjava \
+    exec /opt/zextras/bin/zmjava \
       -cp "${carbonio_jars}:${zal_path}:${zextras_path}" \
       -Xmx128m org.openzal.zal.tools.ConsoleBoot com.zextras.cli.AdvancedCLI \
       --columns "$(tput cols)" \
@@ -32,5 +31,3 @@ call_cli() {
 }
 
 call_cli $@
-
-
