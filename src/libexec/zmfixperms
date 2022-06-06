@@ -257,6 +257,12 @@ if [ -d /opt/zextras ]; then
       find /opt/zextras/conf/templates/ -type d -exec chmod 755 {} \;
       find /opt/zextras/conf/templates/ -type f -exec chmod 644 {} \;
     fi
+
+    if [ -d /opt/zextras/conf/templates_custom/ ]; then
+      chown -R ${zimbra_user}:${zextras_group} /opt/zextras/conf/templates_custom
+      find /opt/zextras/conf/templates_custom/ -type d -exec chmod 755 {} \;
+      find /opt/zextras/conf/templates_custom/ -type f -exec chmod 644 {} \;
+    fi
   fi
 
   if [ -d /opt/zextras/documentation ]; then
