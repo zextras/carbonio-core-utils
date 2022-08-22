@@ -45,8 +45,8 @@ Where valid command/option combinations are:
   verifycrtchain <ca_chain_file> <certfile>
   verifycrtkey   <priv_key>      <certfile>
 
-  viewdeployedcrt    [all|ldap|mailboxd|mta|proxy|imapd]
-  checkcrtexpiration [all|ldap|mailboxd|mta|proxy|imapd] [-days days]
+  viewdeployedcrt    [all|ldap|mailboxd|mta|proxy]
+  checkcrtexpiration [all|ldap|mailboxd|mta|proxy] [-days days]
   addcacert <certfile>
   migrate
 
@@ -111,7 +111,7 @@ The set of services to be used for a request. The service names can be
 specified as comma separate values or the B<-deploy> argument can be
 used multiple times.
 
-Valid services are 'all' or any of: ldap,mailboxd,mta,proxy,imapd.
+Valid services are 'all' or any of: ldap,mailboxd,mta,proxy.
 
 =item B<-subject> I<subject>
 
@@ -543,16 +543,6 @@ use lib qw(/opt/zextras/common/lib/perl5 /opt/zextras/zimbramon/lib/);
             $self->Keytool, @args,
             "-keystore",    $self->sslFiles("keystore"),
             "-storepass",   $self->lc->get("mailboxd_keystore_password"),
-            "2>&1",
-        );
-    }
-
-    sub runImapdKeytool {
-        my ( $self, @args ) = @_;
-        return $self->run(
-            $self->Keytool, @args,
-            "-keystore",    $self->sslFiles("imapd_keystore"),
-            "-storepass",   $self->lc->get("imapd_keystore_password"),
             "2>&1",
         );
     }
@@ -1130,10 +1120,6 @@ use lib qw(/opt/zextras/common/lib/perl5 /opt/zextras/zimbramon/lib/);
                       or return undef;
                     $self->_copy( $keyf, $dkey )
                       or return undef;
-                    if ( $name eq "imapd" ) {
-                        $self->createimapdkeystore($type)
-                          or return undef;
-                    }
                 }
             }
             print("** NOTE: restart services to use the new certificates.\n");
@@ -1599,7 +1585,7 @@ use lib qw(/opt/zextras/common/lib/perl5 /opt/zextras/zimbramon/lib/);
     sub viewdeployedcrt {
         my ( $self, $sname ) = ( shift, @_ );
 
-        my $usage = "viewdeployedcrt [all|ldap|mailboxd|mta|proxy|imapd]";
+        my $usage = "viewdeployedcrt [all|ldap|mailboxd|mta|proxy]";
         warn("DEBUG: viewdeployedcrt(@_)\n") if $self->Debug;
 
         if ($sname) {
@@ -1645,7 +1631,7 @@ use lib qw(/opt/zextras/common/lib/perl5 /opt/zextras/zimbramon/lib/);
 
         # ldap => ldap_crt, ...
         my %svc;
-        foreach my $s (qw(ldap mailboxd mta proxy imapd)) {
+        foreach my $s (qw(ldap mailboxd mta proxy)) {
             $svc{$s} = $nofiles ? 1 : $self->sslFiles( $s . "_crt" );
         }
         return ( $sname eq "all" ) ? %svc : ( $sname => $svc{$sname} );
@@ -1693,7 +1679,7 @@ use lib qw(/opt/zextras/common/lib/perl5 /opt/zextras/zimbramon/lib/);
     sub checkcrtexpiration {
         my ( $self, $sname ) = ( shift, @_ );
 
-        my $usage = "checkcrtexpiration [all|ldap|mailboxd|mta|proxy|imapd]";
+        my $usage = "checkcrtexpiration [all|ldap|mailboxd|mta|proxy]";
         warn("DEBUG: checkcrtexpiration(@_)\n") if $self->Debug;
 
         if ($sname) {
@@ -1798,67 +1784,6 @@ use lib qw(/opt/zextras/common/lib/perl5 /opt/zextras/zimbramon/lib/);
         # - store both private key and certificate in the keystore
         my $pkcsf = $self->sslFiles("pkcs");
         my $kpass = $self->lc->get("mailboxd_keystore_password");
-        print("** Creating file '$pkcsf'\n");
-        @out = $self->run(
-            $self->Openssl, "pkcs12", "-inkey", $keyf,
-            "-in",          $crtf,    "-name",  $server,
-            "-export",      "-out",   $pkcsf,   "-passout",
-            "pass:$kpass",  "2>&1"
-        );
-        if ( $? != 0 or !-s $pkcsf ) {
-            $self->error( "openssl pkcs12 export to '$pkcsf' failed(",
-                $? >> 8, "):\n", @out );
-            return undef;
-        }
-
-        print("** Creating keystore '$keystore'\n");
-        my $cpath =
-"/opt/zextras/lib/ext/com_zimbra_cert_manager/com_zimbra_cert_manager.jar";
-        my $class = "com.zimbra.cert.MyPKCS12Import";
-
-        @out = $self->run(
-            $self->Java, "-classpath", $cpath, $class,
-            $pkcsf,      $keystore,    $kpass, $kpass,
-            "2>&1",
-        );
-        if ( $? != 0 or !-s $keystore ) {
-            $self->error( "$class to '$pkcsf' returned non-zero(",
-                $? >> 8, "):\n", @out );
-            return undef;
-        }
-
-        return 1;
-    }
-
-    # createimapdkeystore <self|comm>
-    sub createimapdkeystore {
-        my ( $self, $type ) = ( shift, @_ );
-        warn("DEBUG: createimapdkeystore(@_)\n") if $self->Debug;
-        $self->_checkType($type) or return undef;
-
-        my $keyf = $self->sslFiles("imapd_key");
-        my $crtf = $self->sslFiles("imapd_crt");
-        $self->_checkFiles( $keyf, $crtf ) or return undef;
-
-        # clean up any previous settings first
-        my $keystore = $self->sslFiles("imapd_keystore");
-        my $server   = $self->lc->get("mailboxd_server");
-        $server ||= $self->lc->get("zimbra_server_hostname");
-
-        my @out;
-        my @cmd = ( "-delete", "-alias", $server );
-        if ( -f $keystore ) {
-            @out = $self->runImapdKeytool(@cmd);
-            if ( $? != 0 and !grep { /does not exist/ } @out ) {
-                $self->error( "imapd keytool(@cmd) returned non-zero(",
-                    $? >> 8, "):\n", @out );
-            }
-        }
-
-        # loading keys and certificates via PKCS12
-        # - store both private key and certificate in the keystore
-        my $pkcsf = $self->sslFiles("pkcs");
-        my $kpass = $self->lc->get("imapd_keystore_password");
         print("** Creating file '$pkcsf'\n");
         @out = $self->run(
             $self->Openssl, "pkcs12", "-inkey", $keyf,
@@ -2199,8 +2124,6 @@ use lib qw(/opt/zextras/common/lib/perl5 /opt/zextras/zimbramon/lib/);
                 # OLD: in_ssl_conf and zimbra_cert_ssl_conf
                 ssl_conf_in   => $confdir . "/zmssl.cnf.in",
                 ssl_conf_cert => $confdir . "/zmssl.cnf",
-                imapd_crt     => $confdir . "/imapd.crt",
-                imapd_key     => $confdir . "/imapd.key",
                 ldap_crt      => $confdir . "/slapd.crt",
                 ldap_key      => $confdir . "/slapd.key",
                 mta_crt       => $confdir . "/smtpd.crt",
@@ -2210,9 +2133,6 @@ use lib qw(/opt/zextras/common/lib/perl5 /opt/zextras/zimbramon/lib/);
 
                 cacerts        => $self->lc->get("mailboxd_truststore"),
                 keystore       => $self->lc->get("mailboxd_keystore"),
-                imapd_keystore => $self->lc->get("imapd_keystore"),
-                imapd_keystore_password =>
-                  $self->lc->get("imapd_keystore_password"),
 
                 # deployed CA
                 conf_ca_crt => "$confcad/ca.pem",
@@ -2446,7 +2366,7 @@ use lib qw(/opt/zextras/common/lib/perl5 /opt/zextras/zimbramon/lib/);
         # xargs     - arrayref w/list of number of extra args allowed
         # xinfo     - useful error info about the extra args allowed
         my @create_opts = qw(new keysize=i digest=s subject=s);
-        my $services    = "[all|ldap|mailboxd|mta|proxy|imapd]";
+        my $services    = "[all|ldap|mailboxd|mta|proxy]";
 
         my %commands = (
 
