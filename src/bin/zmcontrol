@@ -144,7 +144,7 @@ my %REMOTECOMMANDS = (
 
 $| = 1;
 
-unless ( getopts( 'vhH:', \%GlobalOpts ) ) { usage(); }
+unless ( getopts( 'VvhH:', \%GlobalOpts ) ) { usage(); }
 
 if ( !$GlobalOpts{H} ) {
     $GlobalOpts{H} = $localHostName;
@@ -153,6 +153,7 @@ if ( !$GlobalOpts{H} ) {
 
 if ( $GlobalOpts{h} ) { usage(); }
 if ( $GlobalOpts{v} ) { displayVersion(); exit 0; }
+if ( $GlobalOpts{V} ) { displayPackagesVersion(); exit 0; }
 
 # Commands: start, stop, restart and status
 my $command = $ARGV[0];
@@ -559,12 +560,44 @@ sub getHostName {
 }
 
 sub displayVersion {
+    my $zal_path =     "/opt/zextras/lib/ext/carbonio/zal.jar";
+    my $zextras_path = "/opt/zextras/lib/ext/carbonio/carbonio.jar";
+
+    my $additional_zal_version = "";
+    if (-e $zal_path and -e $zextras_path) {
+         $additional_zal_version = `carbonio core getVersion`;
+        chomp $additional_zal_version;
+    }
+
     my $release = qx(cat /opt/zextras/.version);
     chomp $release;
-    my $string = "Release $release";
-    $string .=
-      ( ( -f "/opt/zextras/bin/zmbackupquery" ) ? "" : " Community Edition" );
-    print "$string.\n";
+
+    my $output = "Carbonio Release $release";
+    if (! ($additional_zal_version eq "")) {
+        $output .= "\nAdvance module version:\n" . $additional_zal_version
+    }
+    print "$output.\n";
+}
+
+sub displayPackagesVersion {
+    my $release = qx(cat /opt/zextras/.version);
+    chomp $release;
+    my $distro = `cat /etc/os-release | grep ID= | head -n1 | cut -f2 -d'='`;
+
+    my $packages = "";
+    if ($distro eq "ubuntu") {
+        $packages = `dpkg-query -W -f'${Package} ${Version}\n' carbonio*`;
+    }
+    if ($distro eq "rhel" or $distro eq "rocky" or $distro eq "centos") {
+         # TODO get package list for rpm/dhf based distros
+    }
+
+    my $output = "Carbonio Release $release";
+    if (! ($packages eq "")) {
+        $output .= "\n" . "Installed packages: " . "\n";
+    }
+
+    print "$output.\n"
 }
 
 sub checkAvailableSpace {
