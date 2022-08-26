@@ -580,6 +580,8 @@ sub displayVersion {
 }
 
 sub displayPackagesVersion {
+    my $zal_path =     "/opt/zextras/lib/ext/carbonio/zal.jar";
+    my $zextras_path = "/opt/zextras/lib/ext/carbonio/carbonio.jar";
     my $release = qx(cat /opt/zextras/.version);
     chomp $release;
     my $distro = `cat /etc/os-release | grep ID= | head -n1 | cut -f2 -d'='`;
@@ -589,10 +591,13 @@ sub displayPackagesVersion {
         $packages = `dpkg-query -W -f'${Package} ${Version}\n' carbonio*`;
     }
     if ($distro eq "rhel" or $distro eq "rocky" or $distro eq "centos") {
-         # TODO get package list for rpm/dhf based distros
+        $packages = `dnf list installed | grep carbonio* | awk -F' ' '{{ print $1 " " $2 }}'`
     }
 
     my $output = "Carbonio Release $release";
+    if (-e $zal_path and -e $zextras_path) {
+        $output .= "\n" . "Advanced version installed."
+    }
     if (! ($packages eq "")) {
         $output .= "\n" . "Installed packages: " . "\n";
     }
