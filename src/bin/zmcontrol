@@ -575,7 +575,7 @@ sub displayVersion {
 
     my $output = "Carbonio Release $release";
     if (! ($additional_zal_version eq "")) {
-        $output .= "\nAdvance module version:\n" . $additional_zal_version
+        $output .= "\nAdvanced module version:\n" . $additional_zal_version
     }
     print "$output.\n";
 }
