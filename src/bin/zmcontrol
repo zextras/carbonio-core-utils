@@ -6,6 +6,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 use strict;
+use warnings;
 
 my $id = qx(id -u -n);
 chomp $id;
@@ -141,6 +142,9 @@ my %REMOTECOMMANDS = (
     #"maintenance" => "maintenance",
     "status" => "status",
 );
+
+my $zal_path =     "/opt/zextras/lib/ext/carbonio/zal.jar";
+my $zextras_path = "/opt/zextras/lib/ext/carbonio/carbonio.jar";
 
 $| = 1;
 
@@ -560,12 +564,9 @@ sub getHostName {
 }
 
 sub displayVersion {
-    my $zal_path =     "/opt/zextras/lib/ext/carbonio/zal.jar";
-    my $zextras_path = "/opt/zextras/lib/ext/carbonio/carbonio.jar";
-
     my $additional_zal_version = "";
     if (-e $zal_path and -e $zextras_path) {
-         $additional_zal_version = `carbonio core getVersion`;
+        $additional_zal_version = `carbonio core getVersion`;
         chomp $additional_zal_version;
     }
 
@@ -580,29 +581,28 @@ sub displayVersion {
 }
 
 sub displayPackagesVersion {
-    my $zal_path =     "/opt/zextras/lib/ext/carbonio/zal.jar";
-    my $zextras_path = "/opt/zextras/lib/ext/carbonio/carbonio.jar";
     my $release = qx(cat /opt/zextras/.version);
     chomp $release;
     my $distro = `cat /etc/os-release | grep ID= | head -n1 | cut -f2 -d'='`;
+    chomp $distro;
 
     my $packages = "";
     if ($distro eq "ubuntu") {
-        $packages = `dpkg-query -W -f'${Package} ${Version}\n' carbonio*`;
+        $packages = qx'dpkg-query -W -f\'${Package} ${Version}\n\' carbonio\*';
     }
-    if ($distro eq "rhel" or $distro eq "rocky" or $distro eq "centos") {
-        $packages = `dnf list installed | grep carbonio* | awk -F' ' '{{ print $1 " " $2 }}'`
+    if ($distro eq 'rhel' or $distro eq 'rocky' or $distro eq 'centos') {
+        $packages = qx'dnf list installed | grep carbonio* | awk -F\' \' \'{{ print $1 " " $2 }}\''
     }
 
-    my $output = "Carbonio Release $release";
+    my $output = "Carbonio Release $release\n";
     if (-e $zal_path and -e $zextras_path) {
-        $output .= "\n" . "Advanced version installed."
+        $output .= "Advanced version installed"
     }
     if (! ($packages eq "")) {
-        $output .= "\n" . "Installed packages: " . "\n";
+        $output .= "Installed packages:\n" . "$packages";
     }
 
-    print "$output.\n"
+    print "$output"
 }
 
 sub checkAvailableSpace {
