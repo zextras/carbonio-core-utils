@@ -576,7 +576,7 @@ sub displayVersion {
     if (! ($additional_zal_version eq "")) {
         $output .= "\nAdvanced module version:\n" . $additional_zal_version
     }
-    print "$output.\n";
+    print "$output\n";
 }
 
 sub displayPackagesVersion {
@@ -589,8 +589,8 @@ sub displayPackagesVersion {
     if ($distro eq "ubuntu") {
         $packages = qx'dpkg-query -W -f\'${Package} ${Version}\n\' carbonio\*';
     }
-    if ($distro eq 'rhel' or $distro eq 'rocky' or $distro eq 'centos') {
-        $packages = qx'dnf list installed | grep carbonio* | awk -F\' \' \'{{ print $1 " " $2 }}\''
+    if ($distro eq '"rhel"' or $distro eq '"rocky"' or $distro eq '"centos"') {
+        $packages = qx'dnf list installed 2>/dev/null | grep carbonio* | awk -F\' \' \'{{ print $1 " " $2 }}\''
     }
 
     my $output = "Carbonio Release $release\n";
@@ -598,7 +598,9 @@ sub displayPackagesVersion {
         $output .= "Advanced version installed"
     }
     if (! ($packages eq "")) {
-        $output .= "Installed packages:\n" . "$packages";
+        $output .= "\nInstalled packages:\n" . "$packages";
+    } else {
+        $output .= "\n";
     }
 
     print "$output"
