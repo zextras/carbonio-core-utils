@@ -45,8 +45,6 @@ my %startorder = (
     "mailbox"          => 50,
     "memcached"        => 60,
     "proxy"            => 70,
-    "amavis"           => 75,
-    "antispam"         => 80,
     "antivirus"        => 90,
     "opendkim"         => 100,
     "cbpolicyd"        => 120,
@@ -64,9 +62,7 @@ my %stoporder = (
     "mailbox"          => 40,
     "memcached"        => 50,
     "proxy"            => 60,
-    "antispam"         => 70,
     "antivirus"        => 80,
-    "amavis"           => 85,
     "opendkim"         => 90,
     "cbpolicyd"        => 110,
     "mta"              => 140,
@@ -79,9 +75,7 @@ my %stoporder = (
 );
 
 my %allservices = (
-    "amavis"           => "/opt/zextras/bin/zmamavisdctl",
     "antivirus"        => "/opt/zextras/bin/zmantivirusctl",
-    "antispam"         => "/opt/zextras/bin/zmantispamctl",
     "opendkim"         => "/opt/zextras/bin/zmopendkimctl",
     "mta"              => "/opt/zextras/bin/zmmtactl",
     "mailbox"          => "/opt/zextras/bin/zmstorectl",
@@ -99,10 +93,9 @@ my %allservices = (
 );
 
 my %rewrites = (
-    "antivirus" => "antivirus amavis",
-    "antispam"  => "antispam amavis",
+    "antivirus" => "antivirus",
     "opendkim"  => "opendkim",
-    "mta"       => "amavis antispam antivirus opendkim mta sasl",
+    "mta"       => "antivirus opendkim mta sasl",
     "mailbox"   => "webxml mailbox",
     "proxy"     => "proxy",
 );
@@ -233,6 +226,12 @@ sub doStatus {
         }elsif ( $_ eq "service-discover" ){
             $rc = system("systemctl is-active service-discover.service >/dev/null 2>&1");
             $stat = sprintf "\t%-20s %10s\n", $_, ($rc) ? "Stopped" : "Running";
+        }elsif ( $_ eq "mecha" ){
+            $rc = system("systemctl is-active carbonio-mecha.service >/dev/null 2>&1");
+            $stat = sprintf "\t%-20s %10s\n", $_, ($rc) ? "Stopped" : "Running";
+        }elsif ( $_ eq "rspamd" ){
+            $rc = system("systemctl is-active carbonio-rspamd.service >/dev/null 2>&1");
+            $stat = sprintf "\t%-20s %10s\n", $_, ($rc) ? "Stopped" : "Running";
         }
         else {
             $stat = sprintf "\t%-20s %10s\n", $_, ($rc) ? "Stopped" : "Running";
@@ -341,6 +340,7 @@ sub doStartup {
             print "\tStarting $_ webapp...";
         }
         elsif ( $_ eq "service-discover" ){ next; }
+        elsif ( $_ eq "mecha" || $_ eq "rspamd" ){ next; }
         else {
             print "\tStarting $_...";
         }
@@ -378,6 +378,7 @@ sub doShutdown {
         {
             next;
         }
+        if ( $_ eq "mecha" ) { next; }
         if ( $_ eq "mta" && !( -x "/opt/zextras/common/sbin/postfix" ) ) {
             next;
         }

@@ -5,11 +5,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-SCRIPTS="zmamavisdctl zmclamdctl zmfreshclamctl"
-
-if [ ! -x "/opt/zextras/common/sbin/amavisd" ]; then
-  exit 0
-fi
+SCRIPTS="zmclamdctl zmfreshclamctl"
 
 source /opt/zextras/.bashrc
 
