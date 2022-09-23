@@ -142,9 +142,12 @@ my %REMOTECOMMANDS = (
     "status" => "status",
 );
 
+my $zal_path =     "/opt/zextras/lib/ext/carbonio/zal.jar";
+my $zextras_path = "/opt/zextras/lib/ext/carbonio/carbonio.jar";
+
 $| = 1;
 
-unless ( getopts( 'vhH:', \%GlobalOpts ) ) { usage(); }
+unless ( getopts( 'VvhH:', \%GlobalOpts ) ) { usage(); }
 
 if ( !$GlobalOpts{H} ) {
     $GlobalOpts{H} = $localHostName;
@@ -153,6 +156,7 @@ if ( !$GlobalOpts{H} ) {
 
 if ( $GlobalOpts{h} ) { usage(); }
 if ( $GlobalOpts{v} ) { displayVersion(); exit 0; }
+if ( $GlobalOpts{V} ) { displayPackagesVersion(); exit 0; }
 
 # Commands: start, stop, restart and status
 my $command = $ARGV[0];
@@ -559,12 +563,47 @@ sub getHostName {
 }
 
 sub displayVersion {
+    my $additional_zal_version = "";
+    if (-e $zal_path and -e $zextras_path) {
+        $additional_zal_version = `carbonio core getVersion`;
+        chomp $additional_zal_version;
+    }
+
     my $release = qx(cat /opt/zextras/.version);
     chomp $release;
-    my $string = "Release $release";
-    $string .=
-      ( ( -f "/opt/zextras/bin/zmbackupquery" ) ? "" : " Community Edition" );
-    print "$string.\n";
+
+    my $output = "Carbonio Release $release";
+    if (! ($additional_zal_version eq "")) {
+        $output .= "\nAdvanced module version:\n" . $additional_zal_version
+    }
+    print "$output\n";
+}
+
+sub displayPackagesVersion {
+    my $release = qx(cat /opt/zextras/.version);
+    chomp $release;
+    my $distro = `cat /etc/os-release | grep ID= | head -n1 | cut -f2 -d'='`;
+    chomp $distro;
+
+    my $packages = "";
+    if ($distro eq "ubuntu") {
+        $packages = qx'dpkg-query -W -f\'${Package} ${Version}\n\' carbonio\*';
+    }
+    if ($distro eq '"rhel"' or $distro eq '"rocky"' or $distro eq '"centos"') {
+        $packages = qx'dnf list installed 2>/dev/null | grep carbonio* | awk -F\' \' \'{{ print $1 " " $2 }}\''
+    }
+
+    my $output = "Carbonio Release $release\n";
+    if (-e $zal_path and -e $zextras_path) {
+        $output .= "Advanced version installed"
+    }
+    if (! ($packages eq "")) {
+        $output .= "\nInstalled packages:\n" . "$packages";
+    } else {
+        $output .= "\n";
+    }
+
+    print "$output"
 }
 
 sub checkAvailableSpace {
@@ -629,6 +668,7 @@ sub usage {
     print "$0 [-v -h -H <host>] command [args]\n";
     print "\n";
     print "\t-v:	display version\n";
+    print "\t-V:    display advanced version information\n";
     print "\t-h:	print usage statement\n";
     print "\t-H:	Host name (localhost)\n";
     print "\n";
