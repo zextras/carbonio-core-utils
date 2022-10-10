@@ -92,6 +92,14 @@ for i in master.cf master.cf.in bysender bysender.lmdb tag_as_foreign.re tag_as_
   fi
 done
 
+if [ -d /opt/zextras/common/etc/rspamd ]; then
+  chown -R carbonio-rspamd:carbonio-rspamd /opt/zextras/common/etc/rspamd
+fi
+
+if [ -d /opt/zextras/common/etc/mecha ]; then
+  chown -R carbonio-mecha:carbonio-mecha /opt/zextras/common/etc/mecha
+fi
+
 if [ -f /opt/zextras/common/conf/main.cf ]; then
   chown -f ${root_user}:${root_group} /opt/zextras/common/conf/main.cf
 fi
@@ -297,6 +305,18 @@ fi
 if [ -f /opt/zextras/data/tmp/current.csr ]; then
   chown ${zextras_user}:${zextras_group} /opt/zextras/data/tmp/current.csr
   chmod 644 /opt/zextras/data/tmp/current.csr
+fi
+
+#fix mecha things
+
+if [ -d /opt/zextras/data/mecha ]; then
+  chown -R carbonio-mecha:carbonio-mecha /opt/zextras/data/mecha
+  chmod 755 /opt/zextras/data/mecha
+fi
+
+if [ -d /opt/zextras/data/rspamd ]; then
+  chown -R carbonio-rspamd:carbonio-rspamd /opt/zextras/data/rspamd
+  chmod 644 /opt/zextras/data/rspamd
 fi
 
 # Handle nginx path problems bug#42156
