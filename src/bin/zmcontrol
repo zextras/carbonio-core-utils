@@ -232,6 +232,9 @@ sub doStatus {
         }elsif ( $_ eq "rspamd" ){
             $rc = system("systemctl is-active carbonio-rspamd.service >/dev/null 2>&1");
             $stat = sprintf "\t%-20s %10s\n", $_, ($rc) ? "Stopped" : "Running";
+        }elsif ( $_ eq "service-discover" ){
+            $rc = system("systemctl is-active service-discover.service >/dev/null 2>&1");
+            $stat = sprintf "\t%-20s %10s\n", $_, ($rc) ? "Stopped" : "Running"; 
         }
         else {
             $stat = sprintf "\t%-20s %10s\n", $_, ($rc) ? "Stopped" : "Running";
@@ -339,8 +342,7 @@ sub doStartup {
         {
             print "\tStarting $_ webapp...";
         }
-        elsif ( $_ eq "service-discover" ){ next; }
-        elsif ( $_ eq "mecha" || $_ eq "rspamd" ){ next; }
+        elsif ( $_ eq "mecha" || $_ eq "rspamd" || $_ eq "service-discover"){ next; }
         else {
             print "\tStarting $_...";
         }
@@ -378,7 +380,7 @@ sub doShutdown {
         {
             next;
         }
-        if ( $_ eq "mecha" ) { next; }
+        if ( $_ eq "mecha" || $_ eq "rspamd" || $_ eq "service-discover" ) { next; }
         if ( $_ eq "mta" && !( -x "/opt/zextras/common/sbin/postfix" ) ) {
             next;
         }

@@ -17,7 +17,7 @@ fi
 source $(dirname $0)/zmshutil || exit 1
 zmsetvars
 
-pidfile=${zimbra_log_directory}/clamd.pid
+pidfile="/opt/zextras/data/clamav/clamd.pid"
 
 if [ ! -d "/opt/zextras/data/clamav/db" ]; then
   mkdir -p /opt/zextras/data/clamav/db
