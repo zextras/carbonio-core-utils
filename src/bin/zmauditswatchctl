@@ -10,7 +10,7 @@ if [ x$(whoami) != xzextras ]; then
   exit 1
 fi
 
-source $(dirname $0)/zmshutil || exit 1
+source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
 configfile=/opt/zextras/conf/auditswatchrc

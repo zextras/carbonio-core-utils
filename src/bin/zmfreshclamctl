@@ -14,7 +14,7 @@ if [ ! -x "/opt/zextras/common/bin/freshclam" ]; then
   exit 0
 fi
 
-source $(dirname $0)/zmshutil || exit 1
+source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
 fpidfile=${zimbra_log_directory}/freshclam.pid

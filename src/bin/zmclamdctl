@@ -14,7 +14,7 @@ if [ ! -x "/opt/zextras/common/sbin/clamd" ]; then
   exit 0
 fi
 
-source $(dirname $0)/zmshutil || exit 1
+source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
 pidfile=${zimbra_log_directory}/clamd.pid
