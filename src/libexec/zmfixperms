@@ -266,7 +266,7 @@ if [ -d /opt/zextras ]; then
   fi
 
   if [ -d /opt/zextras/docs ]; then
-    printMsg "Fixing permissions on /opt/zextras/docs"
+    printMsg "Fixing permissions and ownership on /opt/zextras/docs"
     if [ -d /opt/zextras/docs/conf ]; then
         docs_owner=$(stat -c %U /opt/zextras/docs/conf)
       else
