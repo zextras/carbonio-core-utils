@@ -266,9 +266,15 @@ if [ -d /opt/zextras ]; then
   fi
 
   if [ -d /opt/zextras/docs ]; then
-    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/docs
-    find /opt/zextras/docs -type d -exec chmod 755 {} \;
-    find /opt/zextras/docs -type f -exec chmod 644 {} \;
+    printMsg "Fixing permissions on /opt/zextras/docs"
+    if [ -d /opt/zextras/docs/conf ]; then
+      docs_owner=$(stat -c %U /opt/zextras/docs/conf)
+      else
+        docs_owner=carbonio-docs-editor
+      chown "${docs_owner}": -R /opt/zextras/docs
+      find /opt/zextras/docs -type d -exec chmod 755 {} \;
+      find /opt/zextras/docs -type f -exec chmod 644 {} \;
+    fi
   fi
 
   if [ -d /opt/zextras/documentation ]; then
