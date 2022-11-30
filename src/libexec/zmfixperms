@@ -268,13 +268,13 @@ if [ -d /opt/zextras ]; then
   if [ -d /opt/zextras/docs ]; then
     printMsg "Fixing permissions on /opt/zextras/docs"
     if [ -d /opt/zextras/docs/conf ]; then
-      docs_owner=$(stat -c %U /opt/zextras/docs/conf)
+        docs_owner=$(stat -c %U /opt/zextras/docs/conf)
       else
-        docs_owner=carbonio-docs-editor
-      chown "${docs_owner}": -R /opt/zextras/docs
+        docs_owner=zextras
+    fi
+      chown -R ${docs_owner}: /opt/zextras/docs
       find /opt/zextras/docs -type d -exec chmod 755 {} \;
       find /opt/zextras/docs -type f -exec chmod 644 {} \;
-    fi
   fi
 
   if [ -d /opt/zextras/documentation ]; then
