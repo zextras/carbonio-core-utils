@@ -273,8 +273,8 @@ if [ -d /opt/zextras ]; then
         docs_owner=carbonio-docs-editor
     fi
       chown -R ${docs_owner}: /opt/zextras/docs
-      find /opt/zextras/docs/ -type d -exec chmod 755 {} \;
-      find /opt/zextras/docs/ -type f -exec chmod 644 {} \;
+      find /opt/zextras/docs -type d -exec chmod 755 {} \;
+      find /opt/zextras/docs -type f -exec chmod 644 {} \;
   fi
 
   if [ -d /opt/zextras/documentation ]; then
