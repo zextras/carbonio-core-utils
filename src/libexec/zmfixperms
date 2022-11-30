@@ -270,7 +270,7 @@ if [ -d /opt/zextras ]; then
     if [ -d /opt/zextras/docs/conf ]; then
         docs_owner=$(stat -c %U /opt/zextras/docs/conf)
       else
-        docs_owner=zextras
+        docs_owner=carbonio-docs-editor
     fi
       chown -R ${docs_owner}: /opt/zextras/docs
       find /opt/zextras/docs -type d -exec chmod 755 {} \;
