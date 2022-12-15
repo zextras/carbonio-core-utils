@@ -47,7 +47,7 @@ case "$1" in
   if [ "x$2" = "x" ]; then
     /opt/zextras/bin/zmtlsctl >/dev/null 2>&1
   fi
-  sudo /opt/zextras/libexec/zmmailboxdmgr status
+  /opt/zextras/libexec/zmmailboxdmgr status
   if [ $? = 0 ]; then
     echo "mailboxd already running."
     exit 0
@@ -70,7 +70,7 @@ case "$1" in
     mailboxd_java_options="${mailboxd_java_options} -Dsun.net.inetaddr.ttl=${networkaddress_cache_ttl}"
   fi
   echo -n "Starting mailboxd..."
-  sudo /opt/zextras/libexec/zmmailboxdmgr start \
+  /opt/zextras/libexec/zmmailboxdmgr start \
     -Dfile.encoding=UTF-8 ${mailboxd_java_options} ${spnegoJavaOptions} -Xms${javaXms}m \
     -Xmx${javaXmx}m </dev/null >/dev/null 2>&1
   status=$?
@@ -99,13 +99,13 @@ case "$1" in
 
 'kill' | 'stop')
   echo -n "Stopping mailboxd..."
-  sudo /opt/zextras/libexec/zmmailboxdmgr status
+  /opt/zextras/libexec/zmmailboxdmgr status
   if [ $? != 0 ]; then
     echo "mailboxd is not running."
     exit 0
   fi
   /opt/zextras/bin/zmthrdump -i -o /opt/zextras/log/stacktrace.$$.$(date +%Y%m%d%H%M%S) 2>/dev/null
-  sudo /opt/zextras/libexec/zmmailboxdmgr stop
+  /opt/zextras/libexec/zmmailboxdmgr stop
   if [ $? = 0 ]; then
     echo "done."
   else
@@ -122,7 +122,7 @@ case "$1" in
 
 'status')
   echo -n "mailboxd is "
-  sudo /opt/zextras/libexec/zmmailboxdmgr status
+  /opt/zextras/libexec/zmmailboxdmgr status
   if [ $? = 0 ]; then
     echo "running."
     exit 0
