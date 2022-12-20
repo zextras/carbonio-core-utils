@@ -267,7 +267,8 @@ if [ -d /opt/zextras ]; then
 
   if [ -d /opt/zextras/docs ]; then
     printMsg "Fixing permissions and ownership on /opt/zextras/docs"
-    chown -R carbonio-docs-editor /opt/zextras/docs
+    chown carbonio-docs-editor: /opt/zextras/docs
+    chmod 755 /opt/zextras/docs
   fi
 
   if [ -d /opt/zextras/documentation ]; then
