@@ -38,6 +38,10 @@ my $ldapHere      = isLdapLocal();
 my $services;
 my %devicesChecked;
 my %serviceStatusList;
+# This will break a lot of legacy codebase. Sorry not sorry
+my %serviceNames = (
+    "zmconfigd" => "config service"
+);
 my %startorder = (
     "directory-server" => 0,
     "zmconfigd"        => 10,
@@ -227,11 +231,7 @@ sub doStatus {
             $stat = sprintf "\t%-20s %10s\n", $_, ($rc) ? "Stopped" : "Running";
         }
         else {
-            my $service_name = $_;
-            # Rename the "zmconfigd" service
-            if ($service_name eq "zmconfigd") {
-                $service_name = "config template"
-            }
+            my $service_name = renameServices($_);
             $stat = sprintf "\t%-20s %10s\n", $service_name, ($rc) ? "Stopped" : "Running";
         }
         print "$stat";
@@ -336,7 +336,8 @@ sub doStartup {
         }
         elsif ( $_ eq "service-discover" ){ next; }
         else {
-            renameService($_)
+            my $service_name = renameServices($_);
+            print "\tStarting $service_name...";
         }
         unless ( -x "$allservices{$_}" ) {
             print "skipped.\n\t\t$allservices{$_} missing or not executable.\n";
@@ -382,7 +383,8 @@ sub doShutdown {
             print "\tStopping $_ webapp...";
         }
         else {
-            renameService($_)
+            my $service_name = renameServices($_);
+            print "\tStopping $service_name...";
         }
         unless ( -x "$allservices{$_}" ) {
             print "skipped.\n\t\t$allservices{$_} missing or not executable.\n";
@@ -654,13 +656,15 @@ sub hasAvailableSpace() {
     return ( $avail > $freeMbytes ) ? 1 : undef;
 }
 
-sub renameService() {
-    my ($start_name) = @_;
-    # Rename "zmconfigd" to something more user-friendly
-    if ($start_name eq "zmconfigd") {
-        $start_name = "config template"
+sub renameServices {
+    my ($service_id) = @_;
+
+    my $service_name = $serviceNames{$service_id};
+    if ($service_name eq "") {
+        $service_name = $service_id;
     }
-    print "\tStarting $start_name...";
+
+    return $service_name;
 }
 
 sub usage {
