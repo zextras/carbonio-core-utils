@@ -211,7 +211,7 @@ sub doStatus {
     my $status = 0;
     print "Host $localHostName\n";
     foreach ( sort keys %{$services} ) {
-        if ( $_ eq "directory-server" || $_ eq "zimlet" || $_ eq "zimbraAdmin" || $_ eq "zimbra" ) { next; }
+        if ( $_ eq "zimlet" || $_ eq "zimbraAdmin" || $_ eq "zimbra" ) { next; }
         my $rc =
           0xffff & system("$allservices{$_} status > $statusfile 2> $errfile");
         $rc = $rc >> 8;
