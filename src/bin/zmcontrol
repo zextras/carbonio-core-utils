@@ -207,7 +207,7 @@ sub doStatus {
     my $status = 0;
     print "Host $localHostName\n";
     foreach ( sort keys %{$services} ) {
-        if ( $_ eq "syncshare" ) { next; }
+        if ( $_ eq "directory-server" || $_ eq "zimlet" || $_ eq "zimbraAdmin" || $_ eq "zimbra" ) { next; }
         my $rc =
           0xffff & system("$allservices{$_} status > $statusfile 2> $errfile");
         $rc = $rc >> 8;
@@ -227,7 +227,12 @@ sub doStatus {
             $stat = sprintf "\t%-20s %10s\n", $_, ($rc) ? "Stopped" : "Running";
         }
         else {
-            $stat = sprintf "\t%-20s %10s\n", $_, ($rc) ? "Stopped" : "Running";
+            my $service_name = $_;
+            # Rename the "zmconfigd" service
+            if ($service_name eq "zmconfigd") {
+                $service_name = "config template"
+            }
+            $stat = sprintf "\t%-20s %10s\n", $service_name, ($rc) ? "Stopped" : "Running";
         }
         print "$stat";
         if ($rc) {
@@ -315,7 +320,7 @@ sub doStartup {
 
     checkAvailableSpace();
     foreach ( sort { $startorder{$a} <=> $startorder{$b} } keys %{$services} ) {
-        if ( $_ eq "directory-server" ) { next; }
+        if ( $_ eq "directory-server" || $_ eq "zimlet" || $_ eq "zimbraAdmin" || $_ eq "zimbra" ) { next; }
         if ( $_ eq "proxy" ) {
             $rrc = 0xffff & system("/opt/zextras/bin/zmresolverctl");
             $rrc = $rrc >> 8;
@@ -331,12 +336,7 @@ sub doStartup {
         }
         elsif ( $_ eq "service-discover" ){ next; }
         else {
-            my $start_name = $_;
-            # Rename "zmconfigd" to something more user-friendly
-            if ($start_name eq "zmconfigd") {
-                $start_name = "config template"
-            }
-            print "\tStarting $start_name...";
+            renameService($_)
         }
         unless ( -x "$allservices{$_}" ) {
             print "skipped.\n\t\t$allservices{$_} missing or not executable.\n";
@@ -367,6 +367,7 @@ sub doShutdown {
     my $rrc = 0;
     foreach ( sort { $stoporder{$b} <=> $stoporder{$a} } keys %allservices ) {
         Zimbra::Mon::Logger::Log( "info", "Stopping $_ via zmcontrol" );
+        if ( $_ eq "zimlet" || $_ eq "zimbraAdmin" || $_ eq "zimbra" ) { next; }
         if ( $_ eq "directory-server"
             && !( -x "/opt/zextras/common/libexec/slapd" ) )
         {
@@ -381,12 +382,7 @@ sub doShutdown {
             print "\tStopping $_ webapp...";
         }
         else {
-            my $start_name = $_;
-            # Rename "zmconfigd" to something more user-friendly
-            if ($start_name eq "zmconfigd") {
-                $start_name = "config template"
-            }
-            print "\tStopping $start_name...";
+            renameService($_)
         }
         unless ( -x "$allservices{$_}" ) {
             print "skipped.\n\t\t$allservices{$_} missing or not executable.\n";
@@ -656,6 +652,15 @@ sub hasAvailableSpace() {
     }
 
     return ( $avail > $freeMbytes ) ? 1 : undef;
+}
+
+sub renameService() {
+    my ($start_name) = @_;
+    # Rename "zmconfigd" to something more user-friendly
+    if ($start_name eq "zmconfigd") {
+        $start_name = "config template"
+    }
+    print "\tStarting $start_name...";
 }
 
 sub usage {
