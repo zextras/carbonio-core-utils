@@ -672,7 +672,7 @@ sub usage {
     print "$0 [-v -h -H <host>] command [args]\n";
     print "\n";
     print "\t-v:	display version\n";
-    print "\t-V:  display advanced version information\n";
+    print "\t-V:	display advanced version information\n";
     print "\t-h:	print usage statement\n";
     print "\t-H:	Host name (localhost)\n";
     print "\n";
