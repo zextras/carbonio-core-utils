@@ -38,6 +38,10 @@ my $ldapHere      = isLdapLocal();
 my $services;
 my %devicesChecked;
 my %serviceStatusList;
+# This will break a lot of legacy codebase. Sorry not sorry
+my %serviceNames = (
+    "zmconfigd" => "config service"
+);
 my %startorder = (
     "directory-server" => 0,
     "zmconfigd"        => 10,
@@ -53,9 +57,6 @@ my %startorder = (
     "mta"              => 150,
     "stats"            => 160,
     "service"          => 170,
-    "zimbra"           => 180,
-    "zimbraAdmin"      => 190,
-    "zimlet"           => 200,
 );
 
 my %stoporder = (
@@ -72,9 +73,6 @@ my %stoporder = (
     "mta"              => 140,
     "stats"            => 150,
     "service"          => 160,
-    "zimbra"           => 170,
-    "zimbraAdmin"      => 180,
-    "zimlet"           => 190,
     "zmconfigd"        => 210,
 );
 
@@ -86,9 +84,6 @@ my %allservices = (
     "mta"              => "/opt/zextras/bin/zmmtactl",
     "mailbox"          => "/opt/zextras/bin/zmstorectl",
     "service"          => "/opt/zextras/bin/zmstorectl",
-    "zimbra"           => "/opt/zextras/bin/zmstorectl",
-    "zimbraAdmin"      => "/opt/zextras/bin/zmstorectl",
-    "zimlet"           => "/opt/zextras/bin/zmstorectl",
     "logger"           => "/opt/zextras/bin/zmloggerctl",
     "directory-server" => "/opt/zextras/bin/ldap",
     "memcached"        => "/opt/zextras/bin/zmmemcachedctl",
@@ -216,7 +211,7 @@ sub doStatus {
     my $status = 0;
     print "Host $localHostName\n";
     foreach ( sort keys %{$services} ) {
-        if ( $_ eq "syncshare" ) { next; }
+        if ( $_ eq "zimlet" || $_ eq "zimbraAdmin" || $_ eq "zimbra" ) { next; }
         my $rc =
           0xffff & system("$allservices{$_} status > $statusfile 2> $errfile");
         $rc = $rc >> 8;
@@ -226,10 +221,7 @@ sub doStatus {
             $status = 1 if ( $serviceStatusList{$_} );
         }
         my $stat;
-        if (   $_ eq "service"
-            || $_ eq "zimbra"
-            || $_ eq "zimbraAdmin"
-            || $_ eq "zimlet" )
+        if (   $_ eq "service" )
         {
             my $bit = "$_ webapp";
             $stat = sprintf "\t%-20s %10s\n", $bit,
@@ -239,7 +231,8 @@ sub doStatus {
             $stat = sprintf "\t%-20s %10s\n", $_, ($rc) ? "Stopped" : "Running";
         }
         else {
-            $stat = sprintf "\t%-20s %10s\n", $_, ($rc) ? "Stopped" : "Running";
+            my $service_name = renameServices($_);
+            $stat = sprintf "\t%-20s %10s\n", $service_name, ($rc) ? "Stopped" : "Running";
         }
         print "$stat";
         if ($rc) {
@@ -327,7 +320,7 @@ sub doStartup {
 
     checkAvailableSpace();
     foreach ( sort { $startorder{$a} <=> $startorder{$b} } keys %{$services} ) {
-        if ( $_ eq "directory-server" ) { next; }
+        if ( $_ eq "directory-server" || $_ eq "zimlet" || $_ eq "zimbraAdmin" || $_ eq "zimbra" ) { next; }
         if ( $_ eq "proxy" ) {
             $rrc = 0xffff & system("/opt/zextras/bin/zmresolverctl");
             $rrc = $rrc >> 8;
@@ -337,16 +330,14 @@ sub doStartup {
         }
         checkAvailableServiceSpace($_);
         Zimbra::Mon::Logger::Log( "info", "Starting $_ via zmcontrol" );
-        if (   $_ eq "service"
-            || $_ eq "zimbra"
-            || $_ eq "zimbraAdmin"
-            || $_ eq "zimlet" )
+        if (   $_ eq "service" )
         {
             print "\tStarting $_ webapp...";
         }
         elsif ( $_ eq "service-discover" ){ next; }
         else {
-            print "\tStarting $_...";
+            my $service_name = renameServices($_);
+            print "\tStarting $service_name...";
         }
         unless ( -x "$allservices{$_}" ) {
             print "skipped.\n\t\t$allservices{$_} missing or not executable.\n";
@@ -377,6 +368,7 @@ sub doShutdown {
     my $rrc = 0;
     foreach ( sort { $stoporder{$b} <=> $stoporder{$a} } keys %allservices ) {
         Zimbra::Mon::Logger::Log( "info", "Stopping $_ via zmcontrol" );
+        if ( $_ eq "zimlet" || $_ eq "zimbraAdmin" || $_ eq "zimbra" ) { next; }
         if ( $_ eq "directory-server"
             && !( -x "/opt/zextras/common/libexec/slapd" ) )
         {
@@ -386,15 +378,13 @@ sub doShutdown {
             next;
         }
         if ( $_ eq "mailbox" && !( -d "/opt/zextras/db/data" ) ) { next; }
-        if (   $_ eq "service"
-            || $_ eq "zimbra"
-            || $_ eq "zimbraAdmin"
-            || $_ eq "zimlet" )
+        if (   $_ eq "service" )
         {
             print "\tStopping $_ webapp...";
         }
         else {
-            print "\tStopping $_...";
+            my $service_name = renameServices($_);
+            print "\tStopping $service_name...";
         }
         unless ( -x "$allservices{$_}" ) {
             print "skipped.\n\t\t$allservices{$_} missing or not executable.\n";
@@ -429,7 +419,7 @@ sub getServiceStatusList {
     if ( scalar @services > 1 ) {
         foreach my $service (@services) {
             $serviceStatusList{$service} = 1
-              if ( defined( $allservices{$service} ) );
+                if ( defined( $allservices{$service} ) );
         }
     }
 }
@@ -535,7 +525,10 @@ sub getEnabledServices {
     }
     my $entry = $result->entry(0);
     foreach my $value ( $entry->get_value('zimbraServiceEnabled') ) {
-        $s{$value} = $value;
+        # Need to exclude legacy services. See CO-496
+        if ($value ne "zimlet" && $value ne "zimbraAdmin" && $value ne "zimbra") {
+            $s{$value} = $value;
+        }
     }
     $result = $ldap->unbind;
 
@@ -663,12 +656,23 @@ sub hasAvailableSpace() {
     return ( $avail > $freeMbytes ) ? 1 : undef;
 }
 
+sub renameServices {
+    my ($service_id) = @_;
+
+    my $service_name = $serviceNames{$service_id};
+    if ($service_name eq "") {
+        $service_name = $service_id;
+    }
+
+    return $service_name;
+}
+
 sub usage {
     displayVersion();
     print "$0 [-v -h -H <host>] command [args]\n";
     print "\n";
     print "\t-v:	display version\n";
-    print "\t-V:    display advanced version information\n";
+    print "\t-V:	display advanced version information\n";
     print "\t-h:	print usage statement\n";
     print "\t-H:	Host name (localhost)\n";
     print "\n";
