@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if [ "$(whoami)" != "zextras" ]; then
+  echo "$0 must be run as user zextras"
+  exit 1
+fi
+
+dryrun() {
+  certbot --version
+  echo "certbot certonly" "$@" "--dry-run"
+}
+
+ACTION=$1
+
+if [ "$ACTION" = "dryrun" ]; then
+  dryrun "${@:2}"
+fi

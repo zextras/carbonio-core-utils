@@ -41,7 +41,8 @@ my %SIMPLE_COMMANDS = (
    "zmcollectconfigfiles" => "tar cv /opt/zextras/conf | gzip -cf",
    "zmcollectldapzimbra" => "/opt/zextras/common/sbin/slapcat -F /opt/zextras/data/ldap/config -b '' -s cn=zimbra | gzip -cf",
    "zmschedulebackup" => "/opt/zextras/bin/zmschedulebackup",
-   "downloadcsr"      => "cat /opt/zextras/ssl/carbonio/commercial/commercial.csr"
+   "downloadcsr"      => "cat /opt/zextras/ssl/carbonio/commercial/commercial.csr",
+   "certbot dryrun"  => "/opt/zextras/libexec/certbot dryrun"
 );
 
 
