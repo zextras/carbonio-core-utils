@@ -42,7 +42,6 @@ my %SIMPLE_COMMANDS = (
    "zmcollectldapzimbra" => "/opt/zextras/common/sbin/slapcat -F /opt/zextras/data/ldap/config -b '' -s cn=zimbra | gzip -cf",
    "zmschedulebackup" => "/opt/zextras/bin/zmschedulebackup",
    "downloadcsr"      => "cat /opt/zextras/ssl/carbonio/commercial/commercial.csr",
-   "certbot dryrun"   => "/opt/zextras/libexec/certbot dryrun"
 );
 
 
@@ -80,12 +79,15 @@ my %REGEX_CHECKED_COMMANDS = (
     regex => '[a-zA-Z0-9\\/\\.\\-_:@ ]*',
     # alphanumeric, slash, dot, dash, underscore, colon, at, space
     program => "sudo /opt/cluster/bin/zmclustat"},
-   "zmloggerhostmap"  => {
-     regex => '[a-zA-Z0-9\\/\\.\\-_:@ ]*',
-     program=>"/opt/zextras/bin/zmloggerhostmap",},
-   "rsync" => {
-     regex => '[\'"a-zA-Z0-9\\/\\.\\-_:@= ]*',
-     program => "rsync"},
+  "zmloggerhostmap"  => {
+    regex => '[a-zA-Z0-9\\/\\.\\-_:@ ]*',
+    program=>"/opt/zextras/bin/zmloggerhostmap",},
+  "rsync" => {
+    regex => '[\'"a-zA-Z0-9\\/\\.\\-_:@= ]*',
+    program => "rsync"},
+  "certbot" => {
+    regex => '(dryrun)\s?[a-zA-Z0-9\\/\\.\\-\\\_:@\\,\\=\\\'\\"\\* ]*',
+    program => "/opt/zextras/libexec/certbot dryrun"},
 );
 
 my %allhosts = ();
