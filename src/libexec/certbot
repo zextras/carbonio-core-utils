@@ -6,8 +6,7 @@ if [ "$(whoami)" != "zextras" ]; then
 fi
 
 dryrun() {
-  certbot --version
-  echo "certbot certonly" "$@" "--dry-run"
+  certbot certonly "$@" --dry-run
 }
 
 ACTION=$1

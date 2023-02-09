@@ -87,7 +87,7 @@ my %REGEX_CHECKED_COMMANDS = (
     program => "rsync"},
   "certbot" => {
     regex => '(dryrun)\s?[a-zA-Z0-9\\/\\.\\-\\\_:@\\,\\=\\\'\\"\\* ]*',
-    program => "/opt/zextras/libexec/certbot dryrun"},
+    program => "/opt/zextras/libexec/certbot"}
 );
 
 my %allhosts = ();
