@@ -86,7 +86,7 @@ my %REGEX_CHECKED_COMMANDS = (
     regex => '[\'"a-zA-Z0-9\\/\\.\\-_:@= ]*',
     program => "rsync"},
   "certbot" => {
-    regex => '(dryrun)\s?[a-zA-Z0-9\\/\\.\\-\\\_:@\\,\\=\\\'\\"\\* ]*',
+    regex => '(certonly)\s?[a-zA-Z0-9\\/\\.\\-\\\_:@\\,\\=\\\'\\"\\* ]*',
     program => "/opt/zextras/libexec/certbot"}
 );
 
