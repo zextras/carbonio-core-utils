@@ -5,13 +5,14 @@ if [ "$(whoami)" != "zextras" ]; then
   exit 1
 fi
 
+certonly() {
+  certbot "${@}" --dry-run
+}
+
 ACTION=$1
 
 if [ "$ACTION" = "certonly" ]; then
   certonly "${@}"
 fi
 
-certonly() {
-  certbot "${@}" --dry-run
-}
 
