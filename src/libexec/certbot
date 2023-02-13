@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$(whoami)" != "zextras" ]; then
-  echo "$0 must be run as user zextras"
+  echo "${0} must be run as user zextras"
   exit 1
 fi
 
@@ -9,9 +9,9 @@ certonly() {
   certbot "${@}" --dry-run
 }
 
-ACTION=$1
+ACTION="${1}"
 
-if [ "$ACTION" = "certonly" ]; then
+if [ "${ACTION}" = "certonly" ]; then
   certonly "${@}"
 fi
 
