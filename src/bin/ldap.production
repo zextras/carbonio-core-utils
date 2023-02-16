@@ -120,7 +120,7 @@ stop() {
     exit 0
   fi
   echo -n "Killing slapd with pid $PID"
-  kill -TERM $PID
+  kill $PID
   for ((i = 0; i < 1500; i++)); do
     if ! kill -0 $PID 2>/dev/null; then
       echo " done."
@@ -131,7 +131,7 @@ stop() {
     fi
     sleep 1
   done
-  if kill -TERM $PID; then
+  if kill $PID; then
     echo " gave up waiting!"
     exit 1
   fi
