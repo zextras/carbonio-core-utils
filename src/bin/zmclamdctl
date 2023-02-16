@@ -94,9 +94,9 @@ case "$1" in
 'kill')
   if [ -f /opt/zextras/log/clamd.pid ]; then
     cpid=$(cat /opt/zextras/log/clamd.pid)
-    kill -9 "$cpid" 2>/dev/null
+    kill "$cpid" 2>/dev/null
   fi
-  pskillall -9 /opt/zextras/common/sbin/clamd
+  pskillall /opt/zextras/common/sbin/clamd
   exit 0
   ;;
 
@@ -107,7 +107,7 @@ case "$1" in
     echo "clamd is not running."
   else
     if [ x"$cpid" != "x" ]; then
-      kill -TERM "$cpid" 2>/dev/null
+      kill "$cpid" 2>/dev/null
     fi
     for ((i = 0; i < 30; i++)); do
       sleep 2

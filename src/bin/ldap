@@ -56,7 +56,7 @@ stop() {
     echo "slapd not running"
     exit 1
   else
-    kill -TERM $PID
+    kill $PID
   fi
 }
 

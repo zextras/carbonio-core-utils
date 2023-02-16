@@ -81,9 +81,9 @@ case "$1" in
 'kill')
   if [ -f /opt/zextras/log/freshclam.pid ]; then
     cpid=$(cat /opt/zextras/log/freshclam.pid)
-    kill -9 "$cpid" 2>/dev/null
+    kill "$cpid" 2>/dev/null
   fi
-  pskillall -9 /opt/zextras/common/bin/freshclam
+  pskillall /opt/zextras/common/bin/freshclam
   exit 0
   ;;
 
@@ -94,7 +94,7 @@ case "$1" in
     echo "freshclam is not running."
   else
     if [ x"$fpid" != "x" ]; then
-      kill -9 "$fpid" 2>/dev/null
+      kill "$fpid" 2>/dev/null
       if [ $? = 0 ]; then
         echo "done."
       else
