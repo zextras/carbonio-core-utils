@@ -89,7 +89,7 @@ stop)
         rm -rf ${pidfile}
         break
       fi
-      kill -9 $pid
+      kill $pid
       sleep 1
     done
   fi

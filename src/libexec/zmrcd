@@ -79,12 +79,15 @@ my %REGEX_CHECKED_COMMANDS = (
     regex => '[a-zA-Z0-9\\/\\.\\-_:@ ]*',
     # alphanumeric, slash, dot, dash, underscore, colon, at, space
     program => "sudo /opt/cluster/bin/zmclustat"},
-   "zmloggerhostmap"  => {
-     regex => '[a-zA-Z0-9\\/\\.\\-_:@ ]*',
-     program=>"/opt/zextras/bin/zmloggerhostmap",},
-   "rsync" => {
-     regex => '[\'"a-zA-Z0-9\\/\\.\\-_:@= ]*',
-     program => "rsync"},
+  "zmloggerhostmap"  => {
+    regex => '[a-zA-Z0-9\\/\\.\\-_:@ ]*',
+    program=>"/opt/zextras/bin/zmloggerhostmap",},
+  "rsync" => {
+    regex => '[\'"a-zA-Z0-9\\/\\.\\-_:@= ]*',
+    program => "rsync"},
+  "certbot" => {
+    regex => '(certonly)\s?[a-zA-Z0-9\\/\\.\\-\\\_:@\\,\\=\\\'\\"\\* ]*',
+    program => "/opt/zextras/libexec/certbot"}
 );
 
 my %allhosts = ();

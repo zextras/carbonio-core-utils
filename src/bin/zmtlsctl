@@ -173,8 +173,8 @@ updateLdap() {
     fi
     # validate setting of zimbraReverseProxyMailMode based on the setting of zimbraReverseProxySSLToUpstreamEnabled
     echo "On proxy ($proxy): zimbraReverseProxyMailMode='$rpmm', zimbraReverseProxySSLToUpstreamEnabled='$sslup'"
-    if [ "$sslup" = "TRUE" -a "$rpmm" != "both" -a "$rpmm" != "https" -a "$rpmm" != "mixed" -a "$rpmm" != "redirect" ]; then
-      echo "Error: When zimbraReverseProxySSLToUpstreamEnabled (on the proxy server) is TRUE, zimbraReverseProxyMailMode must be one of the following: both, https, mixed, or redirect. Please correct this on the proxy server then retry this command."
+    if [ "$sslup" = "TRUE" -a "$rpmm" != "https" -a "$rpmm" != "redirect" ]; then
+      echo "Error: When zimbraReverseProxySSLToUpstreamEnabled (on the proxy server) is TRUE, zimbraReverseProxyMailMode must be one of the following: https or redirect. Please correct this on the proxy server then retry this command."
       exit 1
     fi
     if [ "$sslup" = "FALSE" -a "$rpmm" != "both" -a "$rpmm" != "http" ]; then
@@ -182,22 +182,11 @@ updateLdap() {
       exit 1
     fi
     # Validate the new setting of zimbraMailMode based on the setting of zimbraReverseProxyMailMode
-    if [ "$rpmm" = "both" -a "$MODE" != "both" ]; then
-      echo "Error: When zimbraReverseProxyMailMode (on the proxy server) is both, the only valid setting for zimbraMailMode is both."
-      exit 1
-    fi
-    if [ "$rpmm" = "http" -a "$MODE" != "both" -a "$MODE" != "http" ]; then
-      echo "Error: When zimbraReverseProxyMailMode (on the proxy server) is http, the only valid settings for zimbraMailMode are both or http."
-      exit 1
-    fi
     if [ "$rpmm" = "https" -a "$MODE" != "both" -a "$MODE" != "https" ]; then
       echo "Error: When zimbraReverseProxyMailMode (on the proxy server) is https, the only valid settings for zimbraMailMode are both or https."
       exit 1
     fi
-    if [ "$rpmm" = "mixed" -a "$MODE" != "both" ]; then
-      echo "Error: When zimbraReverseProxyMailMode (on the proxy server) is mixed, the only valid setting for zimbraMailMode is both."
-      exit 1
-    fi
+
     if [ "$rpmm" = "redirect" -a "$MODE" != "both" -a "$MODE" != "https" ]; then
       echo "Error: When zimbraReverseProxyMailMode (on the proxy server) is redirect, the only valid settings for zimbraMailMode are both or https."
       exit 1

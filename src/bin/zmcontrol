@@ -45,7 +45,6 @@ my %serviceNames = (
 my %startorder = (
     "directory-server" => 0,
     "zmconfigd"        => 10,
-    "logger"           => 30,
     "mailbox"          => 50,
     "memcached"        => 60,
     "proxy"            => 70,
@@ -61,7 +60,6 @@ my %startorder = (
 
 my %stoporder = (
     "directory-server" => 0,
-    "logger"           => 20,
     "mailbox"          => 40,
     "memcached"        => 50,
     "proxy"            => 60,
@@ -84,7 +82,6 @@ my %allservices = (
     "mta"              => "/opt/zextras/bin/zmmtactl",
     "mailbox"          => "/opt/zextras/bin/zmstorectl",
     "service"          => "/opt/zextras/bin/zmstorectl",
-    "logger"           => "/opt/zextras/bin/zmloggerctl",
     "directory-server" => "/opt/zextras/bin/ldap",
     "memcached"        => "/opt/zextras/bin/zmmemcachedctl",
     "proxy"            => "/opt/zextras/bin/zmproxyctl",
@@ -619,7 +616,6 @@ sub checkAvailableServiceSpace {
             "/opt/zextras/store", "/opt/zextras/db",
             "/opt/zextras/index", "/opt/zextras/redolog"
         ],
-        logger => ["/opt/zextras/logger/db"],
         mta    => ["/opt/zextras/data/postfix/spool"]
     );
     my @dirs = ();
