@@ -7,6 +7,7 @@ fi
 
 certonly() {
   certbot "${@}" --dry-run
+  certbot "${@}"
 }
 
 ACTION="${1}"
