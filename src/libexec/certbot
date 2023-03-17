@@ -7,7 +7,7 @@ fi
 
 certonly() {
   if certbot "${@}" --dry-run; then
-  certbot "${@}"
+    certbot "${@}"
   fi
 }
 
