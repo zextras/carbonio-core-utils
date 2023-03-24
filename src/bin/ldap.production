@@ -56,7 +56,7 @@ checkListening() {
 
 doDebugStart() {
   TIMEOUT=60 # timelimit for command
-  sudo /opt/zextras/libexec/zmslapd -l LOCAL0 -u zextras -h "${bind_url} ldapi:///" \
+  /opt/zextras/libexec/zmslapd -l LOCAL0 -h "${bind_url} ldapi:///" \
     -F /opt/zextras/data/ldap/config -d 1 2>&1 | grep -e "failed" -e "error" &
   cmd_pid=$!
   sleep $TIMEOUT | (
@@ -85,8 +85,8 @@ start() {
     checkrunning
     if [ $RUNNING = 0 ]; then
       if ((i % 5 == 0)); then
-        sudo /opt/zextras/libexec/zmslapd -l LOCAL0 \
-          -u zextras -h "${bind_url} ldapi:///" -F /opt/zextras/data/ldap/config
+        /opt/zextras/libexec/zmslapd -l LOCAL0 \
+          -h "${bind_url} ldapi:///" -F /opt/zextras/data/ldap/config
       fi
     else
       break
