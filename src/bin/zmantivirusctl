@@ -7,40 +7,47 @@
 
 SCRIPTS="zmamavisdctl zmclamdctl zmfreshclamctl"
 
-if [ ! -x "/opt/zextras/common/sbin/amavisd" ]; then
-  exit 0
+AMAVISD_EXECUTABLE=0
+if [ -x "/opt/zextras/common/sbin/amavisd" ]; then
+  AMAVISD_EXECUTABLE=1
 fi
 
 source /opt/zextras/.bashrc
 
 case "$1" in
 start)
-  if [ x$2 = "x" ]; then
+  if [ "$2" = "" ]; then
     /opt/zextras/libexec/configrewrite antivirus
   fi
   for i in $SCRIPTS; do
-    /opt/zextras/bin/$i start norewrite
+    if [ "$i" = "zmamavisdctl" ] && [ "$AMAVISD_EXECUTABLE" -ne 1 ]; then
+      continue
+    fi
+    /opt/zextras/bin/"$i" start norewrite
   done
   ;;
 stop)
   for i in $SCRIPTS; do
-    if [ $i = "zmclamdctl" ]; then
-      /opt/zextras/bin/$i stop
-    fi
-    if [ $i = "zmfreshclamctl" ]; then
-      /opt/zextras/bin/$i stop
+    if [ "$i" = "zmclamdctl" ] || [ "$i" = "zmfreshclamctl" ]; then
+      /opt/zextras/bin/"$i" stop
     fi
   done
   ;;
 reload | restart)
   for i in $SCRIPTS; do
-    /opt/zextras/bin/$i $1
+    if [ "$i" = "zmamavisdctl" ] && [ "$AMAVISD_EXECUTABLE" -ne 1 ]; then
+      continue
+    fi
+    /opt/zextras/bin/"$i" "$1"
   done
   ;;
 status)
   STATUS=0
   for i in $SCRIPTS; do
-    /opt/zextras/bin/$i status >/dev/null 2>&1
+    if [ "$i" = "zmamavisdctl" ] && [ "$AMAVISD_EXECUTABLE" -ne 1 ]; then
+      continue
+    fi
+    /opt/zextras/bin/"$i" status >/dev/null 2>&1
     R=$?
     if [ $R -ne "0" ]; then
       echo "$i is not running"

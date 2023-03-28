@@ -76,7 +76,7 @@ my %stoporder = (
 
 my %allservices = (
     "amavis"           => "/opt/zextras/bin/zmamavisdctl",
-    "antivirus"        => "/opt/zextras/bin/zmclamdctl",
+    "antivirus"        => "/opt/zextras/bin/zmantivirusctl",
     "antispam"         => "/opt/zextras/bin/zmantispamctl",
     "opendkim"         => "/opt/zextras/bin/zmopendkimctl",
     "mta"              => "/opt/zextras/bin/zmmtactl",
