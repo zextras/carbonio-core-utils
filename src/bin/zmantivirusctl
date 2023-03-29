@@ -28,9 +28,10 @@ start)
   ;;
 stop)
   for i in $SCRIPTS; do
-    if [ "$i" = "zmclamdctl" ] || [ "$i" = "zmfreshclamctl" ]; then
-      /opt/zextras/bin/"$i" stop
+    if [ "$i" = "zmamavisdctl" ] && [ "$AMAVISD_EXECUTABLE" -ne 1 ]; then
+      continue
     fi
+    /opt/zextras/bin/"$i" stop
   done
   ;;
 reload | restart)
