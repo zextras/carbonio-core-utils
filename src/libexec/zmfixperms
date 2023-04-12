@@ -633,6 +633,11 @@ if [ -x /opt/zextras/common/sbin/nginx ]; then
   chown ${root_user}:${zextras_group} /opt/zextras/common/sbin/nginx
   chmod 750 /opt/zextras/common/sbin/nginx
 
+  if [ -f /opt/zextras/log/nginx.access.log ]; then
+    chown ${zimbra_user}:${zextras_group} /opt/zextras/log/nginx.access.log
+    chmod 644 /opt/zextras/log/nginx.access.log
+  fi
+
   # changing permission will reset capabilities so set it again
   setcap CAP_NET_BIND_SERVICE=+ep /opt/zextras/common/sbin/nginx
 fi
