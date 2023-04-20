@@ -22,7 +22,7 @@ postfix_suid_group=postdrop
 syslog_user=syslog
 syslog_group=adm
 
-zimbra_user=zextras
+zextras_user=zextras
 zextras_group=zextras
 
 extended=no
@@ -46,23 +46,23 @@ usage() {
 
 for opt in "$@"; do
   case "$opt" in
-    -verbose | --verbose | -v)
-      verbose=yes
-      shift
-      ;;
-    -help | --help | -h | --h)
-      usage
-      shift
-      ;;
-    -extended | --extended | -e)
-      extended=yes
-      shift
-      ;;
-    *)
-      echo "Unknown option $opt"
-      usage
-      shift
-      ;;
+  -verbose | --verbose | -v)
+    verbose=yes
+    shift
+    ;;
+  -help | --help | -h | --h)
+    usage
+    shift
+    ;;
+  -extended | --extended | -e)
+    extended=yes
+    shift
+    ;;
+  *)
+    echo "Unknown option $opt"
+    usage
+    shift
+    ;;
   esac
 done
 
@@ -74,7 +74,7 @@ printMsg() {
 
 # NOT /opt/zextras/{store,backup,index}
 if [ ${extended} = "yes" ]; then
-  chown -R ${zimbra_user}:${zextras_group} /opt/zextras/a* /opt/zextras/[c-hj-ot-z]* /opt/zextras/s[a-su-z]* 2>/dev/null
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/a* /opt/zextras/[c-hj-ot-z]* /opt/zextras/s[a-su-z]* 2>/dev/null
 fi
 
 chown ${root_user}:${root_group} /opt
@@ -88,7 +88,7 @@ chmod 775 /opt/zextras/common/conf
 
 for i in master.cf master.cf.in bysender bysender.lmdb tag_as_foreign.re tag_as_foreign.re.in tag_as_originating.re tag_as_originating.re.in; do
   if [ -f /opt/zextras/common/conf/${i} ]; then
-    chown -f ${zimbra_user}:${zextras_group} /opt/zextras/common/conf/${i}
+    chown -f ${zextras_user}:${zextras_group} /opt/zextras/common/conf/${i}
   fi
 done
 
@@ -101,34 +101,34 @@ if [ -d /opt/zextras ]; then
   chmod 755 /opt/zextras
 
   if [ -f /opt/zextras/.viminfo ]; then
-    chown ${zimbra_user}:${zextras_group} /opt/zextras/.viminfo
+    chown ${zextras_user}:${zextras_group} /opt/zextras/.viminfo
   fi
 
   if [ -f /opt/zextras/.ldaprc ]; then
-    chown ${zimbra_user}:${zextras_group} /opt/zextras/.ldaprc
+    chown ${zextras_user}:${zextras_group} /opt/zextras/.ldaprc
   fi
 
   if [ -f /opt/zextras/.exrc ]; then
-    chown ${zimbra_user}:${zextras_group} /opt/zextras/.exrc
+    chown ${zextras_user}:${zextras_group} /opt/zextras/.exrc
   fi
 
   if [ -f /opt/zextras/.bash_profile ]; then
-    chown ${zimbra_user}:${zextras_group} /opt/zextras/.bash_profile
+    chown ${zextras_user}:${zextras_group} /opt/zextras/.bash_profile
   fi
 
   if [ -f /opt/zextras/.bashrc ]; then
-    chown ${zimbra_user}:${zextras_group} /opt/zextras/.bashrc
+    chown ${zextras_user}:${zextras_group} /opt/zextras/.bashrc
   fi
 
   if [ -f /opt/zextras/.platform ]; then
-    chown ${zimbra_user}:${zextras_group} /opt/zextras/.platform
+    chown ${zextras_user}:${zextras_group} /opt/zextras/.platform
   fi
 
   for i in .zmmailbox_history .zmprov_history .bash_history; do
     if [ ! -f /opt/zextras/${i} ]; then
       touch /opt/zextras/${i}
     fi
-    chown ${zimbra_user}:${zextras_group} /opt/zextras/${i}
+    chown ${zextras_user}:${zextras_group} /opt/zextras/${i}
     chmod 640 /opt/zextras/${i}
   done
 
@@ -136,14 +136,14 @@ if [ -d /opt/zextras ]; then
     if [ "$(cat /selinux/enforce 2>/dev/null)" = "1" ]; then
       # make sure ssh keys are in home dir selinux type
       chcon -R -v -u system_u -t user_home_t /opt/zextras/.ssh/
-      # Fix Zimbra upgrades selinux perms
+      # Fix upgrades selinux perms
       restorecon -R /etc/security
     fi
   fi
 
   # Required by HSM features
   if [ -d /opt/zextras/cache ]; then
-    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/cache
+    chown -R ${zextras_user}:${zextras_group} /opt/zextras/cache
     chmod 755 /opt/zextras/cache/* 2>/dev/null
   fi
 
@@ -154,7 +154,7 @@ if [ -d /opt/zextras ]; then
 
   # Required by HSM features
   if [ -d /opt/zextras/incoming ]; then
-    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/incoming
+    chown -R ${zextras_user}:${zextras_group} /opt/zextras/incoming
     chmod 755 /opt/zextras/incoming/* 2>/dev/null
   fi
 
@@ -164,7 +164,7 @@ if [ -d /opt/zextras ]; then
   fi
 
   if [ -d /opt/zextras/log ]; then
-    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/log
+    chown -R ${zextras_user}:${zextras_group} /opt/zextras/log
     if [ -f /opt/zextras/log/.hotspot_compiler ]; then
       chown ${root_user}:${root_group} /opt/zextras/log/.hotspot_compiler
       chmod 444 /opt/zextras/log/.hotspot_compiler
@@ -172,7 +172,7 @@ if [ -d /opt/zextras ]; then
   fi
 
   if [ -d /opt/zextras/logger ]; then
-    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/logger 2>/dev/null
+    chown -R ${zextras_user}:${zextras_group} /opt/zextras/logger 2>/dev/null
     chmod 755 /opt/zextras/logger/* 2>/dev/null
   fi
 
@@ -186,20 +186,20 @@ if [ -d /opt/zextras ]; then
   fi
 
   if [ -d /opt/zextras/wiki ]; then
-    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/wiki
+    chown -R ${zextras_user}:${zextras_group} /opt/zextras/wiki
   fi
 
   if [ -d /opt/zextras/conf ]; then
     printMsg "Fixing ownership and permissions on /opt/zextras/conf"
-    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/conf
+    chown -R ${zextras_user}:${zextras_group} /opt/zextras/conf
 
     if [ -f /opt/zextras/conf/localconfig.xml ]; then
-      chown ${zimbra_user}:${zextras_group} /opt/zextras/conf/localconfig.xml
+      chown ${zextras_user}:${zextras_group} /opt/zextras/conf/localconfig.xml
       chmod 640 /opt/zextras/conf/localconfig.xml
     fi
 
     if [ -f /opt/zextras/conf/attrs/attrs.xml ]; then
-      chown ${zimbra_user}:${zextras_group} /opt/zextras/conf/attrs/attrs.xml
+      chown ${zextras_user}:${zextras_group} /opt/zextras/conf/attrs/attrs.xml
       chmod 444 /opt/zextras/conf/attrs/attrs.xml
     fi
 
@@ -220,7 +220,7 @@ if [ -d /opt/zextras ]; then
     fi
 
     if [ -f /opt/zextras/conf/nginx.conf ]; then
-      chown ${zimbra_user}:${zextras_group} /opt/zextras/conf/nginx.conf
+      chown ${zextras_user}:${zextras_group} /opt/zextras/conf/nginx.conf
       chmod 644 /opt/zextras/conf/nginx.conf
     fi
 
@@ -231,35 +231,35 @@ if [ -d /opt/zextras ]; then
     done
 
     if [ -f /opt/zextras/conf/my.cnf ]; then
-      chown ${zimbra_user}:${zextras_group} /opt/zextras/conf/my.cnf
+      chown ${zextras_user}:${zextras_group} /opt/zextras/conf/my.cnf
       chmod 640 /opt/zextras/conf/my.cnf
     fi
 
     if [ -f /opt/zextras/conf/saslauthd.conf.in ]; then
       chmod 640 /opt/zextras/conf/saslauthd.conf.in
-      chown ${zimbra_user}:${zextras_group} /opt/zextras/conf/saslauthd.conf.in
+      chown ${zextras_user}:${zextras_group} /opt/zextras/conf/saslauthd.conf.in
     fi
     if [ -f /opt/zextras/conf/saslauthd.conf ]; then
       chmod 440 /opt/zextras/conf/saslauthd.conf
-      chown ${zimbra_user}:${zextras_group} /opt/zextras/conf/saslauthd.conf
+      chown ${zextras_user}:${zextras_group} /opt/zextras/conf/saslauthd.conf
     fi
     if [ -f /opt/zextras/conf/sasl2/smtpd.conf.in ]; then
       chmod 640 /opt/zextras/conf/sasl2/smtpd.conf.in
-      chown ${zimbra_user}:${zextras_group} /opt/zextras/conf/sasl2/smtpd.conf.in
+      chown ${zextras_user}:${zextras_group} /opt/zextras/conf/sasl2/smtpd.conf.in
     fi
     if [ -f /opt/zextras/conf/sasl2/smtpd.conf ]; then
       chmod 640 /opt/zextras/conf/sasl2/smtpd.conf
-      chown ${zimbra_user}:${zextras_group} /opt/zextras/conf/sasl2/smtpd.conf
+      chown ${zextras_user}:${zextras_group} /opt/zextras/conf/sasl2/smtpd.conf
     fi
 
     if [ -d /opt/zextras/conf/templates/ ]; then
-      chown -R ${zimbra_user}:${zextras_group} /opt/zextras/conf/templates
+      chown -R ${zextras_user}:${zextras_group} /opt/zextras/conf/templates
       find /opt/zextras/conf/templates/ -type d -exec chmod 755 {} \;
       find /opt/zextras/conf/templates/ -type f -exec chmod 644 {} \;
     fi
 
     if [ -d /opt/zextras/conf/templates_custom/ ]; then
-      chown -R ${zimbra_user}:${zextras_group} /opt/zextras/conf/templates_custom
+      chown -R ${zextras_user}:${zextras_group} /opt/zextras/conf/templates_custom
       find /opt/zextras/conf/templates_custom/ -type d -exec chmod 755 {} \;
       find /opt/zextras/conf/templates_custom/ -type f -exec chmod 644 {} \;
     fi
@@ -271,19 +271,19 @@ if [ -d /opt/zextras ]; then
   fi
 
   if [ -d /opt/zextras/documentation ]; then
-    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/documentation
+    chown -R ${zextras_user}:${zextras_group} /opt/zextras/documentation
     find /opt/zextras/documentation -type d -exec chmod 755 {} \;
     find /opt/zextras/documentation -type f -exec chmod 444 {} \;
   fi
 
   for i in /opt/zextras/zimlets*; do
-    chown -R ${zimbra_user}:${zextras_group} ${i}
+    chown -R ${zextras_user}:${zextras_group} ${i}
   done
 
   for i in /opt/zextras/conf/*.crt /opt/zextras/conf/*.key /opt/zextras/conf/zmssl.cnf; do
     if [ -f ${i} ]; then
       printMsg "Fixing permissions and ownership on ${i}"
-      chown ${zimbra_user}:${zextras_group} "$i"
+      chown ${zextras_user}:${zextras_group} "$i"
       chmod 640 "$i"
     fi
   done
@@ -292,7 +292,7 @@ if [ -d /opt/zextras ]; then
     mkdir -p /opt/zextras/data
   fi
   chmod 755 /opt/zextras/data
-  chown ${zimbra_user}:${zextras_group} /opt/zextras/data
+  chown ${zextras_user}:${zextras_group} /opt/zextras/data
 fi
 
 # fix the temp directory
@@ -300,7 +300,7 @@ if [ ! -d /opt/zextras/data/tmp ]; then
   mkdir -p /opt/zextras/data/tmp
 fi
 if [ -f /opt/zextras/data/tmp/current.csr ]; then
-  chown ${zimbra_user}:${zextras_group} /opt/zextras/data/tmp/current.csr
+  chown ${zextras_user}:${zextras_group} /opt/zextras/data/tmp/current.csr
   chmod 644 /opt/zextras/data/tmp/current.csr
 fi
 
@@ -310,7 +310,7 @@ if [ ! -d /opt/zextras/data/tmp/nginx ]; then
   mkdir -p /opt/zextras/data/tmp/nginx/proxy
   mkdir -p /opt/zextras/data/tmp/nginx/fastcgi
 fi
-chown -R ${zimbra_user}:${zextras_group} /opt/zextras/data/tmp
+chown -R ${zextras_user}:${zextras_group} /opt/zextras/data/tmp
 chmod 1777 /opt/zextras/data/tmp
 chmod 755 /opt/zextras/data/tmp/nginx
 chmod 755 /opt/zextras/data/tmp/nginx/client
@@ -372,7 +372,7 @@ if [ -d /opt/zextras/db ]; then
   if [ ! -d /opt/zextras/db/data ]; then
     mkdir -p /opt/zextras/db/data
   fi
-  chown -R ${zimbra_user}:${zextras_group} /opt/zextras/db
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/db
   chmod 444 /opt/zextras/db/*.sql /opt/zextras/db/*.sql.in
 fi
 
@@ -382,7 +382,7 @@ if [ -d /opt/zextras/common/share/database ]; then
       mkdir -p /opt/zextras/${i}
     fi
   done
-  chown -R ${zimbra_user}:${zextras_group} /opt/zextras/data/cbpolicyd
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/data/cbpolicyd
 fi
 
 if [ -x /opt/zextras/common/sbin/saslauthd ]; then
@@ -390,7 +390,7 @@ if [ -x /opt/zextras/common/sbin/saslauthd ]; then
   if [ ! -d /opt/zextras/data/sasl2/state ]; then
     mkdir -p /opt/zextras/data/sasl2/state
   fi
-  chown -R ${zimbra_user}:${zextras_group} /opt/zextras/data/sasl2/state
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/data/sasl2/state
   chmod 755 /opt/zextras/data/sasl2/state
 fi
 
@@ -398,7 +398,7 @@ if [ -x /opt/zextras/common/bin/altermime ]; then
   if [ ! -d "/opt/zextras/data/altermime" ]; then
     mkdir -p /opt/zextras/data/altermime
   fi
-  chown -R ${zimbra_user}:${zextras_group} /opt/zextras/data/altermime
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/data/altermime
 fi
 
 if [ -x /opt/zextras/common/sbin/amavisd ]; then
@@ -408,14 +408,14 @@ if [ -x /opt/zextras/common/sbin/amavisd ]; then
   fi
   if [ ! -d "/var/spamassassin" ]; then
     mkdir -p /var/spamassassin
-    chown -R ${zimbra_user}:${zextras_group} /var/spamassassin
+    chown -R ${zextras_user}:${zextras_group} /var/spamassassin
   fi
-  chown -R ${zimbra_user}:${zextras_group} /opt/zextras/data/amavisd
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/data/amavisd
   if [ -d /opt/zextras/data/amavisd/.spamassassin ]; then
-    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/data/amavisd/.spamassassin
+    chown -R ${zextras_user}:${zextras_group} /opt/zextras/data/amavisd/.spamassassin
   fi
   if [ -d /opt/zextras/data/spamassassin ]; then
-    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/data/spamassassin
+    chown -R ${zextras_user}:${zextras_group} /opt/zextras/data/spamassassin
   fi
 fi
 
@@ -427,47 +427,47 @@ if [ -L /opt/zextras/jetty ]; then
     keystore mailboxd.{der,pem} jetty.xml{,.in} service.web.xml.in \
     zimbra.web.xml.in zimbraAdmin.web.xml.in zimlet.web.xml.in; do
     if [ -f /opt/zextras/jetty/etc/${i} ]; then
-      chown ${zimbra_user}:${zextras_group} /opt/zextras/jetty/etc/${i}
+      chown ${zextras_user}:${zextras_group} /opt/zextras/jetty/etc/${i}
       chmod 640 /opt/zextras/jetty/etc/${i}
     fi
   done
   if [ -f /opt/zextras/jetty/webapps/zimbraAdmin/tmp/current.csr ]; then
-    chown ${zimbra_user}:${zextras_group} /opt/zextras/jetty/webapps/zimbraAdmin/tmp/current.csr
+    chown ${zextras_user}:${zextras_group} /opt/zextras/jetty/webapps/zimbraAdmin/tmp/current.csr
     chmod 644 /opt/zextras/jetty/webapps/zimbraAdmin/tmp/current.csr
   fi
 
   if [ ! -d /opt/zextras/jetty/webapps/zimlet/WEB-INF ]; then
     mkdir -p /opt/zextras/jetty/webapps/zimlet/WEB-INF
   fi
-  chown -R ${zimbra_user}:${zextras_group} /opt/zextras/jetty/webapps/zimlet
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/jetty/webapps/zimlet
   chmod 755 /opt/zextras/jetty/webapps/zimlet /opt/zextras/jetty/webapps/zimlet/WEB-INF
 
   if [ ! -d /opt/zextras/jetty/work/zimlet ]; then
     mkdir -p /opt/zextras/jetty/work/zimlet
   fi
-  chown -R ${zimbra_user}:${zextras_group} /opt/zextras/jetty/work/zimlet
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/jetty/work/zimlet
   chmod 750 /opt/zextras/jetty/work/zimlet
 
   if [ ! -d /opt/zextras/jetty/work/spnego ]; then
     mkdir -p /opt/zextras/jetty/work/spnego
   fi
-  chown -R ${zimbra_user}:${zextras_group} /opt/zextras/jetty/work/spnego
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/jetty/work/spnego
   chmod 750 /opt/zextras/jetty/work/spnego
 
   if [ ! -d /opt/zextras/fbqueue ]; then
     mkdir -p /opt/zextras/fbqueue
   fi
-  chown ${zimbra_user}:${zextras_group} /opt/zextras/fbqueue
+  chown ${zextras_user}:${zextras_group} /opt/zextras/fbqueue
   chmod 755 /opt/zextras/fbqueue
 
   if [ ! -d /opt/zextras/zimlets-deployed ]; then
     mkdir -p /opt/zextras/zimlets-deployed
   fi
-  chown ${zimbra_user}:${zextras_group} /opt/zextras/zimlets-deployed
+  chown ${zextras_user}:${zextras_group} /opt/zextras/zimlets-deployed
   chmod 755 /opt/zextras/zimlets-deployed
 
   for i in /opt/zextras/jetty/*; do
-    chown -R ${zimbra_user}:${zextras_group} ${i}
+    chown -R ${zextras_user}:${zextras_group} ${i}
   done
 
   if [ -d /opt/zextras/jetty/lib ]; then
@@ -486,13 +486,13 @@ if [ -L /opt/zextras/jetty ]; then
   if [ ! -d /opt/zextras/data/mailboxd ]; then
     mkdir -p /opt/zextras/data/mailboxd
   fi
-  chown ${zimbra_user}:${zextras_group} /opt/zextras/data/mailboxd
+  chown ${zextras_user}:${zextras_group} /opt/zextras/data/mailboxd
   chmod 755 /opt/zextras/data/mailboxd
 
   if [ ! -d /opt/zextras/data/mailboxd/spnego ]; then
     mkdir -p /opt/zextras/data/mailboxd/spnego
   fi
-  chown ${zimbra_user}:${zextras_group} /opt/zextras/data/mailboxd/spnego
+  chown ${zextras_user}:${zextras_group} /opt/zextras/data/mailboxd/spnego
   chmod 755 /opt/zextras/data/mailboxd/spnego
 
 fi
@@ -504,35 +504,35 @@ fi
 
 if [ -d /opt/zextras/ssl ]; then
   printMsg "Fixing ownership and permissions on /opt/zextras/ssl"
-  chown -R ${zimbra_user}:${zextras_group} /opt/zextras/ssl
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/ssl
   find /opt/zextras/ssl -type f -exec chmod 640 {} \;
 fi
 
 if [ -x /opt/zextras/common/libexec/slapd ]; then
   printMsg "Fixing ownership and permissions on /opt/zextras/data/ldap"
   if [ -d /opt/zextras/data/ldap ]; then
-    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/data/ldap
-    chown ${zimbra_user}:${zextras_group} /opt/zextras/data/ldap
+    chown -R ${zextras_user}:${zextras_group} /opt/zextras/data/ldap
+    chown ${zextras_user}:${zextras_group} /opt/zextras/data/ldap
   fi
 fi
 
 if [ -d /opt/zextras/logger/db ]; then
   printMsg "Fixing ownership and permissions on /opt/zextras/logger/db"
-  chown ${zimbra_user}:${zextras_group} /opt/zextras/logger/db
+  chown ${zextras_user}:${zextras_group} /opt/zextras/logger/db
   if [ ! -d /opt/zextras/logger/db/data ]; then
     mkdir -p /opt/zextras/logger/db/data
   fi
-  chown ${zimbra_user}:${zextras_group} /opt/zextras/logger/db/data
+  chown ${zextras_user}:${zextras_group} /opt/zextras/logger/db/data
 fi
 
 if [ -d /opt/zextras/data/clamav ]; then
-  chown -R ${zimbra_user}:${zextras_group} /opt/zextras/data/clamav
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/data/clamav
 fi
 
 if [ -d /opt/zextras/zmstat ]; then
   printMsg "Fixing ownership and permissions on /opt/zextras/zmstat"
   for i in /opt/zextras/zmstat/????-??-??; do
-    chown -R ${zimbra_user}:${zextras_group} ${i}
+    chown -R ${zextras_user}:${zextras_group} ${i}
   done
 fi
 
@@ -549,20 +549,20 @@ if [ -x /opt/zextras/common/sbin/postfix ]; then
   fi
   if [ -e /opt/zextras/common/conf ]; then
     if [ -f /opt/zextras/common/conf/master.cf.in ]; then
-      chown -f ${zimbra_user}:${zextras_group} /opt/zextras/common/conf/master.cf.in
+      chown -f ${zextras_user}:${zextras_group} /opt/zextras/common/conf/master.cf.in
     fi
     if [ -f /opt/zextras/common/conf/tag_as_foreign.re ]; then
-      chown -f ${zimbra_user}:${zextras_group} /opt/zextras/common/conf/tag_as_foreign.re
+      chown -f ${zextras_user}:${zextras_group} /opt/zextras/common/conf/tag_as_foreign.re
     fi
     if [ -f /opt/zextras/common/conf/tag_as_originating.re ]; then
-      chown -f ${zimbra_user}:${zextras_group} /opt/zextras/common/conf/tag_as_originating.re
+      chown -f ${zextras_user}:${zextras_group} /opt/zextras/common/conf/tag_as_originating.re
     fi
   fi
 
   # Postjournal specific permissions
   if [ -f /opt/zextras/bin/zmbackup ]; then
     mkdir -p /opt/zextras/data/postfix-journal
-    chown -R ${zimbra_user}:${zextras_group} /opt/zextras/data/postfix-journal
+    chown -R ${zextras_user}:${zextras_group} /opt/zextras/data/postfix-journal
   fi
 fi
 
@@ -599,24 +599,24 @@ if [ -d /opt/zextras/data/postfix ]; then
   chgrp -f ${root_group} /opt/zextras/data/postfix/spool
 fi
 
-if [ -d /opt/zextras/index -a ${extended} = "yes" ]; then
+if [ -d /opt/zextras/index ] && [ ${extended} = "yes" ]; then
   printMsg "Fixing ownership of /opt/zextras/index"
-  chown -R ${zimbra_user}:${zextras_group} /opt/zextras/index
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/index
 fi
 
-if [ -d /opt/zextras/backup -a ${extended} = "yes" ]; then
+if [ -d /opt/zextras/backup ] && [ ${extended} = "yes" ]; then
   printMsg "Fixing ownership of /opt/zextras/backup"
-  chown -R ${zimbra_user}:${zextras_group} /opt/zextras/backup
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/backup
 fi
 
-if [ -d /opt/zextras/redolog -a ${extended} = "yes" ]; then
+if [ -d /opt/zextras/redolog ] && [ ${extended} = "yes" ]; then
   printMsg "Fixing ownership of /opt/zextras/redolog"
-  chown -R ${zimbra_user}:${zextras_group} /opt/zextras/redolog
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/redolog
 fi
 
-if [ -d /opt/zextras/store -a ${extended} = "yes" ]; then
+if [ -d /opt/zextras/store ] && [ ${extended} = "yes" ]; then
   printMsg "Fixing ownership of /opt/zextras/store"
-  chown -R ${zimbra_user}:${zextras_group} /opt/zextras/store
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/store
 fi
 
 # Fix permissions for default openldap configuration files
@@ -626,5 +626,28 @@ for i in slapd.conf slapd.conf.default slapd.ldif slapd.ldif.default; do
     chmod 644 /opt/zextras/common/etc/openldap/${i}
   fi
 done
+
+##### Fix permissions for ldap and proxy #####
+
+if [ -x /opt/zextras/common/sbin/nginx ]; then
+  chown ${root_user}:${zextras_group} /opt/zextras/common/sbin/nginx
+  chmod 750 /opt/zextras/common/sbin/nginx
+
+  if [ -f /opt/zextras/log/nginx.access.log ]; then
+    chown ${zextras_user}:${zextras_group} /opt/zextras/log/nginx.access.log
+    chmod 644 /opt/zextras/log/nginx.access.log
+  fi
+
+  # changing permission will reset capabilities so set it again
+  setcap CAP_NET_BIND_SERVICE=+ep /opt/zextras/common/sbin/nginx
+fi
+
+if [ -x /opt/zextras/common/libexec/slapd ]; then
+  chown ${root_user}:${zextras_group} /opt/zextras/common/libexec/slapd
+  chmod 750 /opt/zextras/common/libexec/slapd
+
+  # changing permission will reset capabilities so set it again
+  setcap CAP_NET_BIND_SERVICE=+ep /opt/zextras/common/libexec/slapd
+fi
 
 exit 0
