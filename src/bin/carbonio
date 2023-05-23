@@ -20,7 +20,9 @@ carbonio_cli_jars="/usr/bin/carbonio-advanced-cli/*"
 
 call_cli() {
   if [ ! -f "${zal_path}" ] || [ ! -f "${carbonio_path}" ]; then
-    exec /opt/zextras/bin/zmjava com.zimbra.cs.account.ProvUtil "$@"
+    exec /opt/zextras/bin/zmjava \
+      com.zimbra.cs.account.ProvUtil \
+      "$@"
   else
     exec /opt/zextras/bin/zmjava \
       -cp "${carbonio_cli_jars}" \
