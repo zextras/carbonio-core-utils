@@ -15,11 +15,11 @@ fi
 source /opt/zextras/bin/zmshutil || exit 1
 
 zal_path="/opt/zextras/lib/ext/carbonio/zal.jar"
-zextras_path="/opt/zextras/lib/ext/carbonio/carbonio.jar"
+carbonio_path="/opt/zextras/lib/ext/carbonio/carbonio.jar"
 carbonio_cli_jars="/usr/bin/carbonio-advanced-cli/*"
 
 call_cli() {
-  if [ ! -f "${zal_path}" ] || [ ! -f "${zextras_path}" ]; then
+  if [ ! -f "${zal_path}" ] || [ ! -f "${carbonio_path}" ]; then
     exec /opt/zextras/bin/zmjava com.zimbra.cs.account.ProvUtil "$@"
   else
     exec /opt/zextras/bin/zmjava \
