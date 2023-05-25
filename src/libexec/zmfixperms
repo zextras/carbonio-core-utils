@@ -92,6 +92,10 @@ for i in master.cf master.cf.in bysender bysender.lmdb tag_as_foreign.re tag_as_
   fi
 done
 
+if [ -d "/opt/zextras/common/certbot/etc/letsencrypt" ]; then
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/common/certbot/etc/letsencrypt
+fi
+
 if [ -f /opt/zextras/common/conf/main.cf ]; then
   chown -f ${root_user}:${root_group} /opt/zextras/common/conf/main.cf
 fi
