@@ -5,107 +5,82 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-PID=""
-PIDFILE="/opt/zextras/data/ldap/state/run/slapd.pid"
+# shellcheck disable=SC2046
+# shellcheck disable=SC2154
 
 mkdir -p "/opt/zextras/data/ldap/state/run/"
 
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
-if [ "x$ldap_is_master" = "xfalse" ]; then
-  if [ "x$ldap_url" = "x$ldap_master_url" ] && [ "x$1" != "xstop" ]; then
+slapd=/opt/zextras/common/libexec/slapd
+
+if [ ! -f /.dockerenv ]; then
+  ulimit -n 32768
+  ulimit -c unlimited
+  ulimit -v unlimited
+fi
+
+if [ "$ldap_is_master" = "false" ]; then
+  if [ "$ldap_url" = "$ldap_master_url" ] && [ "x$1" != "xstop" ]; then
     echo "ldap_url and ldap_master_url cannot be the same on an ldap replica"
     exit 1
   fi
 fi
 
-getpid() {
-  if [ -f $PIDFILE ]; then
-    PID=$(cat $PIDFILE)
-  fi
-}
-
 checkrunning() {
-  getpid
-  if [ "x$PID" = "x" ]; then
-    RUNNING=0
+  if pidof "${slapd}" >/dev/null 2>&1; then
+    RUNNING=1
   else
-    if ps --no-headers -p "$PID" -o cmd 2>/dev/null | grep slapd >/dev/null 2>&1; then
-      RUNNING=1
-    else
-      PID=""
-      RUNNING=0
-    fi
+    RUNNING=0
   fi
 }
 
 checkListening() {
-  SEARCHTIMEOUT=30 #timelimit for ldapsearch
-  if [ x"$ldap_common_require_tls" = "x0" ]; then
-    /opt/zextras/common/bin/ldapsearch -x -l $SEARCHTIMEOUT -b "" -s base -H ldapi:/// >/dev/null 2>&1
+  local search_timeout
+  search_timeout=30 #timelimit for ldapsearch
+  local ldap_search_cmd ldap_search_cmd_args
+  ldap_search_cmd="/opt/zextras/common/bin/ldapsearch"
+  ldap_search_cmd_args=" -x \
+    -l $search_timeout \
+    -b "" \
+    -s base \
+    -H ldapi:///"
+
+  if [ "$ldap_common_require_tls" = "0" ]; then
+    ldap_search_cmd+="${ldap_search_cmd_args}"
   else
-    /opt/zextras/common/bin/ldapsearch -ZZ -x -l $SEARCHTIMEOUT -b "" -s base -H ldapi:/// >/dev/null 2>&1
+    ldap_search_cmd+="${ldap_search_cmd_args} -ZZ"
   fi
-  if [ $? -ne 0 ]; then
+
+  if eval "$ldap_search_cmd >/dev/null 2>&1" != 1; then
     LISTENING=0
   else
     LISTENING=1
   fi
 }
 
-doDebugStart() {
-  TIMEOUT=60 # timelimit for command
-  /opt/zextras/libexec/zmslapd -l LOCAL0 -h "${bind_url} ldapi:///" \
-    -F /opt/zextras/data/ldap/config -d 1 2>&1 | grep -e "failed" -e "error" &
-  cmd_pid=$!
-  sleep $TIMEOUT | (
-    read nothing              # wait on sleep to finish
-    kill $cmd_pid 2>/dev/null # otherwise abort the command!
-  ) &
-  sleep_pid=$!
-  wait $cmd_pid
-  kill -ALRM $sleep_pid 2>/dev/null # kill sleep if still running
-  echo ""
-  exit 1
-}
-
 start() {
-  checkrunning
-  if [ $RUNNING != 0 ]; then
-    echo "slapd already running: pid $PID"
-    exit 1
-  fi
   # Our ldap url should be the first in the list in localconfig
-  bind_url=$ldap_bind_url
-  if [ x"$bind_url" = "x" ]; then
+  local bind_url=$ldap_bind_url
+  if [ "$bind_url" = "" ]; then
     bind_url=$(echo "${ldap_url}" | awk '{print $1}')
   fi
-  for ((i = 0; i <= 30; i++)); do
-    checkrunning
-    if [ $RUNNING = 0 ]; then
-      if ((i % 5 == 0)); then
-        /opt/zextras/libexec/zmslapd -l LOCAL0 \
-          -h "${bind_url} ldapi:///" -F /opt/zextras/data/ldap/config
-      fi
-    else
-      break
+
+  checkrunning
+  if [ $RUNNING = 0 ]; then
+    if ! $slapd -l LOCAL0 \
+      -h "${bind_url} ldapi:///" \
+      -F /opt/zextras/data/ldap/config; then
+      echo "Failed to start slapd"
     fi
-    sleep 1
-  done
-  if [ "x$PID" = "x" ]; then
-    echo "Failed to start slapd.  Attempting debug start to determine error."
-    doDebugStart
+    echo "Started slapd"
   else
-    echo "Started slapd: pid $PID"
+    echo "slapd already running"
   fi
-  for ((i = 0; i < 30; i++)); do
-    checkListening
-    if [ $LISTENING = 1 ]; then
-      break
-    fi
-    sleep 1
-  done
+
+  checkListening
+
   if [ $LISTENING = 0 ]; then
     echo "Error: Unable to check that slapd is listening to connections"
     exit 1
@@ -114,37 +89,29 @@ start() {
 
 stop() {
   checkrunning
-
   if [ $RUNNING = 0 ]; then
     echo "slapd not running"
     exit 0
-  fi
-  echo -n "Killing slapd with pid $PID"
-  kill $PID
-  for ((i = 0; i < 1500; i++)); do
-    if ! kill -0 $PID 2>/dev/null; then
+  else
+    echo -n "Stopping slapd..."
+    if ! kill $(pidof $slapd 2>/dev/null); then
+      echo " failed to stop $PID"
+      exit 1
+    else
       echo " done."
-      exit 0
     fi
-    if ((i % 5 == 0)); then
-      echo -n "."
-    fi
-    sleep 1
-  done
-  if kill $PID; then
-    echo " gave up waiting!"
-    exit 1
   fi
-  echo " done."
   exit 0
 }
 
 status() {
   checkrunning
+  echo -n "slapd is "
   if [ $RUNNING = 0 ]; then
+    echo "not running."
     exit 1
   else
-    echo "slapd running pid: $PID"
+    echo "running."
     exit 0
   fi
 }
