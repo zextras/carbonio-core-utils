@@ -19,10 +19,15 @@ delete() {
   done
 }
 
-ACTION="${1}"
-
-if [ "${ACTION}" = "certonly" ]; then
+case "$1" in
+certonly)
   certonly "${@}"
-elif [ "${ACTION}" = "delete" ]; then
+  ;;
+delete)
   delete "${@:2}"
-fi
+  ;;
+*)
+  echo "Usage: $(basename "$0") certonly|delete"
+  exit 0
+  ;;
+esac
