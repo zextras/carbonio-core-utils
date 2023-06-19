@@ -18,6 +18,18 @@ zal_path="/opt/zextras/lib/ext/carbonio/zal.jar"
 carbonio_path="/opt/zextras/lib/ext/carbonio/carbonio.jar"
 carbonio_cli_jars="/usr/bin/carbonio-advanced-cli/*"
 
+# check for tty presence and set TPUT usage accordingly
+{
+  [[ -t 0 && -t 1 && -n $TERM && $TERM != dumb ]] && which tput &>/dev/null && USE_TPUT=1
+} || USE_TPUT=0
+
+# default columns value
+TTY_COLS=80
+if [[ $USE_TPUT -eq 1 ]]; then
+  # cols existing tty value
+  TTY_COLS="$(tput cols)"
+fi
+
 call_cli() {
   if [ ! -f "${zal_path}" ] || [ ! -f "${carbonio_path}" ]; then
     exec /opt/zextras/bin/zmjava \
@@ -27,7 +39,7 @@ call_cli() {
     exec /opt/zextras/bin/zmjava \
       -cp "${carbonio_cli_jars}" \
       -Xmx128m com.zextras.cli.AdvancedCLI \
-      --columns "$(tput cols)" \
+      --columns "$TTY_COLS" \
       "$@"
   fi
 }
