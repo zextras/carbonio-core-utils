@@ -16,7 +16,7 @@ source /opt/zextras/bin/zmshutil || exit 1
 
 zal_path="/opt/zextras/lib/ext/carbonio/zal.jar"
 carbonio_path="/opt/zextras/lib/ext/carbonio/carbonio.jar"
-carbonio_cli_jars="/usr/bin/carbonio-advanced-cli/*"
+carbonio_cli_jars="/usr/share/carbonio-advanced-cli/*"
 
 # check for tty presence and set TPUT usage accordingly
 {
