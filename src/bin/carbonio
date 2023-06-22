@@ -14,9 +14,8 @@ fi
 
 source /opt/zextras/bin/zmshutil || exit 1
 
-zal_path="/opt/zextras/lib/ext/carbonio/zal.jar"
-carbonio_path="/opt/zextras/lib/ext/carbonio/carbonio.jar"
-carbonio_cli_jars="/usr/share/carbonio-advanced-cli/*"
+carbonio_cli_path="/usr/share/carbonio-advanced-cli"
+carbonio_cli="carbonio-advanced-cli.jar"
 
 # check for tty presence and set TPUT usage accordingly
 {
@@ -31,13 +30,13 @@ if [[ $USE_TPUT -eq 1 ]]; then
 fi
 
 call_cli() {
-  if [ ! -f "${zal_path}" ] || [ ! -f "${carbonio_path}" ]; then
+  if [ ! -f "${carbonio_cli_path}/${carbonio_cli}" ]; then
     exec /opt/zextras/bin/zmjava \
       com.zimbra.cs.account.ProvUtil \
       "$@"
   else
     exec /opt/zextras/bin/zmjava \
-      -cp "${carbonio_cli_jars}" \
+      -cp "${carbonio_cli_path}/*" \
       -Xmx128m com.zextras.cli.AdvancedCLI \
       --columns "$TTY_COLS" \
       "$@"
