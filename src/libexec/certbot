@@ -5,16 +5,29 @@ if [ "$(whoami)" != "zextras" ]; then
   exit 1
 fi
 
+delete_command="certbot delete -n --cert-name"
+
 certonly() {
   if certbot "${@}" --dry-run; then
     certbot "${@}"
   fi
 }
 
-ACTION="${1}"
+delete() {
+  for domain in "${@}"; do
+    ${delete_command} "$domain"
+  done
+}
 
-if [ "${ACTION}" = "certonly" ]; then
+case "$1" in
+certonly)
   certonly "${@}"
-fi
-
-
+  ;;
+delete)
+  delete "${@:2}"
+  ;;
+*)
+  echo "Usage: $(basename "$0") certonly|delete"
+  exit 0
+  ;;
+esac
