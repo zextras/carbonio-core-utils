@@ -280,10 +280,6 @@ if [ -d /opt/zextras ]; then
     find /opt/zextras/documentation -type f -exec chmod 444 {} \;
   fi
 
-  for i in /opt/zextras/zimlets*; do
-    chown -R ${zextras_user}:${zextras_group} ${i}
-  done
-
   for i in /opt/zextras/conf/*.crt /opt/zextras/conf/*.key /opt/zextras/conf/zmssl.cnf; do
     if [ -f ${i} ]; then
       printMsg "Fixing permissions and ownership on ${i}"
@@ -428,29 +424,12 @@ if [ -L /opt/zextras/jetty ]; then
 
   chown ${root_user}:${root_group} /opt/zextras/jetty-* 2>/dev/null
   for i in \
-    keystore mailboxd.{der,pem} jetty.xml{,.in} service.web.xml.in \
-    zimbra.web.xml.in zimbraAdmin.web.xml.in zimlet.web.xml.in; do
+    keystore mailboxd.{der,pem} jetty.xml{,.in} service.web.xml.in; do
     if [ -f /opt/zextras/jetty/etc/${i} ]; then
       chown ${zextras_user}:${zextras_group} /opt/zextras/jetty/etc/${i}
       chmod 640 /opt/zextras/jetty/etc/${i}
     fi
   done
-  if [ -f /opt/zextras/jetty/webapps/zimbraAdmin/tmp/current.csr ]; then
-    chown ${zextras_user}:${zextras_group} /opt/zextras/jetty/webapps/zimbraAdmin/tmp/current.csr
-    chmod 644 /opt/zextras/jetty/webapps/zimbraAdmin/tmp/current.csr
-  fi
-
-  if [ ! -d /opt/zextras/jetty/webapps/zimlet/WEB-INF ]; then
-    mkdir -p /opt/zextras/jetty/webapps/zimlet/WEB-INF
-  fi
-  chown -R ${zextras_user}:${zextras_group} /opt/zextras/jetty/webapps/zimlet
-  chmod 755 /opt/zextras/jetty/webapps/zimlet /opt/zextras/jetty/webapps/zimlet/WEB-INF
-
-  if [ ! -d /opt/zextras/jetty/work/zimlet ]; then
-    mkdir -p /opt/zextras/jetty/work/zimlet
-  fi
-  chown -R ${zextras_user}:${zextras_group} /opt/zextras/jetty/work/zimlet
-  chmod 750 /opt/zextras/jetty/work/zimlet
 
   if [ ! -d /opt/zextras/jetty/work/spnego ]; then
     mkdir -p /opt/zextras/jetty/work/spnego
@@ -463,12 +442,6 @@ if [ -L /opt/zextras/jetty ]; then
   fi
   chown ${zextras_user}:${zextras_group} /opt/zextras/fbqueue
   chmod 755 /opt/zextras/fbqueue
-
-  if [ ! -d /opt/zextras/zimlets-deployed ]; then
-    mkdir -p /opt/zextras/zimlets-deployed
-  fi
-  chown ${zextras_user}:${zextras_group} /opt/zextras/zimlets-deployed
-  chmod 755 /opt/zextras/zimlets-deployed
 
   for i in /opt/zextras/jetty/*; do
     chown -R ${zextras_user}:${zextras_group} ${i}
