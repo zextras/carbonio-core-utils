@@ -69,6 +69,10 @@ case "$1" in
   if [ -z "$(echo ${mailboxd_java_options} | grep sun.net.inetaddr.ttl)" ]; then
     mailboxd_java_options="${mailboxd_java_options} -Dsun.net.inetaddr.ttl=${networkaddress_cache_ttl}"
   fi
+
+  if [ -z "$(echo ${mailboxd_java_options} | grep log4j)" ]; then
+      mailboxd_java_options="${mailboxd_java_options} -Dlog4j.configurationFile=${zimbra_log4j_properties}"
+  fi
   echo -n "Starting mailboxd..."
   /opt/zextras/libexec/zmmailboxdmgr start \
     -Dfile.encoding=UTF-8 ${mailboxd_java_options} ${spnegoJavaOptions} -Xms${javaXms}m \
