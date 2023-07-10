@@ -18,7 +18,7 @@ import traceback
 
 import conf
 # import commands
-from org.apache.log4j import PropertyConfigurator
+from org.apache.logging.log4j.core.config import Configurator
 import state
 import listener
 from ldap import Ldap
@@ -151,7 +151,7 @@ state.State.mState = myState
 myConfig = conf.Config()
 conf.Config.mConfig = myConfig;
 myState.getLocalConfig(myConfig)
-PropertyConfigurator.configure("/opt/zextras/conf/zmconfigd.log4j.properties")
+Configurator.initialize(None, "/opt/zextras/conf/zmconfigd.log4j.properties")
 Log.initLogging(myConfig)
 Ldap.initLdap(myConfig)
 
