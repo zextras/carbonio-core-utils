@@ -26,28 +26,27 @@ fi
 pid=""
 pidfile="${zimbra_log_directory}/zmconfigd.pid"
 
-NC=$(which nc 2>/dev/null)
-NC=${NC:-$(which netcat 2>/dev/null)}
+NC=$(command -v nc 2>/dev/null)
+NC=${NC:-$(command -v netcat 2>/dev/null)}
 
 getpid() {
-  if [ -f ${pidfile} ]; then
-    pid=$(cat ${pidfile})
+  if [[ -f ${pidfile} ]]; then
+    pid=$(cat "${pidfile}")
   fi
 }
 
 checkrunning() {
   getpid
-  if [ "x$pid" = "x0" ]; then
+  if [[ "${pid}" = "0" ]]; then
     pid=$(ps auxwww | grep zmconfigd | grep -v grep | grep -v zmconfigdctl | awk '{print $2}')
   fi
-  if [ "x$pid" = "x" ]; then
+  if [[ "${pid}" = "" ]]; then
     running=0
   else
-    status=$(echo STATUS | $NC -w 15 localhost ${zmconfigd_listen_port} 2>/dev/null)
-    if [ $? = 0 -a "x$status" = "xSUCCESS ACTIVE" ]; then
-      running=1
-    else
+    if ! ${NC} -z localhost "${zmconfigd_listen_port}"; then
       running=0
+    else
+      running=1
     fi
   fi
 }
@@ -56,33 +55,33 @@ startzmconfigd() {
   err=0
   checkrunning
   echo -n "Starting zmconfigd..."
-  if [ $running = 1 ]; then
+  if [[ ${running} = 1 ]]; then
     echo "zmconfigd is already running."
     return
   fi
-  if [ "x$JYTHONPATH" = "x" ]; then
+  if [[ ${JYTHONPATH} = "" ]]; then
     echo "JYTHONPATH is unset!"
     err=1
     return
   fi
-  if [ "x${pid}" != "x" ]; then
+  if [[ "${pid}" != "" ]]; then
     kill ${pid}
   fi
   rm -rf ${pidfile}
   /opt/zextras/libexec/zmconfigd >/dev/null 2>&1 &
   for ((i = 0; i < 30; i++)); do
-    if [ -f ${pidfile} ]; then
+    if [[ -f ${pidfile} ]]; then
       break
     fi
     sleep 1
   done
-  for ((i = 0; i < ${zmconfigd_startup_pause}; i++)); do
+  for ((i = 0; i < zmconfigd_startup_pause; i++)); do
     checkrunning
-    if [ $running = 1 ]; then
+    if [[ ${running} = 1 ]]; then
       echo "done."
       return
     fi
-    if [ $running = -1 ]; then
+    if [[ ${running} = -1 ]]; then
       echo "Failed to start"
       err=1
       return
@@ -97,27 +96,26 @@ startzmconfigd() {
 case "$1" in
   'start')
     startzmconfigd
-    exit ${err}
+    exit "${err}"
     ;;
 
   'kill' | 'stop')
     checkrunning
     echo -n "Stopping zmconfigd..."
-    if [ $running -lt 1 ]; then
+    if [[ ${running} -lt 1 ]]; then
       echo "zmconfigd is not running."
       exit 0
     else
       for ((i = 0; i < 30; i++)); do
-        kill -0 $pid 2>/dev/null
-        if [ $? != 0 ]; then
-          rm -rf ${pidfile}
+        if ! kill -0 ${pid} 2>/dev/null; then
+          rm -rf "${pidfile}"
           break
         fi
-        kill $pid
+        kill ${pid}
         sleep 1
       done
     fi
-    if [ -s ${pidfile} ]; then
+    if [[ -s ${pidfile} ]]; then
       echo "failed."
       exit 1
     else
@@ -134,7 +132,7 @@ case "$1" in
   'status')
     echo -n "zmconfigd is "
     checkrunning
-    if [ $running -lt 1 ]; then
+    if [[ ${running} -lt 1 ]]; then
       echo "not running."
       exit 1
     else
