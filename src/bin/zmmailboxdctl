@@ -54,11 +54,6 @@ case "$1" in
   fi
 
   mkdir -p ${mailboxd_directory}/work/service/jsp
-  mkdir -p ${mailboxd_directory}/work/zimbra/jsp
-  mkdir -p ${mailboxd_directory}/work/zimbraAdmin/jsp
-  if [ ! -d ${mailboxd_directory}/webapps/zimlet/WEB-INF ]; then
-    mkdir -p ${mailboxd_directory}/webapps/zimlet/WEB-INF
-  fi
 
   mailboxd_thread_stack_size=${mailboxd_thread_stack_size:=256k}
   if [ -z "$(echo ${mailboxd_java_options} | grep Xss)" ]; then
@@ -68,6 +63,10 @@ case "$1" in
   networkaddress_cache_ttl=${networkaddress_cache_ttl:=60}
   if [ -z "$(echo ${mailboxd_java_options} | grep sun.net.inetaddr.ttl)" ]; then
     mailboxd_java_options="${mailboxd_java_options} -Dsun.net.inetaddr.ttl=${networkaddress_cache_ttl}"
+  fi
+
+  if [ -z "$(echo ${mailboxd_java_options} | grep log4j)" ]; then
+      mailboxd_java_options="${mailboxd_java_options} -Dlog4j.configurationFile=${zimbra_log4j_properties}"
   fi
   echo -n "Starting mailboxd..."
   /opt/zextras/libexec/zmmailboxdmgr start \
