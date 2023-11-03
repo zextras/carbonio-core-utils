@@ -96,7 +96,8 @@ if (fork()) {
 	close(LOG);
 	close(PFOUT);
 	
-	my @Report;
+	my $server = getLocalConfig("zimbra_server_hostname");	
+	my @Report = ("Report created on $server\n");
 	while (<MIN>) {
 		push(@Report, $_);
 	}
