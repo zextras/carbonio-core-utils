@@ -13,4 +13,4 @@ This repository contains Carbonio core utilities, such as:
 
 ## License
 
-See [COPYING](COPYING) file for details
+See [COPYING](COPYING-AGPL-3.0-only) file for details
