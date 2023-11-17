@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 # SPDX-FileCopyrightText: 2022 Synacor, Inc.
-# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+# SPDX-FileCopyrightText: 2023 Zextras <https://www.zextras.com>
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
@@ -89,13 +89,8 @@ if (fork()) {
 	}
 	close(LOG);
 	close(PFOUT);
-<<<<<<< HEAD
 	# exit 1;
 	my $server = getLocalConfig("zimbra_server_hostname");
-=======
-	
-	my $server = getLocalConfig("zimbra_server_hostname");	
->>>>>>> e4d2bc5925af5bca3c55e09da086eebca83698ca
 	my @Report = ("Report created on $server\n");
 	while (<MIN>) {
 		push(@Report, $_);
