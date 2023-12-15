@@ -14,6 +14,7 @@ use IPC::Open3;
 use Time::Local;
 use Mail::Mailer;
 use Getopt::Long;
+use File::Find;
 
 my %options = ();
 my $report = [];
@@ -69,6 +70,9 @@ sub checkDbs() {
   my $mysql_root_passwd = getLocalConfig("mysql_root_password");
   my $mysql_socket = getLocalConfig("mysql_socket") || "/opt/zextras/db/mysql.sock";
   my $mysql_mycnf = getLocalConfig("mysql_mycnf") || "/opt/zextras/conf/my.cnf";
+
+  prepareDataDirectoryForChecks($mysql_mycnf);
+
   my $cmd;
   if ( -x "/opt/zextras/mysql/bin/mysqlcheck") {
     $cmd = "/opt/zextras/mysql/bin/mysqlcheck";
@@ -163,6 +167,26 @@ sub getLocalConfig {
 	}
 	$ENV{zmsetvars} = 'true';
 	return $ENV{$key};
+}
+
+
+# Retrieves 'datadir' value from passed MySQL configuration file (my.cnf).
+# If the configuration file doesn't exist, it uses the default 'datadir'.
+#
+# Perform cleanup in the 'datadir' removing empty directories
+# MySql interprets any directory under 'datadir' to be a database.
+#
+# See: https://dev.mysql.com/doc/refman/8.2/en/data-directory.html
+sub prepareDataDirectoryForChecks {
+  my $my_cnf = shift;
+
+  open my $fh, '<', $my_cnf;
+  my ($datadir) = map { /^\s*datadir\s*=\s*(\S+)/i ? $1 : () } <$fh>;
+  close $fh if $fh;
+
+  $datadir //= '/opt/zextras/db/data';
+
+  finddepth(sub{rmdir}, $datadir);
 }
 
 
@@ -270,4 +294,3 @@ sub getLdapGlobalConfigValue {
 
   return $val;
 }
-
