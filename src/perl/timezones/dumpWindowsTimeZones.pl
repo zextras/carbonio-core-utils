@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: GPL-2.0-only
 
 if ($^O ne 'MSWin32') {
     print STDERR "This program only runs on MSWin32 platform.\n";
