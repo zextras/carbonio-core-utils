@@ -1,7 +1,7 @@
 # Carbonio Core Utils
 
 ![Contributors](https://img.shields.io/github/contributors/zextras/carbonio-core-utils "Contributors")
-![Activity](https://img.shields.io/github/commit-activity/m/zextras/carbonio-core-utils "Activity") ![License](https://img.shields.io/badge/license-AGPL%203-green
+![Activity](https://img.shields.io/github/commit-activity/m/zextras/carbonio-core-utils "Activity") ![License](https://img.shields.io/badge/license-GPL%202-green
 "License")
 ![Project](https://img.shields.io/badge/project-carbonio-informational
 "Project")
