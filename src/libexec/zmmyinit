@@ -5,8 +5,11 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-if [ x$(whoami) != "xzextras" ]; then
-  echo "Error: must be run as user zextras"
+# shellcheck disable=SC1091
+# shellcheck disable=SC2154
+
+if [ "$(whoami)" != "root" ]; then
+  echo "Error: must be run as user root"
   exit 1
 fi
 
@@ -28,131 +31,131 @@ zmassert -x /opt/zextras/bin/mysql
 zmassert -x /opt/zextras/bin/zmlocalconfig
 zmassert -x /opt/zextras/bin/zmmypasswd
 zmassert -x /opt/zextras/common/share/mysql/scripts/mysql_install_db
-zmassert -r ${zimbra_db_directory}/db.sql
-zmassert -r ${zimbra_db_directory}/versions-init.sql
+zmassert -r "${zimbra_db_directory}/db.sql"
+zmassert -r "${zimbra_db_directory}/versions-init.sql"
 
 for opt in "$@"; do
   case "$opt" in
-  -help | --help | -h | --help)
-    usage
-    exit 0
-    shift
-    ;;
-  -verbose | --verbose | -v | --v)
-    verbose=yes
-    shift
-    ;;
-  --sql_root_pw)
-    shift
-    sql_root_pw=$1
-    shift
-    ;;
-  --mysql_memory_percent)
-    shift
-    mysql_memory_percent=$1
-    shift
-    ;;
-  --* | -*)
-    echo "Unknown option $opt"
-    usage
-    exit 1
-    shift
-    ;;
+    -help | --help | -h)
+      usage
+      exit 0
+      ;;
+    -verbose | --verbose | -v | --v)
+      verbose=yes
+      shift
+      ;;
+    --sql_root_pw)
+      shift
+      sql_root_pw=$1
+      shift
+      ;;
+    --mysql_memory_percent)
+      shift
+      mysql_memory_percent=$1
+      shift
+      ;;
+    --* | -*)
+      echo "Unknown option $opt"
+      usage
+      exit 1
+      ;;
   esac
 done
 
 mysql_memory_percent=${mysql_memory_percent:=30}
-if [ x"$verbose" = "xyes" ]; then
+if [ "$verbose" = "yes" ]; then
   echo "mysql_memory_percent=$mysql_memory_percent"
 fi
 
 #
 # Create necessary directories
 #
-echo '*' Creating required directories
-mkdir -p ${mysql_data_directory}
-mkdir -p ${zimbra_index_directory}
-mkdir -p ${zimbra_store_directory}
-mkdir -p ${zimbra_log_directory}
+echo "* Creating required directories"
+su - zextras -c "mkdir -p ${mysql_data_directory}"
+su - zextras -c "mkdir -p ${zimbra_index_directory}"
+su - zextras -c "mkdir -p ${zimbra_store_directory}"
+su - zextras -c "mkdir -p ${zimbra_log_directory}"
 
 #
 # Generate a mysql config file
 #
-echo '*' Generating mysql config ${mysql_mycnf}
-rm -f ${mysql_mycnf}
-/opt/zextras/libexec/zmmycnf --innodb-buffer-pool-memory-percent \
-  $mysql_memory_percent >${mysql_mycnf}
+echo "* Generating mysql config ${mysql_mycnf}"
+su - zextras -c "rm -f ${mysql_mycnf}"
+su - zextras -c "/opt/zextras/libexec/zmmycnf --innodb-buffer-pool-memory-percent \
+  $mysql_memory_percent >${mysql_mycnf}"
 
 #
 # Create database
 #
-echo '*' Creating database in ${mysql_data_directory}
-(/opt/zextras/common/share/mysql/scripts/mysql_install_db \
-  --basedir=/opt/zextras/common \
-  --defaults-file=${mysql_mycnf}) \
-  >>${zimbra_log_directory}/zmmyinit.log 2>&1
+echo "* Creating database in ${mysql_data_directory}"
+su - zextras -c "
+  /opt/zextras/common/share/mysql/scripts/mysql_install_db \
+    --basedir=/opt/zextras/common \
+    --defaults-file=${mysql_mycnf} \
+    >>${zimbra_log_directory}/zmmyinit.log 2>&1"
 
 #
 # Start mysql server
 #
-echo '*' Starting mysql server
-/opt/zextras/bin/mysql.server start \
-  >>${zimbra_log_directory}/zmmyinit.log 2>&1
+echo "* Starting mysql server"
+su - zextras -c "/opt/zextras/bin/mysql.server start \
+  >>${zimbra_log_directory}/zmmyinit.log 2>&1"
 
 # make sure we can connect before continuing
-until $(echo "show processlist" | /opt/zextras/bin/mysql -u root --password= >/dev/null 2>&1); do
-  let i++
+until echo "show processlist" | /opt/zextras/bin/mysql -u root -p= >/dev/null 2>&1; do
+  ((i++))
   sleep 5
   if [ $i -gt 25 ]; then
-    echo '*' Failed to connect to mysql...giving up!
-    exit -1
+    echo "* Failed to connect to mysql...giving up!"
+    exit 1
   else
-    echo '*' Failed to connect to mysql...retrying
+    echo "* Failed to connect to mysql...retrying"
   fi
 done
 
 #
 # Load zimbra sql files
 #
-echo '*' Loading schema ${zimbra_db_directory}/db.sql
-/opt/zextras/bin/mysql -u root --password= < \
-  ${zimbra_db_directory}/db.sql
+echo "* Loading schema ${zimbra_db_directory}/db.sql"
+/opt/zextras/bin/mysql -u root -p= < \
+  "${zimbra_db_directory}/db.sql"
 
 if [ -f "${zimbra_db_directory}/create_sharing_database.sql" ]; then
-  echo '*' Loading schema ${zimbra_db_directory}/create_sharing_database.sql
-  /opt/zextras/bin/mysql -u root --password= < \
-    ${zimbra_db_directory}/create_sharing_database.sql
+  echo "* Loading schema ${zimbra_db_directory}/create_sharing_database.sql"
+  /opt/zextras/bin/mysql -u root -p= < \
+    "${zimbra_db_directory}/create_sharing_database.sql"
 fi
 
-echo '*' Loading version from ${zimbra_db_directory}/versions-init.sql
-/opt/zextras/bin/mysql -u root --password= < \
-  ${zimbra_db_directory}/versions-init.sql
+echo "* Loading version from ${zimbra_db_directory}/versions-init.sql"
+/opt/zextras/bin/mysql -u root -p= < \
+  "${zimbra_db_directory}/versions-init.sql"
 
 if [ -f "${zimbra_db_directory}/backup-version-init.sql" ]; then
-  echo '*' Loading version from ${zimbra_db_directory}/backup-version-init.sql
-  /opt/zextras/bin/mysql -u root --password= < \
-    ${zimbra_db_directory}/backup-version-init.sql
+  echo "* Loading version from ${zimbra_db_directory}/backup-version-init.sql"
+  /opt/zextras/bin/mysql -u root -p= < \
+    "${zimbra_db_directory}/backup-version-init.sql"
 fi
 
 #
 # Delete wildcard user login entries
 #
-/opt/zextras/bin/mysql -u root --password= -e "DROP USER ''@'localhost'; DROP USER ''@'$(hostname)';"
+/opt/zextras/bin/mysql -u root -p= \
+  -e "DROP USER ''@'localhost'; DROP USER ''@'$(hostname)';"
 
 #
 # Generate passwords for mysql into local config
 #
-if [ x$sql_root_pw = "x" ]; then
-  echo '*' Setting random passwd for mysql root user in zimbra localconfig
-  /opt/zextras/bin/zmlocalconfig -r -f -e mysql_root_password
+if [ "$sql_root_pw" = "" ]; then
+  echo "* Setting random passwd for mysql root user in zimbra localconfig"
+  su - zextras -c "/opt/zextras/bin/zmlocalconfig -r -f -e mysql_root_password"
 
-  echo '*' Setting random passwd for mysql zextras user in zimbra localconfig
-  /opt/zextras/bin/zmlocalconfig -r -f -e zimbra_mysql_password
+  echo "* Setting random passwd for mysql zextras user in zimbra localconfig"
+  su - zextras -c "/opt/zextras/bin/zmlocalconfig -r -f -e zimbra_mysql_password"
 else
-  echo '*' Setting passwd for mysql root user in zimbra localconfig
-  /opt/zextras/bin/zmlocalconfig -f -e mysql_root_password=$sql_root_pw
-  echo '*' Setting passwd for mysql zextras user in zimbra localconfig
-  /opt/zextras/bin/zmlocalconfig -f -e zimbra_mysql_password=$sql_root_pw
+  echo "* Setting passwd for mysql root user in zimbra localconfig"
+  su - zextras -c "/opt/zextras/bin/zmlocalconfig -f -e mysql_root_password=$sql_root_pw"
+  echo "* Setting passwd for mysql zextras user in zimbra localconfig"
+  su - zextras -c "/opt/zextras/bin/zmlocalconfig -f -e zimbra_mysql_password=$sql_root_pw"
 fi
 
 #
@@ -162,14 +165,9 @@ fi
 # this stage we know that the root password is empty.
 #
 zmsetvars -f
-echo '*' Changing mysql root user password
-cat <<EOF | /opt/zextras/bin/mysql -u root --password=
-    SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${mysql_root_password}');
-    SET PASSWORD FOR 'root'@'$(hostname)' = PASSWORD('${mysql_root_password}');
-    SET PASSWORD FOR 'root'@'127.0.0.1' = PASSWORD('${mysql_root_password}');
-    SET PASSWORD FOR 'root'@'::1' = PASSWORD('${mysql_root_password}');
-    SET PASSWORD FOR 'root'@'localhost.localdomain' = PASSWORD('${mysql_root_password}');
-EOF
+echo "* Changing mysql root user password"
+/opt/zextras/bin/mysql -u root -p= \
+  -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${mysql_root_password}');"
 
-echo '*' Changing mysql zextras user password
-/opt/zextras/bin/zmmypasswd ${zimbra_mysql_password}
+echo "* Changing mysql zextras user password"
+su - zextras -c "/opt/zextras/bin/zmmypasswd ${zimbra_mysql_password}"
