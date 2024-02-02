@@ -5,7 +5,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-if [ x$(whoami) != xzextras ]; then
+if [ "$(whoami)" != zextras ]; then
   echo "Error: must be run as zextras user"
   exit 1
 fi
@@ -15,21 +15,21 @@ zmsetvars
 
 servicename=proxy
 configfile=/opt/zextras/conf/nginx.conf
-pidfile=${zimbra_log_directory}/nginx.pid
+pidfile="${zimbra_log_directory}/nginx.pid"
 pid=""
 
 getpid() {
-  if [ -f ${pidfile} ]; then
-    pid=$(cat ${pidfile})
+  if [ -f "${pidfile}" ]; then
+    pid=$(cat "${pidfile}")
   fi
 }
 
 checkrunning() {
   getpid
-  if [ "x$pid" = "x" ]; then
+  if [ "$pid" = "" ]; then
     running=0
   else
-    if ps --no-headers -p $pid -o cmd 2>/dev/null | grep nginx >/dev/null 2>&1; then
+    if ps --no-headers -p "$pid" -o cmd 2>/dev/null | grep nginx >/dev/null 2>&1; then
       running=1
     else
       pid=""
@@ -39,106 +39,106 @@ checkrunning() {
 }
 
 case "$1" in
-start)
-  if [ ! -x /opt/zextras/common/sbin/nginx ]; then
-    echo "Error: nginx not installed"
-    exit 1
-  fi
+  start)
+    if [ ! -x /opt/zextras/common/sbin/nginx ]; then
+      echo "Error: nginx not installed"
+      exit 1
+    fi
 
-  checkrunning
-  echo -n "Starting ${servicename}..."
-  if [ $running = 1 ]; then
-    echo "${servicename} is already running."
-    exit 0
-  fi
-  if [ "x$2" = "x" ]; then
-    /opt/zextras/libexec/configrewrite proxy >/dev/null 2>&1
-  fi
+    checkrunning
+    echo -n "Starting ${servicename}..."
+    if [ $running = 1 ]; then
+      echo "${servicename} is already running."
+      exit 0
+    fi
+    if [ "$2" = "" ]; then
+      /opt/zextras/libexec/configrewrite proxy >/dev/null 2>&1
+    fi
 
-  if [ ! -f ${configfile} ]; then
-    echo "failed.  ${configfile} is missing."
-    exit 1
-  fi
+    if [ ! -f ${configfile} ]; then
+      echo "failed.  ${configfile} is missing."
+      exit 1
+    fi
 
-  # read the last line of nginx.conf which indicates the conf gen result
-  res=$(tail -n 1 ${configfile})
-  warn=''
+    # read the last line of nginx.conf which indicates the conf gen result
+    res=$(tail -n 1 ${configfile})
+    warn=''
 
-  if ! [[ $res =~ __SUCCESS__ ]]; then
-    msg=$(echo $res | awk -F ':' '{print $2}')
-    if [ x"$msg" = "x" ]; then msg="unknown"; fi
-    if ! [[ $res =~ "No available nginx lookup handlers could be contacted" ]]; then
+    if ! [[ $res =~ __SUCCESS__ ]]; then
+      msg=$(echo "$res" | awk -F ':' '{print $2}')
+      if [ "$msg" = "" ]; then msg="unknown"; fi
+      if ! [[ $res =~ "No available nginx lookup handlers could be contacted" ]]; then
+        echo "failed."
+        echo "nginx start failed. reason: $msg"
+        exit 1
+      else
+        warn=$msg
+      fi
+    fi
+
+    sudo /opt/zextras/common/sbin/nginx -c ${configfile}
+    for ((i = 0; i < 30; i++)); do
+      checkrunning
+      if [ $running = 1 ]; then
+        break
+      fi
+      sleep 1
+    done
+    if [ "$pid" != "" ]; then
+      echo "done."
+      if [ "$warn" != "" ]; then
+        echo "Warning: $warn"
+      fi
+      exit 0
+    else
       echo "failed."
-      echo "nginx start failed. reason: $msg"
+      exit 1
+    fi
+    ;;
+  stop)
+    checkrunning
+    echo -n "Stopping ${servicename}..."
+    if [ $running = 0 ]; then
+      echo "${servicename} is not running."
+      exit 0
+    else
+      sudo /opt/zextras/common/sbin/nginx -c /opt/zextras/conf/nginx.conf -s stop
+      sleep 1
+    fi
+    if [ -s "${pidfile}" ]; then
+      echo "failed."
       exit 1
     else
-      warn=$msg
+      echo "done."
     fi
-  fi
-
-  /opt/zextras/common/sbin/nginx -c ${configfile}
-  for ((i = 0; i < 30; i++)); do
+    exit 0
+    ;;
+  restart)
+    $0 stop
+    $0 start "$2"
+    ;;
+  reload)
     checkrunning
-    if [ $running = 1 ]; then
-      break
+    if [ $running = 1 ] && [ "$pid" != "" ]; then
+      echo -n "Reloading ${servicename}..."
+      sudo /opt/zextras/common/sbin/nginx -c /opt/zextras/conf/nginx.conf -s reload
+      echo "done."
     fi
-    sleep 1
-  done
-  if [ "x$pid" != "x" ]; then
-    echo "done."
-    if [ x"$warn" != "x" ]; then
-      echo "Warning: $warn"
-    fi
-    exit 0
-  else
-    echo "failed."
-    exit 1
-  fi
-  ;;
-stop)
-  checkrunning
-  echo -n "Stopping ${servicename}..."
-  if [ $running = 0 ]; then
-    echo "${servicename} is not running."
-    exit 0
-  else
-    /opt/zextras/common/sbin/nginx -c /opt/zextras/conf/nginx.conf -s stop
-    sleep 1
-  fi
-  if [ -s ${pidfile} ]; then
-    echo "failed."
-    exit 1
-  else
-    echo "done."
-  fi
-  exit 0
-  ;;
-restart)
-  $0 stop
-  $0 start $2
-  ;;
-reload)
-  checkrunning
-  if [ $running = 1 -a "x$pid" != "x" ]; then
-    echo -n "Reloading ${servicename}..."
-    /opt/zextras/common/sbin/nginx -c /opt/zextras/conf/nginx.conf -s reload
-    echo "done."
-  fi
 
-  ;;
-status)
-  echo -n "${servicename} is "
-  checkrunning
-  if [ $running = 0 ]; then
-    echo "not running."
+    ;;
+  status)
+    echo -n "${servicename} is "
+    checkrunning
+    if [ $running = 0 ]; then
+      echo "not running."
+      exit 1
+    else
+      echo "running."
+      exit 0
+    fi
+    ;;
+  *)
+    echo "$0 start|stop|restart|reload|status"
     exit 1
-  else
-    echo "running."
-    exit 0
-  fi
-  ;;
-*)
-  echo "$0 start|stop|restart|reload|status"
-  exit 1
-  ;;
+    ;;
 esac
