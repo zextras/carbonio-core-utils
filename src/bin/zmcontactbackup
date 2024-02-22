@@ -513,13 +513,13 @@ sub loadCron {
     if ( !$comments_good ) {
         print STDERR "Rebuilding contact backup cron\n\n";
 
-        # Find CARBONIO-END, and add contact backup comments
+        # Find ZEXTRAS-END, and add contact backup comments
         # before it. If not found add comments at the end
         my $zimbraEndLoc = 0;
         for ( my $i = 0 ; $i <= $#cron ; $i++ ) {
             $_ = $cron[$i];
             if (
-m/CARBONIO-END -- DO NOT EDIT ANYTHING BETWEEN THIS LINE AND CARBONIO-START/
+m/ZEXTRAS-END -- DO NOT EDIT ANYTHING BETWEEN THIS LINE AND ZEXTRAS-START/
               )
             {
                 $zimbraEndLoc = $i;
@@ -528,7 +528,7 @@ m/CARBONIO-END -- DO NOT EDIT ANYTHING BETWEEN THIS LINE AND CARBONIO-START/
         }
         if ($zimbraEndLoc) {
 
-        # CARBONIO-END found, insert contact backup comments before CARBONIO-END
+        # ZEXTRAS-END found, insert contact backup comments before ZEXTRAS-END
             splice( @cron, $zimbraEndLoc - 1, 0,
                 ( "#\n# CONTACT BACKUP BEGIN\n", "# CONTACT BACKUP END\n#\n" )
             );
@@ -537,7 +537,7 @@ m/CARBONIO-END -- DO NOT EDIT ANYTHING BETWEEN THIS LINE AND CARBONIO-START/
         }
         else {
 
-            # CARBONIO-END not found
+            # ZEXTRAS-END not found
             # One or both contact backup comments not found.
             # Clean up the array, and add them to the end
             if ( $cronstart == -1 && $cronstop == -1 ) {
