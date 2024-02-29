@@ -5,10 +5,11 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-if [ x$(whoami) != "xzextras" ]; then
-  echo "$0 must be run as user zextras"
+if [ "$(whoami)" != zextras ]; then
+  echo "Error: must be run as zextras user"
   exit 1
 fi
+
 umask 027
 
 source /opt/zextras/bin/zmshutil || exit 1

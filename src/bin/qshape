@@ -8,8 +8,7 @@
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
-ID=$(id -un)
-if [ x"$ID" != "xzextras" ]; then
+if [ "$(whoami)" != "zextras" ]; then
   echo "$0 must be run as user zextras."
   exit 1
 fi
