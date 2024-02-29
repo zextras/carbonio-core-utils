@@ -5,9 +5,4 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-if [ ! -f /.dockerenv ]; then
-  ulimit -n 32768
-  ulimit -c unlimited
-  ulimit -v unlimited
-fi
 exec /opt/zextras/common/libexec/slapd "$@"

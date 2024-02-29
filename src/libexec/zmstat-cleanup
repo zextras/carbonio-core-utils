@@ -22,23 +22,23 @@ zmsetvars
 
 while [ $# -gt 0 ]; do
   case $1 in
-  -h | --help)
-    usage
-    ;;
-  -k | --keep)
-    shift
-    zmstat_max_retention=$1
-    ;;
-  -l | --list)
-    listArchives=TRUE
-    ;;
-  -p | --purge)
-    purgeAll=TRUE
-    ;;
-  *)
-    echo "ERROR: Unknown option $1"
-    usage
-    ;;
+    -h | --help)
+      usage
+      ;;
+    -k | --keep)
+      shift
+      zmstat_max_retention=$1
+      ;;
+    -l | --list)
+      listArchives=TRUE
+      ;;
+    -p | --purge)
+      purgeAll=TRUE
+      ;;
+    *)
+      echo "ERROR: Unknown option $1"
+      usage
+      ;;
   esac
   shift
 done

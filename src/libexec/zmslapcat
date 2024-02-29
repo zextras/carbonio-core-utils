@@ -5,12 +5,6 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-if [ ! -f /.dockerenv ]; then
-  ulimit -n 32768
-  ulimit -c unlimited
-  ulimit -v unlimited
-fi
-
 umask 027
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
@@ -19,9 +13,8 @@ if [ ! -x /opt/zextras/common/sbin/slapcat ]; then
   exit 0
 fi
 
-u=$(id -un)
-if [ $u != ${zimbra_user} ]; then
-  echo "Error: must be run as ${zimbra_user} user"
+if [ "$(whoami)" != zextras ]; then
+  echo Error: must be run as zextras user
   exit 1
 fi
 

@@ -41,14 +41,14 @@ remove_dns() {
 }
 
 case "$1" in
-add)
-  add_dns
-  ;;
-remove)
-  remove_dns
-  ;;
-*)
-  echo "Usage: $0 add|remove"
-  exit 1
-  ;;
+  add)
+    add_dns
+    ;;
+  remove)
+    remove_dns
+    ;;
+  *)
+    echo "Usage: $0 add|remove"
+    exit 1
+    ;;
 esac

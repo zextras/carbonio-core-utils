@@ -43,100 +43,99 @@ fi
 # Main
 #
 case "$1" in
-'start')
-  if [ "x$2" = "x" ]; then
-    /opt/zextras/bin/zmtlsctl >/dev/null 2>&1
-  fi
-  /opt/zextras/libexec/zmmailboxdmgr status
-  if [ $? = 0 ]; then
-    echo "mailboxd already running."
-    exit 0
-  fi
-
-  mkdir -p ${mailboxd_directory}/work/service/jsp
-
-  mailboxd_thread_stack_size=${mailboxd_thread_stack_size:=256k}
-  if [ -z "$(echo ${mailboxd_java_options} | grep Xss)" ]; then
-    mailboxd_java_options="${mailboxd_java_options} -Xss${mailboxd_thread_stack_size}"
-  fi
-
-  networkaddress_cache_ttl=${networkaddress_cache_ttl:=60}
-  if [ -z "$(echo ${mailboxd_java_options} | grep sun.net.inetaddr.ttl)" ]; then
-    mailboxd_java_options="${mailboxd_java_options} -Dsun.net.inetaddr.ttl=${networkaddress_cache_ttl}"
-  fi
-
-  if [ -z "$(echo ${mailboxd_java_options} | grep log4j)" ]; then
-      mailboxd_java_options="${mailboxd_java_options} -Dlog4j.configurationFile=${zimbra_log4j_properties}"
-  fi
-  echo -n "Starting mailboxd..."
-  /opt/zextras/libexec/zmmailboxdmgr start \
-    -Dfile.encoding=UTF-8 ${mailboxd_java_options} ${spnegoJavaOptions} -Xms${javaXms}m \
-    -Xmx${javaXmx}m </dev/null >/dev/null 2>&1
-  status=$?
-  if [ $status != 0 ]; then
-    echo "failed."
-    exit $status
-  fi
-  status=1
-  MPORT=$(/opt/zextras/bin/zmprov -l gs ${zimbra_server_hostname} zimbraMailPort | grep zimbraMailPort: | awk '{print $2}')
-  ncOpt="-z"
-  for ((i = 0; i < 12; i++)); do
-    $NC $ncOpt localhost ${MPORT} >/dev/null 2>&1
-    if [ $? = 0 ]; then
-      status=0
-      break
+  'start')
+    if [ "x$2" = "x" ]; then
+      /opt/zextras/bin/zmtlsctl >/dev/null 2>&1
     fi
-    sleep 5
-  done
-  if [ $status = 0 ]; then
-    echo "done."
-  else
-    echo "failed."
-  fi
-  exit $status
-  ;;
+    /opt/zextras/libexec/zmmailboxdmgr status
+    if [ $? = 0 ]; then
+      echo "mailboxd already running."
+      exit 0
+    fi
 
-'kill' | 'stop')
-  echo -n "Stopping mailboxd..."
-  /opt/zextras/libexec/zmmailboxdmgr status
-  if [ $? != 0 ]; then
-    echo "mailboxd is not running."
+    mkdir -p ${mailboxd_directory}/work/service/jsp
+
+    mailboxd_thread_stack_size=${mailboxd_thread_stack_size:=256k}
+    if [ -z "$(echo ${mailboxd_java_options} | grep Xss)" ]; then
+      mailboxd_java_options="${mailboxd_java_options} -Xss${mailboxd_thread_stack_size}"
+    fi
+
+    networkaddress_cache_ttl=${networkaddress_cache_ttl:=60}
+    if [ -z "$(echo ${mailboxd_java_options} | grep sun.net.inetaddr.ttl)" ]; then
+      mailboxd_java_options="${mailboxd_java_options} -Dsun.net.inetaddr.ttl=${networkaddress_cache_ttl}"
+    fi
+
+    if [ -z "$(echo ${mailboxd_java_options} | grep log4j)" ]; then
+      mailboxd_java_options="${mailboxd_java_options} -Dlog4j.configurationFile=${zimbra_log4j_properties}"
+    fi
+    echo -n "Starting mailboxd..."
+    /opt/zextras/libexec/zmmailboxdmgr start \
+      -Dfile.encoding=UTF-8 ${mailboxd_java_options} ${spnegoJavaOptions} -Xms${javaXms}m \
+      -Xmx${javaXmx}m </dev/null >/dev/null 2>&1
+    status=$?
+    if [ $status != 0 ]; then
+      echo "failed."
+      exit $status
+    fi
+    status=1
+    MPORT=$(/opt/zextras/bin/zmprov -l gs ${zimbra_server_hostname} zimbraMailPort | grep zimbraMailPort: | awk '{print $2}')
+    ncOpt="-z"
+    for ((i = 0; i < 12; i++)); do
+      $NC $ncOpt localhost ${MPORT} >/dev/null 2>&1
+      if [ $? = 0 ]; then
+        status=0
+        break
+      fi
+      sleep 5
+    done
+    if [ $status = 0 ]; then
+      echo "done."
+    else
+      echo "failed."
+    fi
+    exit $status
+    ;;
+
+  'kill' | 'stop')
+    echo -n "Stopping mailboxd..."
+    /opt/zextras/libexec/zmmailboxdmgr status
+    if [ $? != 0 ]; then
+      echo "mailboxd is not running."
+      exit 0
+    fi
+    /opt/zextras/bin/zmthrdump -i -o /opt/zextras/log/stacktrace.$$.$(date +%Y%m%d%H%M%S) 2>/dev/null
+    /opt/zextras/libexec/zmmailboxdmgr stop
+    if [ $? = 0 ]; then
+      echo "done."
+    else
+      echo "failed."
+    fi
     exit 0
-  fi
-  /opt/zextras/bin/zmthrdump -i -o /opt/zextras/log/stacktrace.$$.$(date +%Y%m%d%H%M%S) 2>/dev/null
-  /opt/zextras/libexec/zmmailboxdmgr stop
-  if [ $? = 0 ]; then
-    echo "done."
-  else
-    echo "failed."
-  fi
-  exit 0
-  ;;
+    ;;
 
-\
   'restart' | 'reload')
-  $0 stop
-  $0 start $2
-  ;;
+    $0 stop
+    $0 start $2
+    ;;
 
-'status')
-  echo -n "mailboxd is "
-  /opt/zextras/libexec/zmmailboxdmgr status
-  if [ $? = 0 ]; then
-    echo "running."
-    exit 0
-  else
-    echo "not running."
+  'status')
+    echo -n "mailboxd is "
+    /opt/zextras/libexec/zmmailboxdmgr status
+    if [ $? = 0 ]; then
+      echo "running."
+      exit 0
+    else
+      echo "not running."
+      exit 1
+    fi
+    ;;
+
+  'update')
+    mk_download_dir
+    ;;
+
+  *)
+    echo "Usage: $0 start|stop|kill|restart|reload|status|update"
     exit 1
-  fi
-  ;;
-
-'update')
-  mk_download_dir
-  ;;
-
-*)
-  echo "Usage: $0 start|stop|kill|restart|reload|status|update"
-  exit 1
-  ;;
+    ;;
 esac

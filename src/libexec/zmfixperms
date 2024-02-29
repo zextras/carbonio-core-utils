@@ -9,7 +9,7 @@ shopt -s nullglob
 
 root_user=root
 
-if [ x$(whoami) != xroot ]; then
+if [ "$(whoami)" != root ]; then
   echo Error: must be run as root user
   exit 1
 fi
@@ -46,23 +46,23 @@ usage() {
 
 for opt in "$@"; do
   case "$opt" in
-  -verbose | --verbose | -v)
-    verbose=yes
-    shift
-    ;;
-  -help | --help | -h | --h)
-    usage
-    shift
-    ;;
-  -extended | --extended | -e)
-    extended=yes
-    shift
-    ;;
-  *)
-    echo "Unknown option $opt"
-    usage
-    shift
-    ;;
+    -verbose | --verbose | -v)
+      verbose=yes
+      shift
+      ;;
+    -help | --help | -h | --h)
+      usage
+      shift
+      ;;
+    -extended | --extended | -e)
+      extended=yes
+      shift
+      ;;
+    *)
+      echo "Unknown option $opt"
+      usage
+      shift
+      ;;
   esac
 done
 

@@ -5,10 +5,11 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-if [ x$(whoami) != "xzextras" ]; then
-  echo "$0 must be run as user zextras"
+if [ "$(whoami)" != zextras ]; then
+  echo "Error: must be run as zextras user"
   exit 1
 fi
+
 umask 027
 
 source /opt/zextras/bin/zmshutil || exit 1
@@ -211,15 +212,15 @@ getsubjectaltnames() {
     return
   fi
   case "${2}" in
-  "crt")
-    req=x509
-    ;;
-  "csr")
-    req="req"
-    ;;
-  *)
-    return
-    ;;
+    "crt")
+      req=x509
+      ;;
+    "csr")
+      req="req"
+      ;;
+    *)
+      return
+      ;;
   esac
 
   names=$(${openssl} $req -in ${cert} -text | sed -n '/Subject Alternative Name/{n;p;}' | sed 's/^[ \t]*//' | sed 's/DNS://g')

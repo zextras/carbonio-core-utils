@@ -5,8 +5,8 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-if [ x$(whoami) != "xzextras" ]; then
-  echo "Error: $0 must be run as user zextras"
+if [ "$(whoami)" != zextras ]; then
+  echo "Error: must be run as zextras user"
   exit 1
 fi
 
@@ -113,18 +113,18 @@ if [ $# -gt 1 ]; then
 fi
 
 case "$1" in
-both | http | https | mixed | redirect)
-  MODE=$1
-  UPDATE_MAIL_MODE=1
-  ;;
-help | --help | -help)
-  usage 0
-  ;;
-'') ;;
+  both | http | https | mixed | redirect)
+    MODE=$1
+    UPDATE_MAIL_MODE=1
+    ;;
+  help | --help | -help)
+    usage 0
+    ;;
+  '') ;;
 
-*)
-  usage 1
-  ;;
+  *)
+    usage 1
+    ;;
 esac
 
 export JAVA_HOME=${zimbra_java_home}

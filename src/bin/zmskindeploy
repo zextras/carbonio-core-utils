@@ -28,25 +28,25 @@ usage() {
 SKIN_SRC=""
 while [ $# -gt 0 ]; do
   case $1 in
-  -h | --help)
-    usage
-    exit
-    ;;
-  -*)
-    echo "ERROR: Unknown option $1"
-    usage
-    exit -1
-    ;;
-  *)
-    if [ "${SKIN_SRC}x" != "x" ]; then
-      echo "ERROR: Invalid number arguments" >&2
+    -h | --help)
+      usage
+      exit
+      ;;
+    -*)
+      echo "ERROR: Unknown option $1"
       usage
       exit -1
-    else
-      SKIN_SRC=$1
-    fi
-    shift
-    ;;
+      ;;
+    *)
+      if [ "${SKIN_SRC}x" != "x" ]; then
+        echo "ERROR: Invalid number arguments" >&2
+        usage
+        exit -1
+      else
+        SKIN_SRC=$1
+      fi
+      shift
+      ;;
   esac
 done
 

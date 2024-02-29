@@ -5,7 +5,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-if [ x$(whoami) != xzextras ]; then
+if [ "$(whoami)" != zextras ]; then
   echo "Error: must be run as zextras user"
   exit 1
 fi
@@ -96,20 +96,20 @@ initCBPolicyd() {
 
 while [ $# -gt 0 ]; do
   case "$1" in
-  -f | --force | -force)
-    force=1
-    shift
-    ;;
-  -h | -help | --help | help)
-    echo "$0 initializes the sqlite database for cbpolicyd"
-    echo "Usage: $0 [-force]"
-    exit
-    ;;
-  *)
-    echo "Unknown option $1"
-    echo "Usage: $0 [-force]"
-    exit 1
-    ;;
+    -f | --force | -force)
+      force=1
+      shift
+      ;;
+    -h | -help | --help | help)
+      echo "$0 initializes the sqlite database for cbpolicyd"
+      echo "Usage: $0 [-force]"
+      exit
+      ;;
+    *)
+      echo "Unknown option $1"
+      echo "Usage: $0 [-force]"
+      exit 1
+      ;;
   esac
 done
 

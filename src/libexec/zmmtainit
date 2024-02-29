@@ -9,26 +9,26 @@ source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
 case "$#" in
-0) ;;
+  0) ;;
 
-1)
-  ldap_host="$1"
-  ldap_port=389
-  ldap_url="ldap://${ldap_host}:${ldap_port}"
-  ;;
-2)
-  ldap_host="$1"
-  ldap_port="$2"
-  if [ "$ldap_port" == 636 ]; then
-    ldap_url="ldaps://${ldap_host}:${ldap_port}"
-  else
+  1)
+    ldap_host="$1"
+    ldap_port=389
     ldap_url="ldap://${ldap_host}:${ldap_port}"
-  fi
-  ;;
-*)
-  echo Usage: $(basename $0) ldap_host [ ldap_port ]
-  exit
-  ;;
+    ;;
+  2)
+    ldap_host="$1"
+    ldap_port="$2"
+    if [ "$ldap_port" == 636 ]; then
+      ldap_url="ldaps://${ldap_host}:${ldap_port}"
+    else
+      ldap_url="ldap://${ldap_host}:${ldap_port}"
+    fi
+    ;;
+  *)
+    echo Usage: $(basename $0) ldap_host [ ldap_port ]
+    exit
+    ;;
 esac
 
 if [ "$ldap_starttls_supported" == 1 ]; then

@@ -59,7 +59,7 @@ stop() {
     exit 0
   else
     echo -n "Stopping opendkim..."
-    if ! kill $(pidof $odk 2>/dev/null) ; then
+    if ! kill $(pidof $odk 2>/dev/null); then
       echo " failed to stop $PID"
       exit 1
     else
@@ -82,21 +82,21 @@ status() {
 }
 
 case "$1" in
-reload | restart)
-  $0 stop
-  $0 start "$2"
-  ;;
-start)
-  start "$2"
-  ;;
-stop)
-  stop
-  ;;
-status)
-  status
-  ;;
-*)
-  echo "Usage: $0 start|stop|restart|reload|status"
-  exit 1
-  ;;
+  reload | restart)
+    $0 stop
+    $0 start "$2"
+    ;;
+  start)
+    start "$2"
+    ;;
+  stop)
+    stop
+    ;;
+  status)
+    status
+    ;;
+  *)
+    echo "Usage: $0 start|stop|restart|reload|status"
+    exit 1
+    ;;
 esac

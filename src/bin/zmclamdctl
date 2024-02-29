@@ -5,7 +5,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-if [ x$(whoami) != xzextras ]; then
+if [ "$(whoami)" != zextras ]; then
   echo Error: must be run as zextras user
   exit 1
 fi
@@ -63,90 +63,90 @@ pskillall() {
 # Main
 #
 case "$1" in
-'start')
-  if [ x$2 = "x" ]; then
-    rewriteconfig
-  fi
-
-  checkrunning
-  echo -n "Starting clamd..."
-  if [ $running = 1 ]; then
-    echo "clamd is already running."
-  else
-    /opt/zextras/common/sbin/clamd \
-      --config-file=/opt/zextras/conf/clamd.conf \
-      >>${zimbra_log_directory}/clamd.log 2>&1 &
-
-    for ((i = 0; i < 12; i++)); do
-      checkrunning
-      if [ $running = 1 ]; then
-        echo "done."
-        exit 0
-      fi
-      sleep 5
-    done
-    echo "failed."
-    exit 1
-  fi
-  exit 0
-  ;;
-
-'kill')
-  if [ -f /opt/zextras/log/clamd.pid ]; then
-    cpid=$(cat /opt/zextras/log/clamd.pid)
-    kill "$cpid" 2>/dev/null
-  fi
-  pskillall /opt/zextras/common/sbin/clamd
-  exit 0
-  ;;
-
-'stop')
-  checkrunning
-  echo -n "Stopping clamd..."
-  if [ $running = 0 ]; then
-    echo "clamd is not running."
-  else
-    if [ x"$cpid" != "x" ]; then
-      kill "$cpid" 2>/dev/null
+  'start')
+    if [ x$2 = "x" ]; then
+      rewriteconfig
     fi
-    for ((i = 0; i < 30; i++)); do
-      sleep 2
-      kill -0 $cpid 2>/dev/null
-      if [ $? != 0 ]; then
-        rm -f ${pidfile}
-        break
-      fi
-      kill $cpid
-    done
-    if [ -s ${pidfile} ]; then
+
+    checkrunning
+    echo -n "Starting clamd..."
+    if [ $running = 1 ]; then
+      echo "clamd is already running."
+    else
+      /opt/zextras/common/sbin/clamd \
+        --config-file=/opt/zextras/conf/clamd.conf \
+        >>${zimbra_log_directory}/clamd.log 2>&1 &
+
+      for ((i = 0; i < 12; i++)); do
+        checkrunning
+        if [ $running = 1 ]; then
+          echo "done."
+          exit 0
+        fi
+        sleep 5
+      done
       echo "failed."
       exit 1
-    else
-      echo "done."
     fi
-  fi
-  exit 0
-  ;;
-
-'restart' | 'reload')
-  $0 stop
-  $0 start $2
-  ;;
-
-'status')
-  checkrunning
-  echo -n "clamd is "
-  if [ $running = 1 ]; then
-    echo "running."
     exit 0
-  else
-    echo "not runnning."
-    exit 1
-  fi
-  ;;
+    ;;
 
-*)
-  echo "Usage: $0 start|stop|kill|restart|status"
-  exit 1
-  ;;
+  'kill')
+    if [ -f /opt/zextras/log/clamd.pid ]; then
+      cpid=$(cat /opt/zextras/log/clamd.pid)
+      kill "$cpid" 2>/dev/null
+    fi
+    pskillall /opt/zextras/common/sbin/clamd
+    exit 0
+    ;;
+
+  'stop')
+    checkrunning
+    echo -n "Stopping clamd..."
+    if [ $running = 0 ]; then
+      echo "clamd is not running."
+    else
+      if [ x"$cpid" != "x" ]; then
+        kill "$cpid" 2>/dev/null
+      fi
+      for ((i = 0; i < 30; i++)); do
+        sleep 2
+        kill -0 $cpid 2>/dev/null
+        if [ $? != 0 ]; then
+          rm -f ${pidfile}
+          break
+        fi
+        kill $cpid
+      done
+      if [ -s ${pidfile} ]; then
+        echo "failed."
+        exit 1
+      else
+        echo "done."
+      fi
+    fi
+    exit 0
+    ;;
+
+  'restart' | 'reload')
+    $0 stop
+    $0 start $2
+    ;;
+
+  'status')
+    checkrunning
+    echo -n "clamd is "
+    if [ $running = 1 ]; then
+      echo "running."
+      exit 0
+    else
+      echo "not runnning."
+      exit 1
+    fi
+    ;;
+
+  *)
+    echo "Usage: $0 start|stop|kill|restart|status"
+    exit 1
+    ;;
 esac

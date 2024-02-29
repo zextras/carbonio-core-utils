@@ -8,9 +8,8 @@
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
-u=$(id -un)
-if [ $u != ${zimbra_user} ]; then
-  echo "Error: must be run as ${zimbra_user} user"
+if [ "$(whoami)" != zextras ]; then
+  echo Error: must be run as zextras user
   exit 1
 fi
 

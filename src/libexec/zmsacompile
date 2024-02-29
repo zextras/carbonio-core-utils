@@ -9,9 +9,8 @@ if [ ! -x /opt/zextras/common/sbin/amavisd ]; then
   exit 1
 fi
 
-u=$(id -un)
-if [ $u != "zextras" ]; then
-  echo "Error: must be run as the zextras user"
+if [ "$(whoami)" != zextras ]; then
+  echo Error: must be run as zextras user
   exit 1
 fi
 

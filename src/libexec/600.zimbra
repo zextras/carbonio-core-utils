@@ -13,23 +13,23 @@ echo ""
 printf %s "Rotating log files:"
 cd /var/log
 for i in carbonio.log; do
-	if [ -f "${i}" ]; then
-		printf %s " ${i}"
-		if [ -x /usr/bin/gzip ]; then gzext=".gz"; else gzext=""; fi
-		if [ -f "${i}.6${gzext}" ]; then mv -f "${i}.6${gzext}" "${i}.7${gzext}"; fi
-		if [ -f "${i}.5${gzext}" ]; then mv -f "${i}.5${gzext}" "${i}.6${gzext}"; fi
-		if [ -f "${i}.4${gzext}" ]; then mv -f "${i}.4${gzext}" "${i}.5${gzext}"; fi
-		if [ -f "${i}.3${gzext}" ]; then mv -f "${i}.3${gzext}" "${i}.4${gzext}"; fi
-		if [ -f "${i}.2${gzext}" ]; then mv -f "${i}.2${gzext}" "${i}.3${gzext}"; fi
-		if [ -f "${i}.1${gzext}" ]; then mv -f "${i}.1${gzext}" "${i}.2${gzext}"; fi
-		if [ -f "${i}.0${gzext}" ]; then mv -f "${i}.0${gzext}" "${i}.1${gzext}"; fi
-		if [ -f "${i}" ]; then
-			touch "${i}.$$" && chmod 644 "${i}.$$" && chown zextras:zextras "${i}.$$"
-			mv -f "${i}" "${i}.0" && mv "${i}.$$" "${i}" && if [ -x /usr/bin/gzip ]; then
-				gzip -9 "${i}.0"
-			fi
-		fi
-	fi
+  if [ -f "${i}" ]; then
+    printf %s " ${i}"
+    if [ -x /usr/bin/gzip ]; then gzext=".gz"; else gzext=""; fi
+    if [ -f "${i}.6${gzext}" ]; then mv -f "${i}.6${gzext}" "${i}.7${gzext}"; fi
+    if [ -f "${i}.5${gzext}" ]; then mv -f "${i}.5${gzext}" "${i}.6${gzext}"; fi
+    if [ -f "${i}.4${gzext}" ]; then mv -f "${i}.4${gzext}" "${i}.5${gzext}"; fi
+    if [ -f "${i}.3${gzext}" ]; then mv -f "${i}.3${gzext}" "${i}.4${gzext}"; fi
+    if [ -f "${i}.2${gzext}" ]; then mv -f "${i}.2${gzext}" "${i}.3${gzext}"; fi
+    if [ -f "${i}.1${gzext}" ]; then mv -f "${i}.1${gzext}" "${i}.2${gzext}"; fi
+    if [ -f "${i}.0${gzext}" ]; then mv -f "${i}.0${gzext}" "${i}.1${gzext}"; fi
+    if [ -f "${i}" ]; then
+      touch "${i}.$$" && chmod 644 "${i}.$$" && chown zextras:zextras "${i}.$$"
+      mv -f "${i}" "${i}.0" && mv "${i}.$$" "${i}" && if [ -x /usr/bin/gzip ]; then
+        gzip -9 "${i}.0"
+      fi
+    fi
+  fi
 done
 
 # truncate, no saving old logs
@@ -37,39 +37,39 @@ done
 
 cd /opt/zextras/log
 for i in myslow.log logger_myslow.log sync.log zcs.log zmmtaconfig.log httpd_access.log httpd_error.log clamd.log zmswatch.out zmlogswatch.out freshclam.log synctrace.log syncstate.log nginx.log; do
-	if [ -f "${i}" ]; then
-		printf %s " ${i}"
-		if [ -x /usr/bin/gzip ]; then gzext=".gz"; else gzext=""; fi
-		if [ -f "${i}.6${gzext}" ]; then mv -f "${i}.6${gzext}" "${i}.7${gzext}"; fi
-		if [ -f "${i}.5${gzext}" ]; then mv -f "${i}.5${gzext}" "${i}.6${gzext}"; fi
-		if [ -f "${i}.4${gzext}" ]; then mv -f "${i}.4${gzext}" "${i}.5${gzext}"; fi
-		if [ -f "${i}.3${gzext}" ]; then mv -f "${i}.3${gzext}" "${i}.4${gzext}"; fi
-		if [ -f "${i}.2${gzext}" ]; then mv -f "${i}.2${gzext}" "${i}.3${gzext}"; fi
-		if [ -f "${i}.1${gzext}" ]; then mv -f "${i}.1${gzext}" "${i}.2${gzext}"; fi
-		if [ -f "${i}.0${gzext}" ]; then mv -f "${i}.0${gzext}" "${i}.1${gzext}"; fi
-		if [ -f "${i}" ]; then
-			touch "${i}.$$" && chmod 644 "${i}.$$" && chown zextras:zextras "${i}.$$"
-			mv -f "${i}" "${i}.0" && mv "${i}.$$" "${i}" && if [ -x /usr/bin/gzip ]; then
-				gzip -9 "${i}.0"
-			fi
-		fi
-	fi
+  if [ -f "${i}" ]; then
+    printf %s " ${i}"
+    if [ -x /usr/bin/gzip ]; then gzext=".gz"; else gzext=""; fi
+    if [ -f "${i}.6${gzext}" ]; then mv -f "${i}.6${gzext}" "${i}.7${gzext}"; fi
+    if [ -f "${i}.5${gzext}" ]; then mv -f "${i}.5${gzext}" "${i}.6${gzext}"; fi
+    if [ -f "${i}.4${gzext}" ]; then mv -f "${i}.4${gzext}" "${i}.5${gzext}"; fi
+    if [ -f "${i}.3${gzext}" ]; then mv -f "${i}.3${gzext}" "${i}.4${gzext}"; fi
+    if [ -f "${i}.2${gzext}" ]; then mv -f "${i}.2${gzext}" "${i}.3${gzext}"; fi
+    if [ -f "${i}.1${gzext}" ]; then mv -f "${i}.1${gzext}" "${i}.2${gzext}"; fi
+    if [ -f "${i}.0${gzext}" ]; then mv -f "${i}.0${gzext}" "${i}.1${gzext}"; fi
+    if [ -f "${i}" ]; then
+      touch "${i}.$$" && chmod 644 "${i}.$$" && chown zextras:zextras "${i}.$$"
+      mv -f "${i}" "${i}.0" && mv "${i}.$$" "${i}" && if [ -x /usr/bin/gzip ]; then
+        gzip -9 "${i}.0"
+      fi
+    fi
+  fi
 done
 echo ""
 
 if [ -f /var/run/syslog.pid ]; then
-	echo "Sending sighup to syslogd"
-	kill -HUP $(cat /var/run/syslog.pid | head -1)
+  echo "Sending sighup to syslogd"
+  kill -HUP $(cat /var/run/syslog.pid | head -1)
 fi
 if [ -f /opt/zextras/log/logswatch.pid ]; then
-	echo "Restarting zmlogswatch"
-	$SU "/opt/zextras/bin/zmlogswatchctl reload"
+  echo "Restarting zmlogswatch"
+  $SU "/opt/zextras/bin/zmlogswatchctl reload"
 fi
 if [ -f /opt/zextras/log/swatch.pid ]; then
-	echo "Restarting zmswatch"
-	$SU "/opt/zextras/bin/zmswatchctl reload"
+  echo "Restarting zmswatch"
+  $SU "/opt/zextras/bin/zmswatchctl reload"
 fi
 if [ -f /opt/zextras/log/nginx.pid ]; then
-	echo "Sending USR1 to nginx"
-	kill -USR1 $(cat /opt/zextras/log/nginx.pid | head -1)
+  echo "Sending USR1 to nginx"
+  kill -USR1 $(cat /opt/zextras/log/nginx.pid | head -1)
 fi
