@@ -211,15 +211,15 @@ getsubjectaltnames() {
     return
   fi
   case "${2}" in
-  "crt")
-    req=x509
-    ;;
-  "csr")
-    req="req"
-    ;;
-  *)
-    return
-    ;;
+    "crt")
+      req=x509
+      ;;
+    "csr")
+      req="req"
+      ;;
+    *)
+      return
+      ;;
   esac
 
   names=$(${openssl} $req -in ${cert} -text | sed -n '/Subject Alternative Name/{n;p;}' | sed 's/^[ \t]*//' | sed 's/DNS://g')

@@ -15,53 +15,53 @@ fi
 source /opt/zextras/.bashrc
 
 case "$1" in
-start)
-  if [ "$2" = "" ]; then
-    /opt/zextras/libexec/configrewrite antivirus
-  fi
-  for i in $SCRIPTS; do
-    if [ "$i" = "zmamavisdctl" ] && [ "$AMAVISD_EXECUTABLE" -ne 1 ]; then
-      continue
+  start)
+    if [ "$2" = "" ]; then
+      /opt/zextras/libexec/configrewrite antivirus
     fi
-    /opt/zextras/bin/"$i" start norewrite
-  done
-  ;;
-stop)
-  for i in $SCRIPTS; do
-    if [ "$i" = "zmamavisdctl" ] && [ "$AMAVISD_EXECUTABLE" -ne 1 ]; then
-      continue
+    for i in $SCRIPTS; do
+      if [ "$i" = "zmamavisdctl" ] && [ "$AMAVISD_EXECUTABLE" -ne 1 ]; then
+        continue
+      fi
+      /opt/zextras/bin/"$i" start norewrite
+    done
+    ;;
+  stop)
+    for i in $SCRIPTS; do
+      if [ "$i" = "zmamavisdctl" ] && [ "$AMAVISD_EXECUTABLE" -ne 1 ]; then
+        continue
+      fi
+      /opt/zextras/bin/"$i" stop
+    done
+    ;;
+  reload | restart)
+    for i in $SCRIPTS; do
+      if [ "$i" = "zmamavisdctl" ] && [ "$AMAVISD_EXECUTABLE" -ne 1 ]; then
+        continue
+      fi
+      /opt/zextras/bin/"$i" "$1"
+    done
+    ;;
+  status)
+    STATUS=0
+    for i in $SCRIPTS; do
+      if [ "$i" = "zmamavisdctl" ] && [ "$AMAVISD_EXECUTABLE" -ne 1 ]; then
+        continue
+      fi
+      /opt/zextras/bin/"$i" status >/dev/null 2>&1
+      R=$?
+      if [ $R -ne "0" ]; then
+        echo "$i is not running"
+        STATUS=$R
+      fi
+    done
+    if [ "$STATUS" -eq "0" ]; then
+      echo "antivirus is running"
     fi
-    /opt/zextras/bin/"$i" stop
-  done
-  ;;
-reload | restart)
-  for i in $SCRIPTS; do
-    if [ "$i" = "zmamavisdctl" ] && [ "$AMAVISD_EXECUTABLE" -ne 1 ]; then
-      continue
-    fi
-    /opt/zextras/bin/"$i" "$1"
-  done
-  ;;
-status)
-  STATUS=0
-  for i in $SCRIPTS; do
-    if [ "$i" = "zmamavisdctl" ] && [ "$AMAVISD_EXECUTABLE" -ne 1 ]; then
-      continue
-    fi
-    /opt/zextras/bin/"$i" status >/dev/null 2>&1
-    R=$?
-    if [ $R -ne "0" ]; then
-      echo "$i is not running"
-      STATUS=$R
-    fi
-  done
-  if [ "$STATUS" -eq "0" ]; then
-    echo "antivirus is running"
-  fi
-  exit $STATUS
-  ;;
-*)
-  echo "$0 start|stop|restart|reload|status"
-  exit 1
-  ;;
+    exit $STATUS
+    ;;
+  *)
+    echo "$0 start|stop|restart|reload|status"
+    exit 1
+    ;;
 esac

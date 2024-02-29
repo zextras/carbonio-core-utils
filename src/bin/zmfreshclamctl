@@ -59,72 +59,72 @@ pskillall() {
 # Main
 #
 case "$1" in
-'start')
+  'start')
 
-  if [ x$2 = "x" ]; then
-    rewriteconfig
-  fi
+    if [ x$2 = "x" ]; then
+      rewriteconfig
+    fi
 
-  checkrunning
-  echo -n "Starting freshclam..."
-  if [ $frunning = 1 ]; then
-    echo "freshclam is already running."
-  else
-    /opt/zextras/common/bin/freshclam \
-      --config-file=/opt/zextras/conf/freshclam.conf --quiet --daemon --checks=12 \
-      >>${zimbra_log_directory}/freshclam.log 2>&1 &
-    echo "done."
-  fi
-  exit 0
-  ;;
+    checkrunning
+    echo -n "Starting freshclam..."
+    if [ $frunning = 1 ]; then
+      echo "freshclam is already running."
+    else
+      /opt/zextras/common/bin/freshclam \
+        --config-file=/opt/zextras/conf/freshclam.conf --quiet --daemon --checks=12 \
+        >>${zimbra_log_directory}/freshclam.log 2>&1 &
+      echo "done."
+    fi
+    exit 0
+    ;;
 
-'kill')
-  if [ -f /opt/zextras/log/freshclam.pid ]; then
-    cpid=$(cat /opt/zextras/log/freshclam.pid)
-    kill "$cpid" 2>/dev/null
-  fi
-  pskillall /opt/zextras/common/bin/freshclam
-  exit 0
-  ;;
+  'kill')
+    if [ -f /opt/zextras/log/freshclam.pid ]; then
+      cpid=$(cat /opt/zextras/log/freshclam.pid)
+      kill "$cpid" 2>/dev/null
+    fi
+    pskillall /opt/zextras/common/bin/freshclam
+    exit 0
+    ;;
 
-'stop')
-  checkrunning
-  echo -n "Stopping freshclam..."
-  if [ $frunning = 0 ]; then
-    echo "freshclam is not running."
-  else
-    if [ x"$fpid" != "x" ]; then
-      kill "$fpid" 2>/dev/null
-      if [ $? = 0 ]; then
-        echo "done."
-      else
-        echo "failed."
+  'stop')
+    checkrunning
+    echo -n "Stopping freshclam..."
+    if [ $frunning = 0 ]; then
+      echo "freshclam is not running."
+    else
+      if [ x"$fpid" != "x" ]; then
+        kill "$fpid" 2>/dev/null
+        if [ $? = 0 ]; then
+          echo "done."
+        else
+          echo "failed."
+        fi
       fi
     fi
-  fi
 
-  exit 0
-  ;;
-
-'restart' | 'reload')
-  $0 stop
-  $0 start $2
-  ;;
-
-'status')
-  checkrunning
-  echo -n "freshclam is "
-  if [ $frunning = 1 ]; then
-    echo "running."
     exit 0
-  else
-    echo "not runnning."
-    exit 1
-  fi
-  ;;
+    ;;
 
-*)
-  echo "Usage: $0 start|stop|kill|restart|status"
-  exit 1
-  ;;
+  'restart' | 'reload')
+    $0 stop
+    $0 start $2
+    ;;
+
+  'status')
+    checkrunning
+    echo -n "freshclam is "
+    if [ $frunning = 1 ]; then
+      echo "running."
+      exit 0
+    else
+      echo "not runnning."
+      exit 1
+    fi
+    ;;
+
+  *)
+    echo "Usage: $0 start|stop|kill|restart|status"
+    exit 1
+    ;;
 esac

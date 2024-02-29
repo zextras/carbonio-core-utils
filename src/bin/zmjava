@@ -19,8 +19,8 @@ if [ -f ".hotspot_compiler" ]; then
   cd /opt/zextras
 fi
 case "$(uname)" in
-CYGWIN*) PATHSEP=";" ;;
-*) PATHSEP=":" ;;
+  CYGWIN*) PATHSEP=";" ;;
+  *) PATHSEP=":" ;;
 esac
 
 ZIMBRA_EXTENSIONS="backup clamscanner network zimbrahsm zimbrasync twofactorauth"

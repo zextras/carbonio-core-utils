@@ -51,76 +51,76 @@ flushDirtyPages() {
 }
 
 case "$1" in
-start)
-  if [ x$2 = "x" ]; then
-    # Call tlsctl to get all the mailbox config files
-    /opt/zextras/bin/zmtlsctl >/dev/null 2>&1
-  fi
-  for i in $START_ORDER; do
-    /opt/zextras/bin/$i start norewrite >/dev/null 2>&1
-    R=$?
-    if [ $R -ne "0" ]; then
-      STATUS=$R
+  start)
+    if [ x$2 = "x" ]; then
+      # Call tlsctl to get all the mailbox config files
+      /opt/zextras/bin/zmtlsctl >/dev/null 2>&1
     fi
-  done
-  exit $STATUS
-  ;;
-stop)
-  for i in $STOP_ORDER; do
-    if [ "$i" = "mysql.server" ]; then
-      flushDirtyPages
-    fi
-    /opt/zextras/bin/$i stop
-    R=$?
-    if [ $R -ne "0" ]; then
-      STATUS=$R
-    fi
-  done
-  exit $STATUS
-  ;;
-restart | reload)
-  for i in $STOP_ORDER; do
-    if [ "$i" = "mysql.server" ]; then
-      flushDirtyPages
-    fi
-    /opt/zextras/bin/$i stop
-    R=$?
-    if [ $R -ne "0" ]; then
-      STATUS=$R
-    fi
-  done
-  if [ x$2 = "x" ]; then
-    # Call tlsctl to get all the mailbox config files
-    /opt/zextras/bin/zmtlsctl >/dev/null 2>&1
-  fi
-  for i in $START_ORDER; do
-    /opt/zextras/bin/$i start norewrite
-    R=$?
-    if [ $R -ne "0" ]; then
-      STATUS=$R
-    fi
-  done
-  exit $STATUS
-  ;;
-status)
-  for i in $START_ORDER; do
-    if [ $i = "mysql.server" ]; then
-      /opt/zextras/bin/mysqladmin status >/dev/null 2>&1
-    else
-      /opt/zextras/bin/$i status >/dev/null 2>&1
-    fi
-    R=$?
-    if [ $R -ne "0" ]; then
-      echo "$i is not running."
-      if [ x"$i" != "xzmconfigdctl" ]; then
+    for i in $START_ORDER; do
+      /opt/zextras/bin/$i start norewrite >/dev/null 2>&1
+      R=$?
+      if [ $R -ne "0" ]; then
         STATUS=$R
       fi
+    done
+    exit $STATUS
+    ;;
+  stop)
+    for i in $STOP_ORDER; do
+      if [ "$i" = "mysql.server" ]; then
+        flushDirtyPages
+      fi
+      /opt/zextras/bin/$i stop
+      R=$?
+      if [ $R -ne "0" ]; then
+        STATUS=$R
+      fi
+    done
+    exit $STATUS
+    ;;
+  restart | reload)
+    for i in $STOP_ORDER; do
+      if [ "$i" = "mysql.server" ]; then
+        flushDirtyPages
+      fi
+      /opt/zextras/bin/$i stop
+      R=$?
+      if [ $R -ne "0" ]; then
+        STATUS=$R
+      fi
+    done
+    if [ x$2 = "x" ]; then
+      # Call tlsctl to get all the mailbox config files
+      /opt/zextras/bin/zmtlsctl >/dev/null 2>&1
     fi
-  done
-  exit $STATUS
-  ;;
-*)
-  echo "$0 start|stop|restart|reload|status"
-  exit 1
-  ;;
+    for i in $START_ORDER; do
+      /opt/zextras/bin/$i start norewrite
+      R=$?
+      if [ $R -ne "0" ]; then
+        STATUS=$R
+      fi
+    done
+    exit $STATUS
+    ;;
+  status)
+    for i in $START_ORDER; do
+      if [ $i = "mysql.server" ]; then
+        /opt/zextras/bin/mysqladmin status >/dev/null 2>&1
+      else
+        /opt/zextras/bin/$i status >/dev/null 2>&1
+      fi
+      R=$?
+      if [ $R -ne "0" ]; then
+        echo "$i is not running."
+        if [ x"$i" != "xzmconfigdctl" ]; then
+          STATUS=$R
+        fi
+      fi
+    done
+    exit $STATUS
+    ;;
+  *)
+    echo "$0 start|stop|restart|reload|status"
+    exit 1
+    ;;
 esac

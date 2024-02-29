@@ -44,73 +44,73 @@ checkrunning() {
 # Main
 #
 case "$1" in
-'start')
-  checkrunning
-  echo -n "Starting saslauthd..."
-  if [ $running = 1 ]; then
-    echo "already running."
-    exit 0
-  fi
-  mkdir -p /opt/zextras/data/sasl2/state
-  if [ x$2 = "x" ]; then
-    rewriteconfig
-  fi
-  /opt/zextras/common/sbin/saslauthd -r -a zimbra
-  for ((i = 0; i < 30; i++)); do
+  'start')
     checkrunning
+    echo -n "Starting saslauthd..."
     if [ $running = 1 ]; then
-      echo "done."
+      echo "already running."
       exit 0
     fi
-    sleep 1
-  done
-  echo "failed."
-  exit 1
-  ;;
-
-'kill' | 'stop')
-  checkrunning
-  if [ $running = 0 ]; then
-    echo "saslauthd is not running."
-    exit 0
-  else
-    echo -n "Stopping saslauthd..."
+    mkdir -p /opt/zextras/data/sasl2/state
+    if [ x$2 = "x" ]; then
+      rewriteconfig
+    fi
+    /opt/zextras/common/sbin/saslauthd -r -a zimbra
     for ((i = 0; i < 30; i++)); do
-      kill -0 $pid 2>/dev/null
-      if [ $? != 0 ]; then
-        rm -rf ${pidfile}
-        break
+      checkrunning
+      if [ $running = 1 ]; then
+        echo "done."
+        exit 0
       fi
-      kill $pid
       sleep 1
     done
-  fi
-  if [ -s ${pidfile} ]; then
+    echo "failed."
     exit 1
-  else
-    echo "done."
-  fi
-  exit 0
-  ;;
+    ;;
 
-'restart' | 'reload')
-  $0 stop
-  $0 start $2
-  ;;
-
-'status')
-  checkrunning
-  if [ $running = 1 ]; then
-    echo "saslauthd is running."
+  'kill' | 'stop')
+    checkrunning
+    if [ $running = 0 ]; then
+      echo "saslauthd is not running."
+      exit 0
+    else
+      echo -n "Stopping saslauthd..."
+      for ((i = 0; i < 30; i++)); do
+        kill -0 $pid 2>/dev/null
+        if [ $? != 0 ]; then
+          rm -rf ${pidfile}
+          break
+        fi
+        kill $pid
+        sleep 1
+      done
+    fi
+    if [ -s ${pidfile} ]; then
+      exit 1
+    else
+      echo "done."
+    fi
     exit 0
-  else
-    echo "saslauthd is not running."
-    exit 1
-  fi
-  ;;
+    ;;
 
-*)
-  echo "Usage: $0 start|stop|kill|restart|reload|status"
-  exit 1
-  ;;
+  'restart' | 'reload')
+    $0 stop
+    $0 start $2
+    ;;
+
+  'status')
+    checkrunning
+    if [ $running = 1 ]; then
+      echo "saslauthd is running."
+      exit 0
+    else
+      echo "saslauthd is not running."
+      exit 1
+    fi
+    ;;
+
+  *)
+    echo "Usage: $0 start|stop|kill|restart|reload|status"
+    exit 1
+    ;;
 esac

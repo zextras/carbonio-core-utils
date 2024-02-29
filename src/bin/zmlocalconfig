@@ -29,8 +29,8 @@ if [ -f ".hotspot_compiler" ]; then
 fi
 
 case "$(uname)" in
-CYGWIN*) PATHSEP=";" ;;
-*) PATHSEP=":" ;;
+  CYGWIN*) PATHSEP=";" ;;
+  *) PATHSEP=":" ;;
 esac
 
 CP=${ZMROOT}/lib/jars/*

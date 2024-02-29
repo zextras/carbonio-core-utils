@@ -113,18 +113,18 @@ if [ $# -gt 1 ]; then
 fi
 
 case "$1" in
-both | http | https | mixed | redirect)
-  MODE=$1
-  UPDATE_MAIL_MODE=1
-  ;;
-help | --help | -help)
-  usage 0
-  ;;
-'') ;;
+  both | http | https | mixed | redirect)
+    MODE=$1
+    UPDATE_MAIL_MODE=1
+    ;;
+  help | --help | -help)
+    usage 0
+    ;;
+  '') ;;
 
-*)
-  usage 1
-  ;;
+  *)
+    usage 1
+    ;;
 esac
 
 export JAVA_HOME=${zimbra_java_home}

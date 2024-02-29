@@ -240,80 +240,80 @@ echo "JAVA           =  $JAVA"
 # Do the action
 ##################################################
 case "$ACTION" in
-start)
-  echo "Starting Jetty: "
+  start)
+    echo "Starting Jetty: "
 
-  if running; then
-    echo "Already Running!!"
+    if running; then
+      echo "Already Running!!"
+      exit 1
+    fi
+
+    echo "STARTED Jetty $(date)" >>$JETTY_CONSOLE
+
+    nohup sh -c "exec $RUN_CMD >>$JETTY_CONSOLE 2>&1" >/dev/null &
+    echo $! >$JETTY_PID
+    echo "Jetty running pid="$(cat $JETTY_PID)
+    ;;
+
+  stop)
+    PID=$(cat $JETTY_PID 2>/dev/null)
+    echo "Shutting down Jetty: $PID"
+    kill $PID 2>/dev/null
+    sleep 2
+    kill $PID 2>/dev/null
+    rm -f $JETTY_PID
+    echo "STOPPED $(date)" >>$JETTY_CONSOLE
+    ;;
+
+  restart)
+    $0 stop $*
+    sleep 5
+    $0 start $*
+    ;;
+
+  supervise)
+    #
+    # Under control of daemontools supervise monitor which
+    # handles restarts and shutdowns via the svc program.
+    #
+    exec $RUN_CMD
+    ;;
+
+  run | demo)
+    echo "Running Jetty: "
+
+    if running; then
+      echo "Already Running!!"
+      exit 1
+    fi
+
+    exec $RUN_CMD
+    ;;
+
+  check)
+    echo "Checking arguments to Jetty: "
+    echo "JETTY_HOME     =  $JETTY_HOME"
+    echo "JETTY_RUN      =  $JETTY_RUN"
+    echo "JETTY_PID      =  $JETTY_PID"
+    echo "JETTY_CONSOLE  =  $JETTY_CONSOLE"
+    echo "JETTY_PORT     =  $JETTY_PORT"
+    echo "CONFIGS        =  $CONFIGS"
+    echo "JAVA_OPTIONS   =  $JAVA_OPTIONS"
+    echo "JAVA           =  $JAVA"
+    echo "CLASSPATH      =  $CLASSPATH"
+    echo "RUN_CMD        =  $RUN_CMD"
+    echo
+
+    if running; then
+      echo "Jetty running pid="$(cat $JETTY_RUN/jetty.pid)
+      exit 0
+    fi
     exit 1
-  fi
+    ;;
 
-  echo "STARTED Jetty $(date)" >>$JETTY_CONSOLE
-
-  nohup sh -c "exec $RUN_CMD >>$JETTY_CONSOLE 2>&1" >/dev/null &
-  echo $! >$JETTY_PID
-  echo "Jetty running pid="$(cat $JETTY_PID)
-  ;;
-
-stop)
-  PID=$(cat $JETTY_PID 2>/dev/null)
-  echo "Shutting down Jetty: $PID"
-  kill $PID 2>/dev/null
-  sleep 2
-  kill $PID 2>/dev/null
-  rm -f $JETTY_PID
-  echo "STOPPED $(date)" >>$JETTY_CONSOLE
-  ;;
-
-restart)
-  $0 stop $*
-  sleep 5
-  $0 start $*
-  ;;
-
-supervise)
-  #
-  # Under control of daemontools supervise monitor which
-  # handles restarts and shutdowns via the svc program.
-  #
-  exec $RUN_CMD
-  ;;
-
-run | demo)
-  echo "Running Jetty: "
-
-  if running; then
-    echo "Already Running!!"
-    exit 1
-  fi
-
-  exec $RUN_CMD
-  ;;
-
-check)
-  echo "Checking arguments to Jetty: "
-  echo "JETTY_HOME     =  $JETTY_HOME"
-  echo "JETTY_RUN      =  $JETTY_RUN"
-  echo "JETTY_PID      =  $JETTY_PID"
-  echo "JETTY_CONSOLE  =  $JETTY_CONSOLE"
-  echo "JETTY_PORT     =  $JETTY_PORT"
-  echo "CONFIGS        =  $CONFIGS"
-  echo "JAVA_OPTIONS   =  $JAVA_OPTIONS"
-  echo "JAVA           =  $JAVA"
-  echo "CLASSPATH      =  $CLASSPATH"
-  echo "RUN_CMD        =  $RUN_CMD"
-  echo
-
-  if running; then
-    echo "Jetty running pid="$(cat $JETTY_RUN/jetty.pid)
-    exit 0
-  fi
-  exit 1
-  ;;
-
-*)
-  usage
-  ;;
+  *)
+    usage
+    ;;
 esac
 
 exit 0
