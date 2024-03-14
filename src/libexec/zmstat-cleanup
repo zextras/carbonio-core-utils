@@ -43,28 +43,29 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-cd /opt/zextras/zmstat 2>/dev/null
-if [ $? -ne 0 ] || [ "${PWD}" != "/opt/zextras/zmstat" ]; then
-  echo "ERROR: Cannot change to the zmstats log directory /opt/zextras/zmstat."
-  exit -1
+cd /opt/zextras/zmstat || return 1
+rc=$?
+if [ $rc -ne 0 ] || [ "${PWD}" != "$zmstat_dir" ]; then
+  echo "ERROR: Cannot change to the zmstats log directory $zmstat_dir."
+  exit 1
 fi
 
-if [ "${listArchives}x" == "TRUEx" ]; then
-  if [ "$(ls -1A | egrep '^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$' | wc -l)" -gt 0 ]; then
-    /bin/ls -d1 [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]
+if [ "${listArchives}" == "TRUE" ]; then
+  if [ "$(find . -maxdepth 1 -type d -name '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' | wc -l)" -gt 0 ]; then
+    find . -maxdepth 1 -type d -name '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
   fi
-elif [ "${purgeAll}x" == "TRUEx" ]; then
-  DIR_LIST=$(find . -type d -print | egrep '^\./[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$' | sort -r | sed -e "s%./%%")
+elif [ "${purgeAll}" == "TRUE" ]; then
+  DIR_LIST=$(find . -type d -print | grep -E '^\./[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$' | sort -r | sed -e "s%./%%")
   for d in ${DIR_LIST}; do
     echo "Deleting ${d} zmstat archive."
-    /bin/rm -rf "${d}"
+    rm -rf "${d}"
   done
 elif [ "${zmstat_max_retention:-"0"}" -gt 0 ]; then
-  DIR_LIST=$(find . -type d -print | egrep '^\./[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$' | sort -r | sed -e "1,${zmstat_max_retention}d ; s%./%%")
+  DIR_LIST=$(find . -type d -print | grep -E '^\./[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$' | sort -r | sed -e "1,${zmstat_max_retention}d ; s%./%%")
 
   for d in ${DIR_LIST}; do
     echo "Deleting ${d} zmstat archive."
-    /bin/rm -rf "${d}"
+    rm -rf "${d}"
   done
 else
   echo "WARNING: zmstat_max_retention is set to 0 or is undefined.  No zmstat data has been pruned."

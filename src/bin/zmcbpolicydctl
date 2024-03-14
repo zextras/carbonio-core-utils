@@ -21,8 +21,8 @@ rewriteconfig() {
 }
 
 getpid() {
-  if [ -f $pidfile ]; then
-    PID=$(cat $pidfile)
+  if [ -f "$pidfile" ]; then
+    PID=$(cat "$pidfile")
   fi
 }
 
@@ -30,12 +30,13 @@ checkrunning() {
   getpid
   if [ "$PID" = "" ]; then
     RUNNING=0
-    if [ -f $pidfile ]; then
-      rm -f $pidfile
+    if [ -f "$pidfile" ]; then
+      rm -f "$pidfile"
     fi
   else
-    kill -0 $PID 2>/dev/null
-    if [ $? != 0 ]; then
+    kill -0 "$PID" 2>/dev/null
+    rc=$?
+    if [ $rc -ne 0 ]; then
       PID=""
       RUNNING=0
     else
@@ -63,14 +64,15 @@ case "$1" in
       if [ ! -d /opt/zextras/data/cbpolicyd/db ]; then
         mkdir /opt/zextras/data/cbpolicyd/db
       fi
-      if [ ! -f ${dbfile} ]; then
+      if [ ! -f "${dbfile}" ]; then
         /opt/zextras/libexec/zmcbpolicydinit
-        if [ $? != 0 ]; then
+        rc=$?
+        if [ $rc -ne 0 ]; then
           echo "Unable to initialize cbpolicyd database."
           exit 1
         fi
       fi
-      if [ $2 = "" ]; then
+      if [ "$2" = "" ]; then
         rewriteconfig
       fi
       /opt/zextras/common/bin/cbpolicyd --config /opt/zextras/conf/cbpolicyd.conf 2>/dev/null
@@ -101,17 +103,19 @@ case "$1" in
       echo "policyd is not running."
       exit 0
     else
-      kill $PID 2>/dev/null
+      kill "$PID" 2>/dev/null
       for ((i = 0; i < 300; i++)); do
         sleep 5
-        kill -0 $PID 2>/dev/null
-        if [ $? != 0 ]; then
+        kill -0 "$PID" 2>/dev/null
+        rc=$?
+        if [ $rc -ne 0 ]; then
           echo " done."
           exit 0
         fi
       done
-      kill $PID 2>/dev/null
-      if [ $? = 0 ]; then
+      kill "$PID" 2>/dev/null
+      rc=$?
+      if [ $rc -eq 0 ]; then
         echo " failed to stop $PID"
         exit 1
       else
@@ -123,7 +127,7 @@ case "$1" in
 
   'restart' | 'reload')
     $0 stop
-    $0 start $2
+    $0 start "$2"
     ;;
 
   'status')

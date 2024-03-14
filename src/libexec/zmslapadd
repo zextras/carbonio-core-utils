@@ -23,15 +23,15 @@ bgood=no
 zcat=$(which zcat 2>/dev/null)
 bzcat=$(which bzcat 2>/dev/null)
 
-if [ -x $zcat ]; then
+if [ -x "$zcat" ]; then
   zgood=yes
 fi
 
-if [ -x $bzcat ]; then
+if [ -x "$bzcat" ]; then
   bgood=yes
 fi
 
-if [ $1 = "" -o $1 = "-h" -o $1 = "--help" ]; then
+if [ "$1" = "" ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
   echo "USAGE: Imports LDAP databases"
   echo "Main database: zmslapadd <FILE> [-w]"
   echo "Config database: zmslapadd -c <FILE>"
@@ -42,15 +42,15 @@ fi
 CONFIG=no
 ALOG=no
 WRITESYNCREPL=""
-if [ $1 = "-c" ]; then
+if [ "$1" = "-c" ]; then
   CONFIG=yes
   SRC=$2
-elif [ $1 = "-a" ]; then
+elif [ "$1" = "-a" ]; then
   ALOG=yes
   SRC=$2
 else
   SRC=$1
-  if [ $2 = "-w" ]; then
+  if [ "$2" = "-w" ]; then
     WRITESYNCREPL=$2
   fi
 fi
@@ -58,7 +58,7 @@ fi
 comp=0
 computil=
 
-if [ ! -f $SRC ]; then
+if [ ! -f "$SRC" ]; then
   echo "Error: Input file does not exist"
   exit 1
 fi
@@ -81,26 +81,26 @@ fi
 
 if [ $CONFIG = "yes" ]; then
   if [ $comp = "0" ]; then
-    /opt/zextras/common/sbin/slapadd -q -F /opt/zextras/data/ldap/config -n 0 -l $SRC
+    /opt/zextras/common/sbin/slapadd -q -F /opt/zextras/data/ldap/config -n 0 -l "$SRC"
     RETVAL=$?
   else
-    $computil $SRC | /opt/zextras/common/sbin/slapadd -q -F /opt/zextras/data/ldap/config -n 0
+    $computil "$SRC" | /opt/zextras/common/sbin/slapadd -q -F /opt/zextras/data/ldap/config -n 0
     RETVAL=$?
   fi
 elif [ $ALOG = "yes" ]; then
   if [ $comp = "0" ]; then
-    /opt/zextras/common/sbin/slapadd -q -F /opt/zextras/data/ldap/config -b "cn=accesslog" -l $SRC
+    /opt/zextras/common/sbin/slapadd -q -F /opt/zextras/data/ldap/config -b "cn=accesslog" -l "$SRC"
     RETVAL=$?
   else
-    $computil $SRC | /opt/zextras/common/sbin/slapadd -q -F /opt/zextras/data/ldap/config -b "cn=accesslog"
+    $computil "$SRC" | /opt/zextras/common/sbin/slapadd -q -F /opt/zextras/data/ldap/config -b "cn=accesslog"
     RETVAL=$?
   fi
 else
   if [ $comp = "0" ]; then
-    /opt/zextras/common/sbin/slapadd $WRITESYNCREPL -q -F /opt/zextras/data/ldap/config -b "" -l $SRC
+    /opt/zextras/common/sbin/slapadd "$WRITESYNCREPL" -q -F /opt/zextras/data/ldap/config -b "" -l "$SRC"
     RETVAL=$?
   else
-    $computil $SRC | /opt/zextras/common/sbin/slapadd $WRITESYNCREPL -q -F /opt/zextras/data/ldap/config -b ""
+    $computil "$SRC" | /opt/zextras/common/sbin/slapadd "$WRITESYNCREPL" -q -F /opt/zextras/data/ldap/config -b ""
     RETVAL=$?
   fi
 fi

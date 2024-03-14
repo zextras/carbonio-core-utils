@@ -14,18 +14,14 @@ umask 027
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars -f
 
-exp_thres_days=${zimbra_zmcertmgr_expiration_threshold:=30}
-exp_thres_secs=$((exp_thres_days * 24 * 60 * 60))
-
-zimbra_domain_cert_directory=/opt/zextras/conf/domaincerts
-
 ERROR_PREFIX="ERROR:"
 
 saveConfigKey() {
   local key=$1
   local file=$2
   local location=$3
-  local content=$(cat "$file")
+  local content
+  content=$(cat "$file")
   if [ "$location" = "global" ]; then
     local zmprov_opts="mcf"
   elif [ "$location" = "server" ]; then
@@ -39,8 +35,8 @@ saveConfigKey() {
   fi
 
   echo -n "** Saving $location config key $key..."
-  /opt/zextras/bin/zmprov -m -l ${zmprov_opts} "$key" "$content" 2>/dev/null
-  if [ "$?" = 0 ]; then
+
+  if /opt/zextras/bin/zmprov -m -l "${zmprov_opts}" "$key" "$content" 2>/dev/null; then
     echo "done."
   else
     echo "failed."
@@ -63,8 +59,9 @@ cleanConfigKey() {
   fi
 
   echo -n "** Clean $location config key $key..."
-  /opt/zextras/bin/zmprov -m -l ${zmprov_opts} "$key" "" 2>/dev/null
-  if [ "$?" = 0 ]; then
+  /opt/zextras/bin/zmprov -m -l "${zmprov_opts}" "$key" "" 2>/dev/null
+  rc=$?
+  if [ $rc -eq 0 ]; then
     echo "done."
   else
     echo "failed."
@@ -91,14 +88,16 @@ loadConfigKey() {
     return
   fi
   TMPDIR="${zimbra_tmp_directory}"
-  local tmpfile=$(mktemp -t zmcertmgr.XXXXXX 2>/dev/null) || {
+  local tmpfile
+  tmpfile=$(mktemp -t zmcertmgr.XXXXXX 2>/dev/null) || {
     echo "Failed to create tmpfile"
     exit 1
   }
   if [ ! -s "$file" ]; then
     echo -n "** Retrieving $location config key $key..."
-    /opt/zextras/bin/zmprov -m -l ${zmprov_opts} "${key}" | sed -e 's/^${key}: //' >"$tmpfile" 2>/dev/null && mv -f "$tmpfile" "$file" 2>/dev/null
-    if [ $? = 0 ] && [ -s "$file" ]; then
+    /opt/zextras/bin/zmprov -m -l "${zmprov_opts}" "${key}" | sed -e "s/^${key}: //" >"$tmpfile" 2>/dev/null && mv -f "$tmpfile" "$file" 2>/dev/null
+    rc=$?
+    if [ "$rc" -eq 0 ] && [ -s "$file" ]; then
       chmod 400 "$file" 2>/dev/null
       echo "done."
     else
@@ -115,16 +114,14 @@ deployCerts() {
     fi
   fi
 
-  DOMAINS=$(/opt/zextras/bin/zmprov -m -l garpd | awk '{print $1}')
-  if [ $? != 0 ]; then
+  DOMAINS=$(/opt/zextras/bin/zmprov -m -l garpd | awk '{print $1}') || {
     echo "Unable to retrieve list of domains with SSL certificates"
     exit 1
-  fi
+  }
 
   for i in ${DOMAINS}; do
     echo -n "** Deploying cert for $i..."
-    getClientCertFromLdap "$i" >/dev/null 2>&1
-    if [ $? = 0 ]; then
+    if getClientCertFromLdap "$i" >/dev/null 2>&1; then
       echo "done."
     else
       echo "failed."
@@ -227,7 +224,7 @@ else
   for arg in "$ACTION" "$@"; do
     [[ "$arg" =~ ^-?-h ]] && usage 0
   done
-  echo "$ERROR_PREFIX unknown argument(s): $ACTION $@"
+  echo "$ERROR_PREFIX unknown argument(s): $ACTION" "$@"
   usage
 fi
 

@@ -38,13 +38,14 @@ getpid() {
 checkrunning() {
   getpid
   if [[ "${pid}" = "0" ]]; then
-    pid=$(ps auxwww | grep zmconfigd | grep -v grep | grep -v zmconfigdctl | awk '{print $2}')
+    pid=$(pgrep -f zmconfigd)
   fi
   if [[ "${pid}" = "" ]]; then
     running=0
   else
-    status=$(echo STATUS | $NC -w 15 localhost ${zmconfigd_listen_port} 2>/dev/null)
-    if [ $? = 0 ] && [ "$status" = "SUCCESS ACTIVE" ]; then
+    status=$(echo STATUS | $NC -w 15 localhost "${zmconfigd_listen_port}" 2>/dev/null)
+    rc=$?
+    if [ $rc -eq 0 ] && [ "$status" = "SUCCESS ACTIVE" ]; then
       running=1
     else
       running=0
@@ -66,9 +67,9 @@ startzmconfigd() {
     return
   fi
   if [[ "${pid}" != "" ]]; then
-    kill ${pid}
+    kill "${pid}"
   fi
-  rm -rf ${pidfile}
+  rm -rf "${pidfile}"
   /opt/zextras/libexec/zmconfigd >/dev/null 2>&1 &
   for ((i = 0; i < 30; i++)); do
     if [[ -f ${pidfile} ]]; then
@@ -108,11 +109,11 @@ case "$1" in
       exit 0
     else
       for ((i = 0; i < 30; i++)); do
-        if ! kill -0 ${pid} 2>/dev/null; then
+        if ! kill -0 "${pid}" 2>/dev/null; then
           rm -rf "${pidfile}"
           break
         fi
-        kill ${pid}
+        kill "${pid}"
         sleep 1
       done
     fi

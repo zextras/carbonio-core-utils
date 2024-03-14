@@ -8,14 +8,14 @@
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
-LDAP_URL=$(echo ${ldap_url} | awk '{ print $1 }')
+LDAP_URL=$(echo "${ldap_url}" | awk '{ print $1 }')
 
-GSA_ID_LIST=$(/opt/zextras/common/bin/ldapsearch -x -H ${LDAP_URL} -w ${zimbra_ldap_password} -D uid=zimbra,cn=admins,cn=zimbra -b '' '(&(objectClass=zimbraDomain)(zimbraGalAccountId=*))' zimbraGalAccountId | awk '{if ($1 ~ /^zimbraGalAccountId:$/) { print $2 } }')
+GSA_ID_LIST=$(/opt/zextras/common/bin/ldapsearch -x -H "${LDAP_URL}" -w "${zimbra_ldap_password}" -D uid=zimbra,cn=admins,cn=zimbra -b '' '(&(objectClass=zimbraDomain)(zimbraGalAccountId=*))' zimbraGalAccountId | awk '{if ($1 ~ /^zimbraGalAccountId:$/) { print $2 } }')
 
 MY_HOSTNAME=$zimbra_server_hostname
 for ID in $GSA_ID_LIST; do
-  GSA_MAIL_HOST=$(/opt/zextras/common/bin/ldapsearch -x -H ${LDAP_URL} -w ${zimbra_ldap_password} -D uid=zimbra,cn=admins,cn=zimbra -b '' '(&(objectClass=zimbraAccount)(zimbraId='${ID}'))' zimbraMailHost | awk '{if ($1 ~ /^zimbraMailHost:$/) { print $2 } }')
+  GSA_MAIL_HOST=$(/opt/zextras/common/bin/ldapsearch -x -H "${LDAP_URL}" -w "${zimbra_ldap_password}" -D uid=zimbra,cn=admins,cn=zimbra -b '' '(&(objectClass=zimbraAccount)(zimbraId='"${ID}"'))' zimbraMailHost | awk '{if ($1 ~ /^zimbraMailHost:$/) { print $2 } }')
   if [ "${GSA_MAIL_HOST}" == "${MY_HOSTNAME}" ]; then
-    /opt/zextras/bin/zmgsautil trickleSync -i ${ID} -n InternalGAL
+    /opt/zextras/bin/zmgsautil trickleSync -i "${ID}" -n InternalGAL
   fi
 done

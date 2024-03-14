@@ -28,8 +28,8 @@ rewriteconfig() {
 }
 
 getpid() {
-  if [ -f $pidfile ]; then
-    cpid=$(cat $pidfile)
+  if [ -f "$pidfile" ]; then
+    cpid=$(cat "$pidfile")
   fi
 }
 
@@ -39,10 +39,10 @@ checkrunning() {
   if [ "$cpid" = "" ]; then
     running=0
   else
-    if ps --no-headers -p $cpid -o cmd 2>/dev/null | grep clamd >/dev/null 2>&1; then
+    if ps --no-headers -p "$cpid" -o cmd 2>/dev/null | grep clamd >/dev/null 2>&1; then
       running=1
     else
-      rm $pidfile
+      rm "$pidfile"
       cpid=""
       running=0
     fi
@@ -50,13 +50,9 @@ checkrunning() {
 }
 
 pskillall() {
-  ps_cmd="/bin/ps ax -o pid,ppid,command"
   killsig="$1"
-  pname=$(echo "$2" | sed -e 's%/%\\\/%g')
-  plist=$(${ps_cmd} | awk '{ if ( $3 ~ /'${pname}'/ ) { print $1 " " $2 } }' | sort -nr -k2 -k1 | awk '{ print $1 }')
-  for p in ${plist}; do
-    kill ${killsig} ${p}
-  done
+  pid=$(pidof "$2")
+  kill "${killsig}" "${pid}"
 }
 
 #
@@ -64,7 +60,7 @@ pskillall() {
 #
 case "$1" in
   'start')
-    if [ $2 = "" ]; then
+    if [ "$2" == "" ]; then
       rewriteconfig
     fi
 
@@ -75,7 +71,7 @@ case "$1" in
     else
       /opt/zextras/common/sbin/clamd \
         --config-file=/opt/zextras/conf/clamd.conf \
-        >>${zimbra_log_directory}/clamd.log 2>&1 &
+        >>"${zimbra_log_directory}/clamd.log" 2>&1 &
 
       for ((i = 0; i < 12; i++)); do
         checkrunning
@@ -111,14 +107,15 @@ case "$1" in
       fi
       for ((i = 0; i < 30; i++)); do
         sleep 2
-        kill -0 $cpid 2>/dev/null
-        if [ $? != 0 ]; then
-          rm -f ${pidfile}
+        kill -0 "$cpid" 2>/dev/null
+        rc=$?
+        if [ $rc -ne 0 ]; then
+          rm -f "${pidfile}"
           break
         fi
-        kill $cpid
+        kill "$cpid"
       done
-      if [ -s ${pidfile} ]; then
+      if [ -s "${pidfile}" ]; then
         echo "failed."
         exit 1
       else
@@ -130,7 +127,7 @@ case "$1" in
 
   'restart' | 'reload')
     $0 stop
-    $0 start $2
+    $0 start "$2"
     ;;
 
   'status')

@@ -5,7 +5,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-# Not a typo, /bin/df (not file-descriptors)
+# Not a typo, df (not file-descriptors)
 
 use strict;
 use Getopt::Long;
@@ -21,7 +21,7 @@ my $DISK_WARN_THRESHOLD = getLocalConfig("zmdisklog_warn_threshold") || 85;
 my $hostname = qx(/opt/zextras/bin/zmhostname);
 chomp $hostname;
 
-my $DF = '/bin/df -k';
+my $DF = 'df -k';
 my $HEADING = 'timestamp, path, disk, disk_use, disk_space, disk_pct_used';
 
 my @DF_EXCLUDES = split(/:/, getLocalConfig("zmstat_df_excludes") || "");

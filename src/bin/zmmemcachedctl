@@ -14,13 +14,12 @@ source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
 servicename=memcached
-configfile=/opt/zextras/conf/${servicename}.conf
 pidfile=${zimbra_log_directory}/${servicename}.pid
 pid=""
 
 getpid() {
-  if [ -f ${pidfile} ]; then
-    pid=$(cat ${pidfile})
+  if [ -f "${pidfile}" ]; then
+    pid=$(cat "${pidfile}")
   fi
 }
 
@@ -29,7 +28,7 @@ checkrunning() {
   if [ "$pid" = "" ]; then
     running=0
   else
-    if ps --no-headers -p $pid -o cmd 2>/dev/null | grep memcached >/dev/null 2>&1; then
+    if ps --no-headers -p "$pid" -o cmd 2>/dev/null | grep memcached >/dev/null 2>&1; then
       running=1
     else
       pid=""
@@ -53,13 +52,13 @@ case "$1" in
       exit 0
     fi
 
-    addr=$(/opt/zextras/bin/zmprov -l gs ${zimbra_server_hostname} zimbraMemcachedBindAddress | awk '/^zimbraMemcachedBindAddress:/{ print $2 }')
+    addr=$(/opt/zextras/bin/zmprov -l gs "${zimbra_server_hostname}" zimbraMemcachedBindAddress | awk '/^zimbraMemcachedBindAddress:/{ print $2 }')
     addr="${addr//$'\n'/,}"
-    port=$(/opt/zextras/bin/zmprov -l gs ${zimbra_server_hostname} zimbraMemcachedBindPort | awk '/^zimbraMemcachedBindPort:/{ print $2 }')
+    port=$(/opt/zextras/bin/zmprov -l gs "${zimbra_server_hostname}" zimbraMemcachedBindPort | awk '/^zimbraMemcachedBindPort:/{ print $2 }')
     if [ "$addr" = "" ]; then
-      /opt/zextras/common/bin/${servicename} -d -P ${pidfile} -U 0 -l 127.0.1.1,127.0.0.1 -p ${port:-11211}
+      /opt/zextras/common/bin/${servicename} -d -P "${pidfile}" -U 0 -l 127.0.1.1,127.0.0.1 -p "${port:-11211}"
     else
-      /opt/zextras/common/bin/${servicename} -d -P ${pidfile} -U 0 -l ${addr} -p ${port:-11211}
+      /opt/zextras/common/bin/${servicename} -d -P "${pidfile}" -U 0 -l "${addr}" -p "${port:-11211}"
     fi
     for ((i = 0; i < 30; i++)); do
       checkrunning
@@ -84,16 +83,17 @@ case "$1" in
       exit 0
     else
       for ((i = 0; i < 30; i++)); do
-        kill -0 $pid 2>/dev/null
-        if [ $? != 0 ]; then
-          rm -rf ${pidfile}
+        kill -0 "$pid" 2>/dev/null
+        rc=$?
+        if [ $rc != 0 ]; then
+          rm -rf "${pidfile}"
           break
         fi
-        kill $pid
+        kill "$pid"
         sleep 1
       done
     fi
-    if [ -s ${pidfile} ]; then
+    if [ -s "${pidfile}" ]; then
       echo "failed."
       exit 1
     else
@@ -109,7 +109,7 @@ case "$1" in
     checkrunning
     if [ $running = 1 ] && [ "$pid" != "" ]; then
       echo -n "Reloading ${servicename}..."
-      kill -HUP $pid
+      kill -HUP "$pid"
       echo "done."
     fi
 

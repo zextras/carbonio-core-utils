@@ -57,7 +57,8 @@ SET PASSWORD FOR '${zimbra_mysql_user}' = PASSWORD('${newpassword}');
 SET PASSWORD FOR '${zimbra_mysql_user}'@'localhost' = PASSWORD('${newpassword}');
 SET PASSWORD FOR '${zimbra_mysql_user}'@'localhost.localdomain' = PASSWORD('${newpassword}');
 EOF
-  if [ $? = 0 ]; then
+  rc=$?
+  if [ $rc -eq 0 ]; then
     echo '*' Changed zextras mysql user password
   else
     echo '****' PASSWORD CHANGE FAILED
@@ -71,7 +72,8 @@ fi
 if [ ${password_key} = mysql_root_password ]; then
   echo /opt/zextras/bin/mysqladmin -u root --password="${mysql_root_password}" password "${newpassword}"
   /opt/zextras/bin/mysqladmin -u root --password="${mysql_root_password}" password "${newpassword}"
-  if [ $? = 0 ]; then
+  rc=$?
+  if [ $rc -eq 0 ]; then
     echo '*' Changed mysql root user password
   else
     echo '****' PASSWORD CHANGE FAILED
@@ -82,7 +84,8 @@ if [ ${password_key} = mysql_root_password ]; then
 SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${newpassword}');
 SET PASSWORD FOR 'root'@'localhost.localdomain' = PASSWORD('${newpassword}');
 EOF
-  if [ $? = 0 ]; then
+  rc=$?
+  if [ $rc -eq 0 ]; then
     echo '*' Changed mysql root user password root@localhost
   else
     echo '****' PASSWORD CHANGE FAILED FOR root@localhost

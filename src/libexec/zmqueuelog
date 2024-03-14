@@ -11,9 +11,7 @@ use lib "/opt/zextras/common/lib/perl5";
 use Zimbra::Util::Common;
 use Zimbra::Mon::Logger;
 
-my $MNTCMD;
 my $DFCMD;
-$MNTCMD = "mount -t ext3";
 $DFCMD = "df -ml ";
 
 

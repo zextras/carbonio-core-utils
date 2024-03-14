@@ -1,3 +1,4 @@
+#!/bin/bash
 # SPDX-FileCopyrightText: 2022 Synacor, Inc.
 # SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
 #
@@ -36,7 +37,7 @@ zmassert() {
   if [ "$@" ]; then
     return
   fi
-  echo Error: assertion "'$@'" failed && exit 1
+  echo "Error: assertion" "$@" "failed" && exit 1
 }
 
 #

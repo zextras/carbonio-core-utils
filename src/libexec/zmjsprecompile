@@ -23,7 +23,7 @@ for i in $extensions; do
   fi
 done
 
-for i in $(ls /opt/zextras/common/jetty_home/lib/apache-jsp/*.jar); do
+for i in /opt/zextras/common/jetty_home/lib/apache-jsp/*.jar; do
   if [ "$class_path" = "" ]; then
     class_path="$i"
   else
@@ -31,7 +31,7 @@ for i in $(ls /opt/zextras/common/jetty_home/lib/apache-jsp/*.jar); do
   fi
 done
 
-for i in $(ls /opt/zextras/common/jetty_home/lib/apache-jstl/*.jar); do
+for i in /opt/zextras/common/jetty_home/lib/apache-jstl/*.jar; do
   if [ "$class_path" = "" ]; then
     class_path="$i"
   else
@@ -55,7 +55,9 @@ compile_jsp() {
   return $?
 }
 
-if compile_jsp; then
+compile_jsp
+rc=$?
+if [ $rc -eq 0 ]; then
   echo "done."
 else
   echo "failed."

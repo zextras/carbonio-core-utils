@@ -17,38 +17,39 @@ fi
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
-pidfile=${cbpolicyd_pid_file:=${zimbra_log_directory}/cbpolicyd.pid}
 dbfile=${cbpolicyd_db_file:=/opt/zextras/data/cbpolicyd/db/cbpolicyd.sqlitedb}
-dbdir=$(dirname $dbfile)
+dbdir=$(dirname "$dbfile")
 cbpolicyDir=/opt/zextras/common
 sqlite3=$(which sqlite3)
 
-if [ ${sqlite3} = "" ]; then
+if [ "${sqlite3}" = "" ]; then
   echo "cbpolicyd requires sqlite3 to be installed."
   exit 1
 fi
 
-if [ ! -d $dbdir ]; then
-  mkdir -p $dbdir
-  if [ $? = 0 ]; then
+if [ ! -d "$dbdir" ]; then
+  mkdir -p "$dbdir"
+  rc=$?
+  if [ $rc -eq 0 ]; then
     exit 1
   fi
 fi
 
 initCBPolicyd() {
-  if [ -f ${dbfile} ]; then
+  if [ -f "${dbfile}" ]; then
     if [ "$force" = "" ]; then
       echo "Must use -force to overwrite existing database."
       exit 1
     else
-      rm -f $dbfile
+      rm -f "$dbfile"
     fi
   fi
   echo -n "Converting policyd database templates to sqlite..."
   for i in core.tsql access_control.tsql accounting.tsql amavis.tsql quotas.tsql checkhelo.tsql checkspf.tsql greylisting.tsql; do
     ${cbpolicyDir}/share/database/convert-tsql sqlite ${cbpolicyDir}/share/database/$i | sed -e '/^#/d'
-  done >${dbfile}.sq3
-  if [ $? != 0 ]; then
+  done >"${dbfile}.sq3"
+  rc=$?
+  if [ $rc -ne 0 ]; then
     echo "failed."
     exit 1
   else
@@ -56,8 +57,9 @@ initCBPolicyd() {
   fi
 
   echo -n "Creating sqlite database..."
-  ${sqlite3} ${dbfile} <${dbfile}.sq3
-  if [ $? != 0 ]; then
+  ${sqlite3} "${dbfile}" <"${dbfile}.sq3"
+  rc=$?
+  if [ $rc -ne 0 ]; then
     echo "failed."
     exit 1
   else
@@ -66,7 +68,8 @@ initCBPolicyd() {
 
   echo -n "Adding Domains..."
   for dom in $(zmprov gad); do sqlite3 /opt/zextras/data/cbpolicyd/db/cbpolicyd.sqlitedb "INSERT INTO policy_group_members (PolicyGroupID,Member) VALUES ('2','@$dom');"; done
-  if [ $? != 0 ]; then
+  rc=$?
+  if [ $rc -ne 0 ]; then
     echo "failed."
     exit 1
   else
@@ -76,7 +79,8 @@ initCBPolicyd() {
   echo -n "Adding subnets from Mynetworks global..."
   globalSubnet=$(zmprov gacf | grep zimbraMtaMyNetworks | sed 's/127.0.0.0\/8 //g' | awk '{ print $NF }')
   sqlite3 /opt/zextras/data/cbpolicyd/db/cbpolicyd.sqlitedb "INSERT INTO policy_group_members (PolicyGroupID,Member) VALUES (1,'$globalSubnet');"
-  if [ $? != 0 ]; then
+  rc=$?
+  if [ $rc -ne 0 ]; then
     echo "failed."
     exit 1
   else
@@ -84,9 +88,10 @@ initCBPolicyd() {
   fi
 
   echo -n "Adding subnets from Mynetworks server..."
-  serverSubnet=$(zmprov gs $(zmhostname) | grep zimbraMtaMyNetworks | sed 's/127.0.0.0\/8 //g' | awk '{ print $NF }')
+  serverSubnet=$(zmprov gs "$(zmhostname)" | grep zimbraMtaMyNetworks | sed 's/127.0.0.0\/8 //g' | awk '{ print $NF }')
   sqlite3 /opt/zextras/data/cbpolicyd/db/cbpolicyd.sqlitedb "INSERT INTO policy_group_members (PolicyGroupID,Member) VALUES (1,'$serverSubnet');"
-  if [ $? != 0 ]; then
+  rc=$?
+  if [ $rc -ne 0 ]; then
     echo "failed."
     exit 1
   else

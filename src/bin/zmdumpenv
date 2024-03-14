@@ -9,7 +9,7 @@ source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
 while getopts "h" flag; do
-  if [ $flag == "h" ]; then
+  if [ "$flag" == "h" ]; then
     echo "Usage: $0 [-h]"
     echo "    Dumps various environment information"
     echo "    -h: This help information"
@@ -27,9 +27,9 @@ echo "----------------"
 hostname
 echo "----------------"
 H=$(/opt/zextras/bin/zmhostname)
-echo $H
+echo "$H"
 echo "----------------"
-host $H
+host "$H"
 echo "----------------"
 df -h
 echo "----------------"
@@ -42,11 +42,11 @@ echo "----------------"
 uptime
 echo "----------------"
 memkb=$(zmsysmemkb)
-echo $memkb KB
+echo "$memkb KB"
 echo "----------------"
 echo "----------------"
 freemem=$(free -m)
-echo FREE $freemem KB
+echo "FREE $freemem KB"
 echo "----------------"
 echo "----------------"
 cat /etc/hosts

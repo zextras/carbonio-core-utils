@@ -10,7 +10,7 @@ SU="su - zextras -c "
 
 echo ""
 printf %s "Rotating log files:"
-cd /var/log
+cd /var/log || return
 log_name=carbonio.log
 if [ -f "${log_name}" ]; then
   printf %s " ${log_name}"
@@ -33,7 +33,7 @@ fi
 # truncate, no saving old logs
 true >carbonio-stats.log
 
-cd /opt/zextras/log
+cd /opt/zextras/log || return
 for i in myslow.log logger_myslow.log sync.log zcs.log zmmtaconfig.log httpd_access.log httpd_error.log clamd.log zmswatch.out zmlogswatch.out freshclam.log synctrace.log syncstate.log nginx.log; do
   if [ -f "${i}" ]; then
     printf %s " ${i}"

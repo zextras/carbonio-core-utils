@@ -19,8 +19,8 @@ isrunning() {
 }
 
 opth=0
-for opt in $@; do
-  if [ $opt = "-h" ] || [ $opt = "--help" ]; then
+for opt in "$@"; do
+  if [ "$opt" = "-h" ] || [ "$opt" = "--help" ]; then
     opth=1
     break
   fi
@@ -33,31 +33,31 @@ if [ $opth -eq 0 ]; then
     echo "Error: mailboxd still running.  Stop mailboxd before running zmplayredo."
     exit 1
   fi
-  if [ -s $ropid ]; then
-    echo "Error: another instance of zmplayredo (pid=$(cat $ropid)) is already running"
+  if [ -s "$ropid" ]; then
+    echo "Error: another instance of zmplayredo (pid=$(cat "$ropid")) is already running"
     echo "       remove $ropid if this is not the case"
     exit 1
   fi
 fi
 
-if [ -d ${zimbra_java_home}/jre ]; then
+if [ -d "${zimbra_java_home}/jre" ]; then
   JRE_EXT_DIR=${zimbra_java_home}/jre/lib/ext
 else
   JRE_EXT_DIR=/System/Library/Frameworks/JavaVM.framework/Versions/CurrentJDK/Home/lib/ext
   #JRE_EXT_DIR=${zimbra_java_home}/lib/ext
 fi
 
-jardirs=${JRE_EXT_DIR}:/opt/zextras/mailboxd/lib/*:/opt/zextras/mailboxd/common/lib/*:/opt/zextras/lib/jars/*
+jardirs="${JRE_EXT_DIR}:/opt/zextras/mailboxd/lib/*:/opt/zextras/mailboxd/common/lib/*:/opt/zextras/lib/jars/*"
 if [ -e /opt/zextras/lib/ext-common ]; then
-  jardirs=${jardirs}:/opt/zextras/lib/ext-common/*
+  jardirs="${jardirs}:/opt/zextras/lib/ext-common/*"
 fi
-for jd in $(find /opt/zextras/lib/ext -type d); do
-  if [ ${jd} != /opt/zextras/lib/ext ]; then
+while IFS= read -r -d '' jd; do
+  if [ "${jd}" != /opt/zextras/lib/ext ]; then
     jardirs="${jardirs}:${jd}/*"
   fi
-done
-
+done < <(find /opt/zextras/lib/ext -type d -print0)
 jardirs="${jardirs}:/opt/zextras/jetty/common/lib/*:/opt/zextras/jetty/webapps/service/WEB-INF/lib/*"
+
 #
 # Memory for use by JVM
 #
@@ -78,7 +78,8 @@ for opt in $mailboxd_java_options; do
   fi
 done
 
-echo $$ >$ropid
+echo $$ >"$ropid"
+# shellcheck disable=SC2086
 ${zimbra_java_home}/bin/java \
   ${xms_xmx_options} ${sanitized_options} \
   -Dzimbra.config=/opt/zextras/conf/localconfig.xml \
@@ -86,5 +87,5 @@ ${zimbra_java_home}/bin/java \
   -classpath ${jardirs} \
   com.zimbra.cs.redolog.util.PlaybackUtil "$@"
 rc=$?
-rm -f $ropid
+rm -f "$ropid"
 exit $rc

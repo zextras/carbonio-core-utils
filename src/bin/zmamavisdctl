@@ -30,7 +30,7 @@ checkrunning() {
   # Get PID from scanning the proc table.
   if [ "$PID" = "" ]; then
     # PID file is NULL.  Get info from proc table.
-    PID=$(/bin/ps axo user,pid,ppid,command | awk '{ if ((($4 ~ /^amavisd$/) || ($4 ~ /^\/opt\/zextras\/common\/sbin\/amavisd$/)) && ($5 ~ /^\(master\)$/)) { print $2 } }')
+    PID=$(ps axo user,pid,ppid,command | awk '{ if ((($4 ~ /^amavisd$/) || ($4 ~ /^\/opt\/zextras\/common\/sbin\/amavisd$/)) && ($5 ~ /^\(master\)$/)) { print $2 } }')
   fi
   # If PID is still not set, then we cannot find any amavisd (master) process.  Assume amavisd is not running.
   if [ "$PID" = "" ]; then
@@ -39,12 +39,12 @@ checkrunning() {
   fi
 
   # If we get to this point the PID was defined in the PID file.  But we're not sure we trust it's validity
-  # so we're going the verify it from /bin/ps output!
-  PID=$(/bin/ps axo user,pid,ppid,command | awk '{ if (($2 == '$PID') && (($4 ~ /^amavisd$/) || ($4 ~ /^\/opt\/zextras\/common\/sbin\/amavisd$/)) && ($5 ~ /^\(master\)$/)) { print $2 } }')
+  # so we're going the verify it from ps output!
+  PID=$(ps axo user,pid,ppid,command | awk '{ if (($2 == "$PID") && (($4 ~ /^amavisd$/) || ($4 ~ /^\/opt\/zextras\/common\/sbin\/amavisd$/)) && ($5 ~ /^\(master\)$/)) { print $2 } }')
   # If PID is NULL now, then the PID stored in the PID file was bogus!
   # Let's try to find the true amavisd (master) process ID
   if [ "$PID" = "" ]; then
-    PID=$(/bin/ps axo user,pid,ppid,command | awk '{ if ((($4 ~ /^amavisd$/) || ($4 ~ /^\/opt\/zextras\/common\/sbin\/amavisd$/)) && ($5 ~ /^\(master\)$/)) { print $2 } }')
+    PID=$(ps axo user,pid,ppid,command | awk '{ if ((($4 ~ /^amavisd$/) || ($4 ~ /^\/opt\/zextras\/common\/sbin\/amavisd$/)) && ($5 ~ /^\(master\)$/)) { print $2 } }')
   fi
   # If the PID is still NULL now, it really must not be running.
   if [ "$PID" = "" ]; then
@@ -60,7 +60,7 @@ checkrunning-mc() {
   #  Get PID from scanning the proc table.
   if [ "$MCPID" = "" ]; then
     # PID file is NULL.  Get info from proc table.
-    MCPID=$(/bin/ps axo user,pid,ppid,command | awk '{ if ((($6 ~ /amavis-mc$/) || ($6 ~ /\/opt\/zextras\/common\/sbin\/amavis-mc$/))) { print $2 } }')
+    MCPID=$(ps axo user,pid,ppid,command | awk '{ if ((($6 ~ /amavis-mc$/) || ($6 ~ /\/opt\/zextras\/common\/sbin\/amavis-mc$/))) { print $2 } }')
   fi
   # If PID is still not set, then we cannot find any amavisd (master) process.  Assume amavisd is not running.
   if [ "$MCPID" = "" ]; then
@@ -116,7 +116,7 @@ case "$1" in
       if [ ! -d /opt/zextras/data/amavisd/var ]; then
         mkdir /opt/zextras/data/amavisd/var
       fi
-      if [ $2 = "" ]; then
+      if [ "$2" == "" ]; then
         rewriteconfig
       fi
       /opt/zextras/common/sbin/amavisd -X no_conf_file_writable_check -c \
@@ -146,16 +146,18 @@ case "$1" in
     if [ $RUNNING = 0 ]; then
       echo "amavisd is not running."
     else
-      kill $PID 2>/dev/null
+      kill "$PID" 2>/dev/null
       for ((i = 0; i < 300; i++)); do
         sleep 5
-        kill -0 $PID 2>/dev/null
-        if [ $? != 0 ]; then
+        kill -0 "$PID" 2>/dev/null
+        rc=$?
+        if [ $rc -ne 0 ]; then
           break
         fi
       done
-      kill $PID 2>/dev/null
-      if [ $? != 0 ]; then
+      kill "$PID" 2>/dev/null
+      rc=$?
+      if [ $rc -ne 0 ]; then
         echo " done."
       else
         echo " failed to stop $PID"
@@ -167,16 +169,18 @@ case "$1" in
     if [ $MCRUNNING = 0 ]; then
       echo "amavisd-mc is not running."
     else
-      kill $MCPID 2>/dev/null
+      kill "$MCPID" 2>/dev/null
       for ((i = 0; i < 300; i++)); do
         sleep 5
-        kill -0 $MCPID 2>/dev/null
-        if [ $? != 0 ]; then
+        kill -0 "$MCPID" 2>/dev/null
+        rc=$?
+        if [ $rc -ne 0 ]; then
           break
         fi
       done
-      kill $MCPID 2>/dev/null
-      if [ $? != 0 ]; then
+      kill "$MCPID" 2>/dev/null
+      rc=$?
+      if [ $rc -ne 0 ]; then
         echo " done."
       else
         echo " failed to stop $PID"
@@ -188,7 +192,7 @@ case "$1" in
 
   'restart' | 'reload')
     $0 stop
-    $0 start $2
+    $0 start "$2"
     ;;
 
   'status')

@@ -8,7 +8,7 @@
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
-if [ ! -d ${mailboxd_directory} ]; then
+if [ ! -d "${mailboxd_directory}" ]; then
   exit 0
 fi
 
@@ -16,7 +16,7 @@ if [ ! -x /opt/zextras/common/bin/mysql ]; then
   exit 0
 fi
 
-if [ ! -d ${zimbra_java_home} ]; then
+if [ ! -d "${zimbra_java_home}" ]; then
   exit 0
 fi
 
@@ -28,7 +28,6 @@ NC=${NC:-$(which netcat 2>/dev/null)}
 javaXmx=${mailboxd_java_heap_size:=512}
 javaXms=${javaXmx}
 mailboxd_java_heap_new_size_percent=${mailboxd_java_heap_new_size_percent:=25}
-javaXmn=$(expr ${javaXmx} '*' ${mailboxd_java_heap_new_size_percent} / 100)
 
 #
 # Spnego - the spnego_options_file is written by zmconfigd
@@ -48,64 +47,70 @@ case "$1" in
       /opt/zextras/bin/zmtlsctl >/dev/null 2>&1
     fi
     /opt/zextras/libexec/zmmailboxdmgr status
-    if [ $? = 0 ]; then
+    rc=$?
+    if [ $rc -eq 0 ]; then
       echo "mailboxd already running."
       exit 0
     fi
 
-    mkdir -p ${mailboxd_directory}/work/service/jsp
+    mkdir -p "${mailboxd_directory}/work/service/jsp"
 
     mailboxd_thread_stack_size=${mailboxd_thread_stack_size:=256k}
-    if [ -z "$(echo ${mailboxd_java_options} | grep Xss)" ]; then
+    if ! echo "${mailboxd_java_options}" | grep -q 'Xss'; then
       mailboxd_java_options="${mailboxd_java_options} -Xss${mailboxd_thread_stack_size}"
     fi
 
     networkaddress_cache_ttl=${networkaddress_cache_ttl:=60}
-    if [ -z "$(echo ${mailboxd_java_options} | grep sun.net.inetaddr.ttl)" ]; then
+    if ! echo "${mailboxd_java_options}" | grep -q 'sun.net.inetaddr.ttl'; then
       mailboxd_java_options="${mailboxd_java_options} -Dsun.net.inetaddr.ttl=${networkaddress_cache_ttl}"
     fi
 
-    if [ -z "$(echo ${mailboxd_java_options} | grep log4j)" ]; then
+    if ! echo "${mailboxd_java_options}" | grep -q "log4j"; then
       mailboxd_java_options="${mailboxd_java_options} -Dlog4j.configurationFile=${zimbra_log4j_properties}"
     fi
+
     echo -n "Starting mailboxd..."
+    # shellcheck disable=SC2086
     /opt/zextras/libexec/zmmailboxdmgr start \
       -Dfile.encoding=UTF-8 ${mailboxd_java_options} ${spnegoJavaOptions} -Xms${javaXms}m \
-      -Xmx${javaXmx}m </dev/null >/dev/null 2>&1
-    status=$?
-    if [ $status != 0 ]; then
+      "-Xmx${javaXmx}m" </dev/null >/dev/null 2>&1
+    rc=$?
+    if [ $rc != 0 ]; then
       echo "failed."
-      exit $status
+      exit $rc
     fi
-    status=1
-    MPORT=$(/opt/zextras/bin/zmprov -l gs ${zimbra_server_hostname} zimbraMailPort | grep zimbraMailPort: | awk '{print $2}')
+    rc=1
+    MPORT=$(/opt/zextras/bin/zmprov -l gs "${zimbra_server_hostname}" zimbraMailPort | grep zimbraMailPort: | awk '{print $2}')
     ncOpt="-z"
     for ((i = 0; i < 12; i++)); do
-      $NC $ncOpt localhost ${MPORT} >/dev/null 2>&1
-      if [ $? = 0 ]; then
-        status=0
+      $NC $ncOpt localhost "${MPORT}" >/dev/null 2>&1
+      rc=$?
+      if [ $rc -eq 0 ]; then
+        rc=0
         break
       fi
       sleep 5
     done
-    if [ $status = 0 ]; then
+    if [ $rc = 0 ]; then
       echo "done."
     else
       echo "failed."
     fi
-    exit $status
+    exit $rc
     ;;
 
   'kill' | 'stop')
     echo -n "Stopping mailboxd..."
     /opt/zextras/libexec/zmmailboxdmgr status
-    if [ $? != 0 ]; then
+    rc=$?
+    if [ $rc -ne 0 ]; then
       echo "mailboxd is not running."
       exit 0
     fi
-    /opt/zextras/bin/zmthrdump -i -o /opt/zextras/log/stacktrace.$$.$(date +%Y%m%d%H%M%S) 2>/dev/null
+    /opt/zextras/bin/zmthrdump -i -o /opt/zextras/log/stacktrace.$$."$(date +%Y%m%d%H%M%S)" 2>/dev/null
     /opt/zextras/libexec/zmmailboxdmgr stop
-    if [ $? = 0 ]; then
+    rc=$?
+    if [ $rc -eq 0 ]; then
       echo "done."
     else
       echo "failed."
@@ -115,13 +120,14 @@ case "$1" in
 
   'restart' | 'reload')
     $0 stop
-    $0 start $2
+    $0 start "$2"
     ;;
 
   'status')
     echo -n "mailboxd is "
     /opt/zextras/libexec/zmmailboxdmgr status
-    if [ $? = 0 ]; then
+    rc=$?
+    if [ $rc -eq 0 ]; then
       echo "running."
       exit 0
     else
