@@ -47,13 +47,6 @@ if [ -f "${ZMROOT}/lib/ext/com_zimbra_oo/com_zimbra_oo.jar" ]; then
   CP="$CP${PATHSEP}${ZMROOT}/lib/ext/com_zimbra_oo/com_zimbra_oo.jar"
 fi
 
-java_version=$(${java} -version 2>&1 | grep "java version" | sed -e 's/"//g' | awk '{print $NF}' | awk -F_ '{print $1}')
-if [ "$java_version" = "1.6.0" ]; then
-  java_options="-XX:ErrorFile=${ZMROOT}/log"
-else
-  java_options=""
-fi
-
-exec ${java} ${java_options} -client -cp "$CP" \
+exec ${java} -client -cp "$CP" \
   -Djava.library.path=${ZMROOT}/lib -Dzimbra.home="${ZMROOT}" \
   com.zimbra.cs.localconfig.LocalConfigCLI "$@"
