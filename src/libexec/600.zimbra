@@ -6,7 +6,6 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 PATH=/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/bin:/opt/zextras/bin:/opt/zextras/libexec
-host=$(hostname -s)
 SU="su - zextras -c "
 
 echo ""
@@ -32,7 +31,7 @@ if [ -f "${log_name}" ]; then
 fi
 
 # truncate, no saving old logs
->carbonio-stats.log
+true >carbonio-stats.log
 
 cd /opt/zextras/log
 for i in myslow.log logger_myslow.log sync.log zcs.log zmmtaconfig.log httpd_access.log httpd_error.log clamd.log zmswatch.out zmlogswatch.out freshclam.log synctrace.log syncstate.log nginx.log; do

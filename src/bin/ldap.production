@@ -31,7 +31,7 @@ checkrunning() {
   if [ "$PID" = "" ]; then
     RUNNING=0
   else
-    if ps --no-headers -p "$PID" || cmd 2>/dev/null | grep slapd >/dev/null 2>&1; then
+    if ps --no-headers -p "$PID" -o cmd 2>/dev/null | grep slapd >/dev/null 2>&1; then
       RUNNING=1
     else
       PID=""
@@ -52,22 +52,6 @@ checkListening() {
   else
     LISTENING=1
   fi
-}
-
-doDebugStart() {
-  TIMEOUT=60 # timelimit for command
-  /opt/zextras/libexec/zmslapd -l LOCAL0 -h "${bind_url} ldapi:///" \
-    -F /opt/zextras/data/ldap/config -d 1 2>&1 | grep -e "failed" -e "error" &
-  cmd_pid=$!
-  sleep $TIMEOUT | (
-    read nothing              # wait on sleep to finish
-    kill $cmd_pid 2>/dev/null # otherwise abort the command!
-  ) &
-  sleep_pid=$!
-  wait $cmd_pid
-  kill -ALRM $sleep_pid 2>/dev/null # kill sleep if still running
-  echo ""
-  exit 1
 }
 
 start() {
@@ -94,8 +78,7 @@ start() {
     sleep 1
   done
   if [ "$PID" = "" ]; then
-    echo "Failed to start slapd.  Attempting debug start to determine error."
-    doDebugStart
+    echo "Failed to start slapd."
   else
     echo "Started slapd: pid $PID"
   fi
