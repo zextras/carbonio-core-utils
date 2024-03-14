@@ -40,7 +40,7 @@ saveConfigKey() {
 
   echo -n "** Saving $location config key $key..."
   /opt/zextras/bin/zmprov -m -l ${zmprov_opts} "$key" "$content" 2>/dev/null
-  if [ $? = 0 ]; then
+  if [ "$?" = 0 ]; then
     echo "done."
   else
     echo "failed."
@@ -64,7 +64,7 @@ cleanConfigKey() {
 
   echo -n "** Clean $location config key $key..."
   /opt/zextras/bin/zmprov -m -l ${zmprov_opts} "$key" "" 2>/dev/null
-  if [ $? = 0 ]; then
+  if [ "$?" = 0 ]; then
     echo "done."
   else
     echo "failed."
@@ -206,7 +206,7 @@ usage() {
   $0 cleancrt server
   $0 cleancrt global
 "
-  exit $rc
+  exit "$rc"
 }
 
 ###Main Execution###

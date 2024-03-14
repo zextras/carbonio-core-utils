@@ -57,7 +57,7 @@ echo ""
 
 if [ -f /var/run/syslog.pid ]; then
   echo "Sending sighup to syslogd"
-  kill -HUP $(head -1 /var/run/syslog.pid)
+  kill -HUP "$(head -1 /var/run/syslog.pid)"
 fi
 if [ -f /opt/zextras/log/logswatch.pid ]; then
   echo "Restarting zmlogswatch"
@@ -69,5 +69,5 @@ if [ -f /opt/zextras/log/swatch.pid ]; then
 fi
 if [ -f /opt/zextras/log/nginx.pid ]; then
   echo "Sending USR1 to nginx"
-  kill -USR1 $(head -1 /opt/zextras/log/nginx.pid)
+  kill -USR1 "$(head -1 /opt/zextras/log/nginx.pid)"
 fi

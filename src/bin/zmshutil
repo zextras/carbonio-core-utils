@@ -10,7 +10,7 @@ zmsetvars() {
   if [ "$1" = "-f" ]; then
     shift
   else
-    if [ ${zmsetvars} = "true" ]; then
+    if [ "${zmsetvars}" = "true" ]; then
       return
     fi
   fi
@@ -21,7 +21,7 @@ zmsetvars() {
     exit 1
   fi
 
-  if ! eval $(${zmlocalconfig} -q -m export); then
+  if ! eval "$(${zmlocalconfig} -q -m export)"; then
     echo Error: executing: ${zmlocalconfig} -q -m export
     exit 1
   fi
@@ -33,7 +33,7 @@ zmsetvars() {
 # Check if a conditional expression is true.
 #
 zmassert() {
-  if [ $@ ]; then
+  if [ "$@" ]; then
     return
   fi
   echo Error: assertion "'$@'" failed && exit 1
@@ -48,8 +48,8 @@ zmsysmemkb() {
   else
     memkb=$(/usr/sbin/sysctl hw.memsize 2>/dev/null | awk -F: '{ print $2 / 1024; }')
   fi
-  if ! echo $memkb | grep '^[0-9]*$' >/dev/null; then
+  if ! echo "$memkb" | grep '^[0-9]*$' >/dev/null; then
     memkb=524288
   fi
-  echo $memkb
+  echo "$memkb"
 }
