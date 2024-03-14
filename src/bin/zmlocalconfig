@@ -10,43 +10,14 @@
 # chicken and egg reasons. So we just make assumptions about install layout.
 #
 
-ZMROOT=$(dirname $0)/..
-ZMROOT=$( (
-  cd "${ZMROOT}"
-  pwd
-))
+ROOT=/opt/zextras
 
 umask 0027
 
-if [ -x "${ZMROOT}/common/bin/java" ]; then
-  java="${ZMROOT}/common/bin/java"
-else
-  java=java
-fi
+java="${ROOT}/common/bin/java"
 
-if [ -f ".hotspot_compiler" ]; then
-  cd $ZMROOT
-fi
-
-case "$(uname)" in
-  CYGWIN*) PATHSEP=";" ;;
-  *) PATHSEP=":" ;;
-esac
-
-CP=${ZMROOT}/lib/jars/*
-
-if [ -f "${ZMROOT}/lib/ext/backup/zimbrabackup.jar" ]; then
-  CP="$CP${PATHSEP}${ZMROOT}/lib/ext/backup/zimbrabackup.jar"
-fi
-
-if [ -f "${ZMROOT}/lib/ext/voice/zimbravoice.jar" ]; then
-  CP="$CP${PATHSEP}${ZMROOT}/lib/ext/voice/zimbravoice.jar"
-fi
-
-if [ -f "${ZMROOT}/lib/ext/com_zimbra_oo/com_zimbra_oo.jar" ]; then
-  CP="$CP${PATHSEP}${ZMROOT}/lib/ext/com_zimbra_oo/com_zimbra_oo.jar"
-fi
+CP="${ROOT}/lib/jars/*"
 
 exec ${java} -client -cp "$CP" \
-  -Djava.library.path=${ZMROOT}/lib -Dzimbra.home="${ZMROOT}" \
+  -Djava.library.path=${ROOT}/lib -Dzimbra.home="${ROOT}" \
   com.zimbra.cs.localconfig.LocalConfigCLI "$@"

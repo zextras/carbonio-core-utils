@@ -349,7 +349,7 @@ sub run() {
             invoke_thread_dump( $i, $TS );
             my $top_cmd = "top -bc -n1 > top.$i.$TS 2>&1";
             system($top_cmd);
-            system("/bin/ps -auxw > ps.$i.$TS 2>&1");
+            system("ps -auxw > ps.$i.$TS 2>&1");
             my $netstat = "netstat -anp > netstat.$i.$TS 2>&1";
             system($netstat);
 
@@ -507,7 +507,7 @@ sub run() {
             my $TS = strftime( "%H-%M-%S", localtime() );
             my $top_cmd = "top -bc -n1 > top.$i.$TS 2>&1";
             system($top_cmd);
-            system("/bin/ps -auxw > ps.$i.$TS 2>&1");
+            system("ps -auxw > ps.$i.$TS 2>&1");
             my $netstat = "netstat -anp > netstat.$i.$TS 2>&1";
             system($netstat);
             sleep(5);

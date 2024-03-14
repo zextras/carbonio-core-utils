@@ -8,8 +8,8 @@
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
-antispam_mysql_enabled=$(echo ${antispam_mysql_enabled} | tr [:upper:] [:lower:])
-if [ "${antispam_mysql_enabled}x" != "truex" ]; then
+antispam_mysql_enabled=$(echo "${antispam_mysql_enabled}" | tr "[:upper:]" "[:lower:]")
+if [ "${antispam_mysql_enabled}" != "true" ]; then
   echo "Spamassassin is not set up to use MySQL backend database!  Aborting..."
   exit 1
 fi
@@ -59,7 +59,8 @@ SET PASSWORD FOR '${antispam_mysql_user}'@'127.0.0.1' = PASSWORD('${newpassword}
 SET PASSWORD FOR '${antispam_mysql_user}'@'localhost' = PASSWORD('${newpassword}');
 SET PASSWORD FOR '${antispam_mysql_user}'@'localhost.localdomain' = PASSWORD('${newpassword}');
 EOF
-  if [ $? = 0 ]; then
+  rc=$?
+  if [ $rc -eq 0 ]; then
     echo '*' Changed antispam mysql user password
   else
     echo '****' PASSWORD CHANGE FAILED
@@ -73,7 +74,8 @@ fi
 if [ ${password_key} = antispam_mysql_root_password ]; then
   echo /opt/zextras/bin/antispam-mysqladmin -u root --password="${antispam_mysql_root_password}" password "${newpassword}"
   /opt/zextras/bin/antispam-mysqladmin -u root --password="${antispam_mysql_root_password}" password "${newpassword}"
-  if [ $? = 0 ]; then
+  rc=$?
+  if [ $rc -eq 0 ]; then
     echo '*' Changed antispam mysql root user password
   else
     echo '****' PASSWORD CHANGE FAILED
@@ -84,7 +86,8 @@ if [ ${password_key} = antispam_mysql_root_password ]; then
 SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${newpassword}');
 SET PASSWORD FOR 'root'@'localhost.localdomain' = PASSWORD('${newpassword}');
 EOF
-  if [ $? = 0 ]; then
+  rc=$?
+  if [ $rc -eq 0 ]; then
     echo '*' Changed antispam mysql root user password root@localhost
   else
     echo '****' PASSWORD CHANGE FAILED FOR root@localhost

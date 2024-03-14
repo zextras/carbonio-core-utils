@@ -8,24 +8,18 @@
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
-libjars=/opt/zextras/lib/jars
 configfile=/opt/zextras/conf/localconfig.xml
 log4jfile=/opt/zextras/conf/milter.log4j.properties
 pidfile=${zimbra_log_directory}/milter.pid
 pid=""
 java="/opt/zextras/bin/zmjava"
 
-case "$(uname)" in
-  CYGWIN*) PATHSEP=";" ;;
-  *) PATHSEP=":" ;;
-esac
-
 runcmd="${java} -Dlog4j.configurationFile=file:${log4jfile} -Dzimbra.home=\"/opt/zextras\" -Dzimbra.config=\"${configfile}\" \
    com.zimbra.cs.milter.MilterServer"
 
 getpid() {
-  if [ -f ${pidfile} ]; then
-    pid=$(cat ${pidfile})
+  if [ -f "${pidfile}" ]; then
+    pid=$(cat "${pidfile}")
   fi
 }
 
@@ -34,8 +28,9 @@ checkrunning() {
   if [ "$pid" = "" ]; then
     running=0
   else
-    kill -0 $pid 2>/dev/null
-    if [ $? != 0 ]; then
+    kill -0 "$pid" 2>/dev/null
+    rc=$?
+    if [ $rc != 0 ]; then
       pid=""
       running=0
     else
@@ -49,7 +44,7 @@ refresh() {
   if [ "$pid" = "" ]; then
     echo "milter server is not currently running"
   else
-    kill -CONT $pid 2>/dev/null
+    kill -CONT "$pid" 2>/dev/null
   fi
 }
 
@@ -66,7 +61,7 @@ case "$1" in
 
     pid=$!
     if [ "$pid" != 'x' ]; then
-      echo $pid >$pidfile
+      echo $pid >"$pidfile"
     else
       echo "failed."
       exit 1
@@ -88,16 +83,17 @@ case "$1" in
       exit 0
     else
       for ((i = 0; i < 30; i++)); do
-        kill -0 $pid 2>/dev/null
-        if [ $? != 0 ]; then
-          rm -rf ${pidfile}
+        kill -0 "$pid" 2>/dev/null
+        rc=$?
+        if [ $rc -ne 0 ]; then
+          rm -rf "${pidfile}"
           break
         fi
-        kill $pid
+        kill "$pid"
         sleep 1
       done
     fi
-    if [ -s ${pidfile} ]; then
+    if [ -s "${pidfile}" ]; then
       echo "failed."
       exit 1
     else

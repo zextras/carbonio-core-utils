@@ -11,26 +11,26 @@ inix=/tmp/initest-x.$$
 zminiutil=./zminiutil
 
 asf() {
-  echo "==== asf:" $@
-  if $@; then
+  echo "==== asf:" "$@"
+  if "$@"; then
     echo "==== test failed! aborting! ===="
     exit 1
   fi
 }
 
 ast() {
-  echo "==== ast:" $@
-  if ! $@; then
+  echo "==== ast:" "$@"
+  if ! "$@"; then
     echo "==== test failed"
     exit 1
   fi
 }
 
 ase() {
-  echo "==== ase:" $@
+  echo "==== ase:" "$@"
   expected=$1
   shift
-  run=$@
+  run="$@"
   actual="$($run)"
   if [ "$expected" != "$actual" ]; then
     echo "==== test failed"

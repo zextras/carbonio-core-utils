@@ -31,7 +31,7 @@ checkrunning() {
   if [ "$pid" = "" ]; then
     running=0
   else
-    if ps --no-headers -p $pid -o cmd 2>/dev/null | grep saslauthd >/dev/null 2>&1; then
+    if ps --no-headers -p "$pid" -o cmd 2>/dev/null | grep saslauthd >/dev/null 2>&1; then
       running=1
     else
       pid=""
@@ -52,7 +52,7 @@ case "$1" in
       exit 0
     fi
     mkdir -p /opt/zextras/data/sasl2/state
-    if [ $2 = "" ]; then
+    if [ "$2" = "" ]; then
       rewriteconfig
     fi
     /opt/zextras/common/sbin/saslauthd -r -a zimbra
@@ -76,12 +76,13 @@ case "$1" in
     else
       echo -n "Stopping saslauthd..."
       for ((i = 0; i < 30; i++)); do
-        kill -0 $pid 2>/dev/null
-        if [ $? != 0 ]; then
-          rm -rf ${pidfile}
+        kill -0 "$pid" 2>/dev/null
+        rc=$?
+        if [ $rc -ne 0 ]; then
+          rm -rf "${pidfile}"
           break
         fi
-        kill $pid
+        kill "$pid"
         sleep 1
       done
     fi
@@ -95,7 +96,7 @@ case "$1" in
 
   'restart' | 'reload')
     $0 stop
-    $0 start $2
+    $0 start "$2"
     ;;
 
   'status')

@@ -7,13 +7,13 @@
 add_dns() {
   if [ -x /opt/zextras/common/sbin/unbound ]; then
     /opt/zextras/common/sbin/unbound-checkconf -o interface | (
-      while read interface; do
-        if [ "$interface" = x127.0.0.1 ]; then
-          if [[ ! $(grep 127.0.0.1 /etc/resolv.conf) ]]; then
+      while read -r interface; do
+        if [ "$interface" = 127.0.0.1 ]; then
+          if ! grep -q 127.0.0.1 /etc/resolv.conf; then
             sed -i '1s|^|nameserver 127.0.0.1\n|' /etc/resolv.conf
           fi
-        elif [ "$interface" = x::1 ]; then
-          if [[ ! $(grep ::1 /etc/resolv.conf) ]]; then
+        elif [ "$interface" = ::1 ]; then
+          if ! grep -q ::1 /etc/resolv.conf; then
             sed -i '1s|^|nameserver ::1\n|' /etc/resolv.conf
           fi
         fi
@@ -25,13 +25,13 @@ add_dns() {
 remove_dns() {
   if [ -x /opt/zextras/common/sbin/unbound ]; then
     /opt/zextras/common/sbin/unbound-checkconf -o interface | (
-      while read interface; do
-        if [ "$interface" = x127.0.0.1 ]; then
-          if [[ $(grep 127.0.0.1 /etc/resolv.conf) ]]; then
+      while read -r interface; do
+        if [ "$interface" = 127.0.0.1 ]; then
+          if ! grep -q 127.0.0.1 /etc/resolv.conf; then
             sed -i '/nameserver 127.0.0.1/d' /etc/resolv.conf
           fi
-        elif [ "$interface" = x::1 ]; then
-          if [[ ! $(grep ::1 /etc/resolv.conf) ]]; then
+        elif [ "$interface" = ::1 ]; then
+          if ! grep -q ::1 /etc/resolv.conf; then
             sed -i '/nameserver ::1/d' /etc/resolv.conf
           fi
         fi

@@ -47,7 +47,8 @@ checkListening() {
   else
     /opt/zextras/common/bin/ldapsearch -ZZ -x -l $SEARCHTIMEOUT -b "" -s base -H ldapi:/// >/dev/null 2>&1
   fi
-  if [ $? -ne 0 ]; then
+  rc=$?
+  if [ $rc -ne 0 ]; then
     LISTENING=0
   else
     LISTENING=1

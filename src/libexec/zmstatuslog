@@ -24,10 +24,8 @@ chomp $platform;
 my $pidFile="/opt/zextras/log/zmstatuslog.pid";
 
 my $TIMEOUT=60;
-my $MNTCMD;
 my $DFCMD;
 
-$MNTCMD = "mount -t ext3";
 $DFCMD = "df -ml ";
 
 

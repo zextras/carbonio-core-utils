@@ -24,8 +24,8 @@ rewriteconfig() {
 }
 
 getpid() {
-  if [ -f $fpidfile ]; then
-    fpid=$(cat $fpidfile)
+  if [ -f "$fpidfile" ]; then
+    fpid=$(cat "$fpidfile")
   fi
 }
 
@@ -35,10 +35,10 @@ checkrunning() {
   if [ "$fpid" = "" ]; then
     frunning=0
   else
-    if ps --no-headers -p $fpid -o cmd 2>/dev/null | grep freshclam >/dev/null 2>&1; then
+    if ps --no-headers -p "$fpid" -o cmd 2>/dev/null | grep freshclam >/dev/null 2>&1; then
       frunning=1
     else
-      rm $fpidfile
+      rm "$fpidfile"
       fpid=""
       frunning=0
     fi
@@ -46,13 +46,9 @@ checkrunning() {
 }
 
 pskillall() {
-  ps_cmd="/bin/ps ax -o pid,ppid,command"
   killsig="$1"
-  pname=$(echo "$2" | sed -e 's%/%\\\/%g')
-  plist=$(${ps_cmd} | awk '{ if ( $3 ~ /'${pname}'/ ) { print $1 " " $2 } }' | sort -nr -k2 -k1 | awk '{ print $1 }')
-  for p in ${plist}; do
-    kill ${killsig} ${p}
-  done
+  pid=$(pidof "$2")
+  kill "${killsig}" "${pid}"
 }
 
 #
@@ -61,7 +57,7 @@ pskillall() {
 case "$1" in
   'start')
 
-    if [ $2 = "" ]; then
+    if [ "$2" == "" ]; then
       rewriteconfig
     fi
 
@@ -72,7 +68,7 @@ case "$1" in
     else
       /opt/zextras/common/bin/freshclam \
         --config-file=/opt/zextras/conf/freshclam.conf --quiet --daemon --checks=12 \
-        >>${zimbra_log_directory}/freshclam.log 2>&1 &
+        >>"${zimbra_log_directory}/freshclam.log" 2>&1 &
       echo "done."
     fi
     exit 0
@@ -95,7 +91,8 @@ case "$1" in
     else
       if [ "$fpid" != "" ]; then
         kill "$fpid" 2>/dev/null
-        if [ $? = 0 ]; then
+        rc=$?
+        if [ $rc -eq 0 ]; then
           echo "done."
         else
           echo "failed."
@@ -108,7 +105,7 @@ case "$1" in
 
   'restart' | 'reload')
     $0 stop
-    $0 start $2
+    $0 start "$2"
     ;;
 
   'status')

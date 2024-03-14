@@ -18,7 +18,7 @@ zmsetvars -f
 bufferPoolPercent=25
 if [ "$1" = "--innodb-buffer-pool-memory-percent" ]; then
   if echo "$2" | grep -q "^[0-9]*$"; then
-    if [ $2 -gt 1 -a $2 -lt 100 ]; then
+    if [ "$2" -gt 1 ] && [ "$2" -lt 100 ]; then
       bufferPoolPercent=$2
     fi
   fi

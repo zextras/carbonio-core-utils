@@ -167,7 +167,7 @@ elsif ( $options{l} ) {
                 }
             }
             else {
-                system("/bin/rm -f $infile.bak");
+                system("rm -f $infile.bak");
             }
         }
     }
@@ -241,7 +241,7 @@ elsif ( $options{p} ) {
             }
         }
         else {
-            system("/bin/rm -f $infile.bak");
+            system("rm -f $infile.bak");
         }
     }
 }
@@ -291,7 +291,7 @@ elsif ( $options{a} ) {
             }
         }
         else {
-            system("/bin/rm -f $infile.bak");
+            system("rm -f $infile.bak");
         }
     }
 }
@@ -341,7 +341,7 @@ elsif ( $options{n} ) {
             }
         }
         else {
-            system("/bin/rm -f $infile.bak");
+            system("rm -f $infile.bak");
         }
     }
 }
@@ -391,7 +391,7 @@ elsif ( $options{b} ) {
             }
         }
         else {
-            system("/bin/rm -f $infile.bak");
+            system("rm -f $infile.bak");
         }
     }
 }
@@ -441,7 +441,7 @@ else {
             }
         }
         else {
-            system("/bin/rm -f $infile.bak");
+            system("rm -f $infile.bak");
         }
     }
 }
