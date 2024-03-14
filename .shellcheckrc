@@ -1,2 +1,2 @@
 # Disable individual error codes
-disable=SC1091
+disable=SC1091,SC2154
