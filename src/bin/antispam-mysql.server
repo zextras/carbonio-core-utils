@@ -14,19 +14,19 @@ if [ "$(whoami)" != zextras ]; then
 fi
 
 antispam_mysql_enabled=$(echo ${antispam_mysql_enabled} | tr '[:upper:]' '[:lower:]')
-if [ ${antispam_mysql_enabled} != "true" -a \( "$1" != "stop" -a "$1" != "restart" -a "$1" != "reload" \) ]; then
+if [ ${antispam_mysql_enabled} != "true" ] && [ "$1" != "stop" ] && [ "$1" != "restart" ] && [ "$1" != "reload" ]; then
   # antispam is not configured to use mysql db, so nothing to do here.
   exit 0
 fi
 
 # If antispam_mysql_host is set to the local host then setup and use local MySQL db.
 # Otherwise, reconfigure the salocal.cf file to point to a remote MySQL db.
-if [ ${antispam_mysql_host} != "127.0.0.1" -a ${antispam_mysql_host} != $(zmhostname) -a ${antispam_mysql_host} != "localhost" ]; then
+if [ ${antispam_mysql_host} != "127.0.0.1" ] && [ ${antispam_mysql_host} != $(zmhostname) ] && [ ${antispam_mysql_host} != "localhost" ]; then
   # antispam is not configured to use DB on this (local) host
   exit 0
 fi
 
-if [ ! -x /opt/zextras/common/bin/mysql -a ! -x /opt/zextras/common/sbin/amavisd ]; then
+if [ ! -x /opt/zextras/common/bin/mysql ] && [ ! -x /opt/zextras/common/sbin/amavisd ]; then
   exit 0
 fi
 

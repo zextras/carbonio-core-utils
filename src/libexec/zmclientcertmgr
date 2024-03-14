@@ -98,7 +98,7 @@ loadConfigKey() {
   if [ ! -s "$file" ]; then
     echo -n "** Retrieving $location config key $key..."
     /opt/zextras/bin/zmprov -m -l ${zmprov_opts} "${key}" | sed -e 's/^${key}: //' >"$tmpfile" 2>/dev/null && mv -f "$tmpfile" "$file" 2>/dev/null
-    if [ $? = 0 -a -s "$file" ]; then
+    if [ $? = 0 ] && [ -s "$file" ]; then
       chmod 400 "$file" 2>/dev/null
       echo "done."
     else

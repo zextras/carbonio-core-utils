@@ -100,7 +100,7 @@ loadConfigKey() {
   fi
   echo -n "** Retrieving $location config key $key..."
   /opt/zextras/bin/zmprov -m -l ${zmprov_opts} "${key}" | sed -e "s/^${key}: //" >${tmpfile} 2>/dev/null
-  if [ $? = 0 -a -s "${tmpfile}" ]; then
+  if [ $? = 0 ] && [ -s "${tmpfile}" ]; then
     chmod 400 ${tmpfile}
     mv -f ${tmpfile} ${file}
     echo "done."
@@ -183,7 +183,7 @@ viewstagedcrt() {
     else
       usage
     fi
-  elif [ "${1}" != "self" -a "${1}" != "comm" ]; then
+  elif [ "${1}" != "self" ] && [ "${1}" != "comm" ]; then
     usage
   else
     type=$1
@@ -238,14 +238,14 @@ checkCertExpiration() {
 
   if [ "$1" = "" ]; then
     VIEW="all"
-  elif [ "$1" = "all" -o "$1" = "mta" -o "$1" = "proxy" -o "$1" = "mailboxd" -o "$1" = "ldap" ]; then
+  elif [ "$1" = "all" ] || [ "$1" = "mta" ] || [ "$1" = "proxy" ] || [ "$1" = "mailboxd" ] || [ "$1" = "ldap" ]; then
     VIEW="$1"
   else
     echo "${ERROR_PREFIX} Can't verify cert expiration for $1.  Unknown service."
     return
   fi
 
-  if [ $VIEW = "all" -o $VIEW = "mta" ]; then
+  if [ $VIEW = "all" ] || [ $VIEW = "mta" ]; then
     service_crt=/opt/zextras/conf/smtpd.crt
     #echo "::service mta::"
     if [ -f "${service_crt}" ]; then
@@ -260,7 +260,7 @@ checkCertExpiration() {
     fi
   fi
 
-  if [ $VIEW = "all" -o $VIEW = "proxy" ]; then
+  if [ $VIEW = "all" ] || [ $VIEW = "proxy" ]; then
     service_crt=/opt/zextras/conf/nginx.crt
     #echo "::service proxy::"
     if [ -f "${service_crt}" ]; then
@@ -275,7 +275,7 @@ checkCertExpiration() {
     fi
   fi
 
-  if [ $VIEW = "all" -o $VIEW = "mailboxd" ]; then
+  if [ $VIEW = "all" ] || [ $VIEW = "mailboxd" ]; then
     service_der=/opt/zextras/mailboxd/etc/mailboxd.der
     service_crt=/opt/zextras/mailboxd/etc/mailboxd.pem
     #echo "::service mailboxd::"
@@ -305,7 +305,7 @@ checkCertExpiration() {
     fi
   fi
 
-  if [ $VIEW = "all" -o $VIEW = "ldap" ]; then
+  if [ $VIEW = "all" ] || [ $VIEW = "ldap" ]; then
     service_crt=/opt/zextras/conf/slapd.crt
     #echo "::service ldap::"
     if [ -f "${service_crt}" ]; then
@@ -326,14 +326,14 @@ checkCertExpiration() {
 viewdeployedcrt() {
   if [ "$1" = "" ]; then
     VIEW="all"
-  elif [ "$1" = "all" -o "$1" = "mta" -o "$1" = "proxy" -o "$1" = "mailboxd" -o "$1" = "ldap" ]; then
+  elif [ "$1" = "all" ] || [ "$1" = "mta" ] || [ "$1" = "proxy" ] || [ "$1" = "mailboxd" ] || [ "$1" = "ldap" ]; then
     VIEW="$1"
   else
     echo "${ERROR_PREFIX} Can't view cert for $1.  Unknown service."
     return
   fi
 
-  if [ $VIEW = "all" -o $VIEW = "mta" ]; then
+  if [ $VIEW = "all" ] || [ $VIEW = "mta" ]; then
     service_crt=/opt/zextras/conf/smtpd.crt
     echo "::service mta::"
     if [ -f "${service_crt}" ]; then
@@ -344,7 +344,7 @@ viewdeployedcrt() {
     fi
   fi
 
-  if [ $VIEW = "all" -o $VIEW = "proxy" ]; then
+  if [ $VIEW = "all" ] || [ $VIEW = "proxy" ]; then
     service_crt=/opt/zextras/conf/nginx.crt
     echo "::service proxy::"
     if [ -f "${service_crt}" ]; then
@@ -355,7 +355,7 @@ viewdeployedcrt() {
     fi
   fi
 
-  if [ $VIEW = "all" -o $VIEW = "mailboxd" ]; then
+  if [ $VIEW = "all" ] || [ $VIEW = "mailboxd" ]; then
     service_der=/opt/zextras/mailboxd/etc/mailboxd.der
     service_crt=/opt/zextras/mailboxd/etc/mailboxd.pem
     echo "::service mailboxd::"
@@ -381,7 +381,7 @@ viewdeployedcrt() {
     fi
   fi
 
-  if [ $VIEW = "all" -o $VIEW = "ldap" ]; then
+  if [ $VIEW = "all" ] || [ $VIEW = "ldap" ]; then
     service_crt=/opt/zextras/conf/slapd.crt
     echo "::service ldap::"
     if [ -f "${service_crt}" ]; then
@@ -394,7 +394,7 @@ viewdeployedcrt() {
 }
 
 verifycrtkey() {
-  if [ "${1}" = "" ] || [ "${1}" != "self" -a "${1}" != "comm" ]; then
+  if [ "${1}" = "" ] || [ "${1}" != "self" ] && [ "${1}" != "comm" ]; then
     usage
   else
     type=$1
@@ -435,7 +435,7 @@ verifycrtkey() {
     #echo "crt_md5=${crt_md5}"
   fi
 
-  if [ "${key_md5}" != "" -a "${key_md5}" = "${crt_md5}" ]; then
+  if [ "${key_md5}" != "" ] && [ "${key_md5}" = "${crt_md5}" ]; then
     echo "Certificate (${crt}) and private key (${key}) match."
   else
     echo "${ERROR_PREFIX} Unmatching certificate (${crt}) and private key (${key}) pair."
@@ -485,7 +485,7 @@ if [ "$ACTION" = "deploycrts" ]; then
   deployCerts $@
 elif [ "$ACTION" = "savecrt" ]; then
   saveDomainCertToLdap $@
-elif [ "$ACTION" = "-help" -o "$ACTION" = "help" -o "$ACTION" = "-h" -o "$ACTION" = "--help" ]; then
+elif [ "$ACTION" = "-help" ] || [ "$ACTION" = "help" ] || [ "$ACTION" = "-h" ] || [ "$ACTION" = "--help" ]; then
   usage
 else
   usage

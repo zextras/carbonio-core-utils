@@ -149,7 +149,7 @@ USER=$1
 MODE=$(echo $2 | tr A-Z a-z)
 FOLDER=$3
 
-if [ "${MODE}" != "spam" -a "${MODE}" != "ham" ]; then
+if [ "${MODE}" != "spam" ] && [ "${MODE}" != "ham" ]; then
   usage
 fi
 

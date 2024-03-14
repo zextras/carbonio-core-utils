@@ -44,7 +44,7 @@ while [ $# -gt 0 ]; do
 done
 
 cd /opt/zextras/zmstat 2>/dev/null
-if [ $? -ne 0 -o "${PWD}" != "/opt/zextras/zmstat" ]; then
+if [ $? -ne 0 ] || [ "${PWD}" != "/opt/zextras/zmstat" ]; then
   echo "ERROR: Cannot change to the zmstats log directory /opt/zextras/zmstat."
   exit -1
 fi

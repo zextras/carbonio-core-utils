@@ -161,12 +161,12 @@ echo "Found JAVA=$JAVA in JAVA_HOME=$JAVA_HOME"
 # Determine which JVM of version >1.2
 # Try to use JAVA_HOME
 ##################################################
-if [ "$JAVA" = "" -a "$JAVA_HOME" != "" ]; then
+if [ "$JAVA" = "" ] && [ "$JAVA_HOME" != "" ]; then
   if [ ! -z "$JAVACMD" ]; then
     JAVA="$JAVACMD"
   else
-    [ -x $JAVA_HOME/bin/jre -a ! -d $JAVA_HOME/bin/jre ] && JAVA=$JAVA_HOME/bin/jre
-    [ -x $JAVA_HOME/bin/java -a ! -d $JAVA_HOME/bin/java ] && JAVA=$JAVA_HOME/bin/java
+    [ -x $JAVA_HOME/bin/jre ] && [ ! -d $JAVA_HOME/bin/jre ] && JAVA=$JAVA_HOME/bin/jre
+    [ -x $JAVA_HOME/bin/java ] && [ ! -d $JAVA_HOME/bin/java ] && JAVA=$JAVA_HOME/bin/java
   fi
 fi
 
