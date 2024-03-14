@@ -6,4 +6,4 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 export TMP=/opt/zextras/data/tmp
-exec $(dirname $0)/zmjava -Djava.io.tmpdir=/opt/zextras/data/tmp -Dpython.cachedir.skip=true org.python.util.jython "$@"
+exec /opt/zextras/bin/zmjava -Djava.io.tmpdir=/opt/zextras/data/tmp -Dpython.cachedir.skip=true org.python.util.jython "$@"

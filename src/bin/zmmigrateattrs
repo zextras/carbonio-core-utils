@@ -7,4 +7,4 @@
 
 source /opt/zextras/bin/zmshutil || exit 1
 
-exec $(dirname $0)/zmjava com.zimbra.cs.ephemeral.migrate.AttributeMigrationUtil "$@"
+exec /opt/zextras/bin/zmjava com.zimbra.cs.ephemeral.migrate.AttributeMigrationUtil "$@"
