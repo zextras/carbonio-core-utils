@@ -55,8 +55,7 @@ compile_jsp() {
   return $?
 }
 
-compile_jsp
-if [ $? = 0 ]; then
+if compile_jsp; then
   echo "done."
 else
   echo "failed."
