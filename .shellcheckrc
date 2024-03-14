@@ -1,0 +1,2 @@
+# Disable individual error codes
+disable=SC1091
