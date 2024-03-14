@@ -13,15 +13,15 @@ if [ "$(whoami)" != zextras ]; then
   exit 1
 fi
 
-antispam_mysql_enabled=$(echo ${antispam_mysql_enabled} | tr '[:upper:]' '[:lower:]')
-if [ ${antispam_mysql_enabled} != "true" ] && [ "$1" != "stop" ] && [ "$1" != "restart" ] && [ "$1" != "reload" ]; then
+antispam_mysql_enabled=$(echo "${antispam_mysql_enabled}" | tr '[:upper:]' '[:lower:]')
+if [ "${antispam_mysql_enabled}" != "true" ] && [ "$1" != "stop" ] && [ "$1" != "restart" ] && [ "$1" != "reload" ]; then
   # antispam is not configured to use mysql db, so nothing to do here.
   exit 0
 fi
 
 # If antispam_mysql_host is set to the local host then setup and use local MySQL db.
 # Otherwise, reconfigure the salocal.cf file to point to a remote MySQL db.
-if [ ${antispam_mysql_host} != "127.0.0.1" ] && [ ${antispam_mysql_host} != $(zmhostname) ] && [ ${antispam_mysql_host} != "localhost" ]; then
+if [ "${antispam_mysql_host}" != "127.0.0.1" ] && [ "${antispam_mysql_host}" != "$(zmhostname)" ] && [ "${antispam_mysql_host}" != "localhost" ]; then
   # antispam is not configured to use DB on this (local) host
   exit 0
 fi
@@ -30,11 +30,11 @@ if [ ! -x /opt/zextras/common/bin/mysql ] && [ ! -x /opt/zextras/common/sbin/ama
   exit 0
 fi
 
-if [ ! -d ${zimbra_tmp_directory}/antispam-mysql ]; then
-  mkdir -p ${zimbra_tmp_directory}/antispam-mysql >/dev/null 2>&1
+if [ ! -d "${zimbra_tmp_directory}/antispam-mysql" ]; then
+  mkdir -p "${zimbra_tmp_directory}/antispam-mysql" >/dev/null 2>&1
 fi
 
-zmassert -d ${zimbra_tmp_directory}
+zmassert -d "${zimbra_tmp_directory}"
 zmassert -x /opt/zextras/common/bin/mysqld_safe
 
 # innodb will open the database before binding and writing out the pid
@@ -43,16 +43,16 @@ zmassert -x /opt/zextras/common/bin/mysqld_safe
 initlockfile=${zimbra_tmp_directory}/antispam-mysql/antispam-mysql.server.lock
 checkInitLock() {
   if [ -f "$initlockfile" ]; then
-    initpid=$(cat $initlockfile)
+    initpid=$(cat "$initlockfile")
     if [ "$initpid" != "" ]; then
-      kill -0 $initpid 2>/dev/null
+      kill -0 "$initpid" 2>/dev/null
       if [ $? = 0 ]; then
         echo "$0 already running with pid $initpid"
         exit 1
       fi
     fi
   fi
-  echo $$ >$initlockfile
+  echo $$ >"$initlockfile"
 }
 
 trap "quit 1" SIGINT SIGQUIT
@@ -61,31 +61,31 @@ quit() {
   RC=$1
   rc=${RC:=0}
   cleanup
-  exit $rc
+  exit "$rc"
 }
 
 cleanup() {
-  [ -f $initlockfile ] && rm -f $initlockfile
+  [ -f "$initlockfile" ] && rm -f "$initlockfile"
 }
 
 #
 # If PID file for mysqld for antispam exists, grab the recorded PID
 #
-if [ -f ${antispam_mysql_pidfile} ]; then
-  pid=$(cat ${antispam_mysql_pidfile})
+if [ -f "${antispam_mysql_pidfile}" ]; then
+  pid=$(cat "${antispam_mysql_pidfile}")
 fi
 
 case "$1" in
   'start')
     checkInitLock
-    if [ ! -d ${antispam_mysql_data_directory} ]; then
+    if [ ! -d "${antispam_mysql_data_directory}" ]; then
       # The antispam mysql data directory does not appear to exist, assuming that db has not been initialized
       /opt/zextras/libexec/zmantispamdbinit
     fi
-    zmassert -r ${antispam_mysql_mycnf}
-    zmassert -d $(dirname ${antispam_mysql_pidfile})
+    zmassert -r "${antispam_mysql_mycnf}"
+    zmassert -d "$(dirname "${antispam_mysql_pidfile}")"
     if [ "$pid" != "" ]; then
-      kill -0 $pid 2>/dev/null
+      kill -0 "$pid" 2>/dev/null
       if [ $? = 0 ]; then
         echo "mysqld_safe for anti-spam already running with pid $pid"
         quit 0
@@ -125,18 +125,18 @@ case "$1" in
       quit 0
     else
       echo -n "Stopping mysqld for anti-spam..."
-      kill $pid >>${antispam_mysql_errlogfile} 2>&1
+      kill "$pid" >>"${antispam_mysql_errlogfile}" 2>&1
       # wait for mysqld pid file to be removed
       for ((i = 0; i < 30; i++)); do
         sleep 2
-        kill -0 $pid 2>/dev/null
+        kill -0 "$pid" 2>/dev/null
         if [ $? != 0 ]; then
-          rm -f ${antispam_mysql_pidfile}
+          rm -f "${antispam_mysql_pidfile}"
           break
         fi
-        kill $pid >>${antispam_mysql_errlogfile} 2>&1
+        kill "$pid" >>"${antispam_mysql_errlogfile}" 2>&1
       done
-      if [ -s ${antispam_mysql_pidfile} ]; then
+      if [ -s "${antispam_mysql_pidfile}" ]; then
         echo "failed."
         quit 1
       else
@@ -152,7 +152,7 @@ case "$1" in
     ;;
 
   'status')
-    kill -0 $pid 2>/dev/null
+    kill -0 "$pid" 2>/dev/null
     mysqlstatus=$?
     if [ $mysqlstatus = 0 ]; then
       echo "mysql is running with pid $pid"

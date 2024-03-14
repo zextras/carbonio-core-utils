@@ -57,14 +57,14 @@ elif [ "${purgeAll}x" == "TRUEx" ]; then
   DIR_LIST=$(find . -type d -print | egrep '^\./[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$' | sort -r | sed -e "s%./%%")
   for d in ${DIR_LIST}; do
     echo "Deleting ${d} zmstat archive."
-    /bin/rm -rf ${d}
+    /bin/rm -rf "${d}"
   done
-elif [ ${zmstat_max_retention:-"0"} -gt 0 ]; then
+elif [ "${zmstat_max_retention:-"0"}" -gt 0 ]; then
   DIR_LIST=$(find . -type d -print | egrep '^\./[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$' | sort -r | sed -e "1,${zmstat_max_retention}d ; s%./%%")
 
   for d in ${DIR_LIST}; do
     echo "Deleting ${d} zmstat archive."
-    /bin/rm -rf ${d}
+    /bin/rm -rf "${d}"
   done
 else
   echo "WARNING: zmstat_max_retention is set to 0 or is undefined.  No zmstat data has been pruned."
