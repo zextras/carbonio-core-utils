@@ -6,4 +6,4 @@
 # SPDX-License-Identifier: GPL-2.0-only
 #
 
-exec $(dirname $0)/../bin/zmjava com.zimbra.cs.util.ProxyPurgeUtil "$@"
+exec /opt/zextras/bin/zmjava com.zimbra.cs.util.ProxyPurgeUtil "$@"

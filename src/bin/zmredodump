@@ -6,4 +6,4 @@
 # SPDX-License-Identifier: GPL-2.0-only
 #
 
-exec $(dirname $0)/zmjava com.zimbra.cs.redolog.util.RedoLogVerify "$@"
+exec /opt/zextras/bin/zmjava com.zimbra.cs.redolog.util.RedoLogVerify "$@"

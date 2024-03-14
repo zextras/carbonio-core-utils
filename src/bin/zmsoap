@@ -7,4 +7,4 @@
 
 source /opt/zextras/bin/zmshutil || exit 1
 
-exec $(dirname $0)/zmjava com.zimbra.soap.SoapCommandUtil "$@"
+exec /opt/zextras/bin/zmjava com.zimbra.soap.SoapCommandUtil "$@"

@@ -14,7 +14,7 @@ source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
 # These variables are not set if run via cron.  Make sure they are set prior to execution
-if [ x"$JYTHONPATH" = "x" ]; then
+if [ "$JYTHONPATH" = "" ]; then
   JAVA_HOME=/opt/zextras/common/lib/jvm/java
   PATH=/opt/zextras/bin:/opt/zextras/common/bin:${JAVA_HOME}/bin:/usr/sbin:${PATH}
   export PATH
