@@ -15,7 +15,7 @@ GSA_ID_LIST=$(/opt/zextras/common/bin/ldapsearch -x -H ${LDAP_URL} -w ${zimbra_l
 MY_HOSTNAME=$zimbra_server_hostname
 for ID in $GSA_ID_LIST; do
   GSA_MAIL_HOST=$(/opt/zextras/common/bin/ldapsearch -x -H ${LDAP_URL} -w ${zimbra_ldap_password} -D uid=zimbra,cn=admins,cn=zimbra -b '' '(&(objectClass=zimbraAccount)(zimbraId='${ID}'))' zimbraMailHost | awk '{if ($1 ~ /^zimbraMailHost:$/) { print $2 } }')
-  if [ "x${GSA_MAIL_HOST}" == "x${MY_HOSTNAME}" ]; then
+  if [ "${GSA_MAIL_HOST}" == "${MY_HOSTNAME}" ]; then
     /opt/zextras/bin/zmgsautil trickleSync -i ${ID} -n InternalGAL
   fi
 done

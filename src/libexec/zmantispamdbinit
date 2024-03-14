@@ -49,7 +49,7 @@ zmassert -d $(dirname ${antispam_mysql_pidfile})
 if [ -f ${antispam_mysql_pidfile} ]; then
   pid=$(cat ${antispam_mysql_pidfile})
 fi
-if [ "x$pid" != "x" ]; then
+if [ "$pid" != "" ]; then
   kill -0 $pid 2>/dev/null
   if [ $? = 0 ]; then
     # What the heck happened here.  mysqld_safe for anti-spam should not already be running!
@@ -92,7 +92,7 @@ echo '*' Loading schema /opt/zextras/data/amavisd/mysql/antispamdb.sql
 #
 # Generate passwords for mysql into local config
 #
-if [ x$sql_root_pw = "x" ]; then
+if [ $sql_root_pw = "" ]; then
   echo '*' Setting random password for antispam mysql root user in zimbra local config
   /opt/zextras/bin/zmlocalconfig -r -f -e antispam_mysql_root_password
 

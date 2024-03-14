@@ -20,7 +20,7 @@ if [ -f "/opt/zextras/conf/mta_milter_options" ]; then
 fi
 zimbraMilterServerEnabled=${zimbraMilterServerEnabled:=FALSE}
 
-if [ x"$zimbraMilterServerEnabled" = "xTRUE" ]; then
+if [ "$zimbraMilterServerEnabled" = "TRUE" ]; then
   START_SCRIPTS="zmmilterctl zmsaslauthdctl postfix"
   STOP_SCRIPTS="postfix zmsaslauthdctl zmmilterctl"
 else
@@ -44,7 +44,7 @@ rewriteconfig() {
 
 case "$1" in
   start)
-    if [ x$2 = "x" ]; then
+    if [ $2 = "" ]; then
       rewriteconfig
     fi
     STATUS=0
@@ -64,11 +64,11 @@ case "$1" in
     done
     ;;
   reload | restart)
-    if [ x$2 = "x" ]; then
+    if [ $2 = "" ]; then
       rewriteconfig
     fi
     for i in $START_SCRIPTS; do
-      if [ x$2 = "x" ]; then
+      if [ $2 = "" ]; then
         /opt/zextras/bin/$i reload
       else
         /opt/zextras/bin/$i reload $2

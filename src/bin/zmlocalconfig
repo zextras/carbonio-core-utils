@@ -48,7 +48,7 @@ if [ -f "${ZMROOT}/lib/ext/com_zimbra_oo/com_zimbra_oo.jar" ]; then
 fi
 
 java_version=$(${java} -version 2>&1 | grep "java version" | sed -e 's/"//g' | awk '{print $NF}' | awk -F_ '{print $1}')
-if [ x"$java_version" = "x1.6.0" ]; then
+if [ "$java_version" = "1.6.0" ]; then
   java_options="-XX:ErrorFile=${ZMROOT}/log"
 else
   java_options=""

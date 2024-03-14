@@ -338,7 +338,7 @@ for i in ${components}; do
   elif [ -d /opt/zextras/${i} ]; then
     printMsg "Fixing ownership and permissions on /opt/zextras/${i}"
     chown -R ${root_user}:${root_group} /opt/zextras/${i} 2>/dev/null
-    if [ x$i = "xcommon/lib/jylibs" ]; then
+    if [ $i = "common/lib/jylibs" ]; then
       chmod a+r /opt/zextras/${i}/*.class 2>/dev/null
     fi
   fi

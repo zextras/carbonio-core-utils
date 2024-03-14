@@ -27,7 +27,7 @@ autoTrainSystem() {
     --dbpath=${db_path} --sync
   timestampit "Finished spamassassin training."
 
-  if [ x"$amavis_dspam_enabled" = "xtrue" ]; then
+  if [ "$amavis_dspam_enabled" = "true" ]; then
     timestampit "Starting dspam training"
     /opt/zextras/dspam/bin/dspam_train zimbra ${spamdir} ${hamdir}
     /opt/zextras/dspam/bin/dspam_clean -p0 $USER
@@ -40,9 +40,9 @@ autoTrainSystem() {
 trainAccountFolder() {
 
   tempdir=$(mktmpdir ${MODE})
-  if [ "x${MODE}" = "xspam" ]; then
+  if [ "${MODE}" = "spam" ]; then
     FOLDER=${FOLDER:=junk}
-  elif [ "x${MODE}" = "xham" ]; then
+  elif [ "${MODE}" = "ham" ]; then
     FOLDER=${FOLDER:=inbox}
   fi
 
@@ -57,7 +57,7 @@ trainAccountFolder() {
     --dbpath=${db_path} --sync
   timestampit "Finished spamassassin $MODE training for $USER using folder $FOLDER"
 
-  if [ x"$amavis_dspam_enabled" = "xtrue" ]; then
+  if [ "$amavis_dspam_enabled" = "true" ]; then
     timestampit "Starting dspam $MODE training for $USER using folder $FOLDER"
     if [ $MODE == "ham" ]; then
       MODE="innocent"
@@ -106,33 +106,33 @@ amavis_dspam_enabled=$(echo $amavis_dspam_enabled | tr A-Z a-z)
 antispam_mysql_enabled=$(echo $antispam_mysql_enabled | tr A-Z a-z)
 zmtrainsa_cleanup_host=$(echo $zmtrainsa_cleanup_host | tr A-Z a-z)
 
-if [ "x${zimbra_spam_externalIsSpamAccount}" = "x" ]; then
+if [ "${zimbra_spam_externalIsSpamAccount}" = "" ]; then
   spam_account="-s"
 else
   spam_account="-m ${zimbra_spam_externalIsSpamAccount}"
 fi
 
-if [ "x${zimbra_spam_externalIsNotSpamAccount}" = "x" ]; then
+if [ "${zimbra_spam_externalIsNotSpamAccount}" = "" ]; then
   ham_account="-n"
 else
   ham_account="-m ${zimbra_spam_externalIsNotSpamAccount}"
 fi
 
 # Set db_path
-if [ x"$antispam_mysql_enabled" = "xtrue" ]; then
+if [ "$antispam_mysql_enabled" = "true" ]; then
   db_path='/opt/zextras/data/amavisd/mysql/data'
 else
   db_path='/opt/zextras/data/amavisd/.spamassassin'
 fi
 
 # No argument mode uses zmspamextract for auto-training.
-if [ x$1 = "x" ]; then
+if [ $1 = "" ]; then
   autoTrainSystem
   exit
 fi
 
-if [ x$1 = "x--cleanup" ]; then
-  if [ x${zmtrainsa_cleanup_host} = "xtrue" ]; then
+if [ $1 = "--cleanup" ]; then
+  if [ ${zmtrainsa_cleanup_host} = "true" ]; then
     timestampit "Starting spam/ham cleanup"
     mydir=$(mktmpdir cleanup)
     /opt/zextras/libexec/zmspamextract ${spam_account} -o ${mydir} -d
@@ -149,11 +149,11 @@ USER=$1
 MODE=$(echo $2 | tr A-Z a-z)
 FOLDER=$3
 
-if [ "x${MODE}" != "xspam" -a "x${MODE}" != "xham" ]; then
+if [ "${MODE}" != "spam" -a "${MODE}" != "ham" ]; then
   usage
 fi
 
-if [ "x${USER}" = "x" ]; then
+if [ "${USER}" = "" ]; then
   usage
 fi
 

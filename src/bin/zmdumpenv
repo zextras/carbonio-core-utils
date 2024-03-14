@@ -9,7 +9,7 @@ source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
 while getopts "h" flag; do
-  if [ x$flag == "xh" ]; then
+  if [ $flag == "h" ]; then
     echo "Usage: $0 [-h]"
     echo "    Dumps various environment information"
     echo "    -h: This help information"

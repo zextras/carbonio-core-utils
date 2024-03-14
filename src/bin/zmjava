@@ -33,11 +33,11 @@ done
 
 java_options="-XX:ErrorFile=/opt/zextras/log"
 
-if [ x${zimbra_zmjava_java_library_path} = "x" ]; then
+if [ ${zimbra_zmjava_java_library_path} = "" ]; then
   zimbra_zmjava_java_library_path=/opt/zextras/lib
 fi
 
-if [ x${zimbra_zmjava_java_ext_dirs} = "x" ]; then
+if [ ${zimbra_zmjava_java_ext_dirs} = "" ]; then
   zimbra_zmjava_java_ext_dirs=${JRE_EXT_DIR}${PATHSEP}/opt/zextras/lib/jars${PATHSEP}${ZIMBRA_EXT_DIR}
 fi
 

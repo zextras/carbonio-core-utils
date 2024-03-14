@@ -28,12 +28,12 @@ rewriteconfig() {
 
 checkrunning() {
   # Get PID from scanning the proc table.
-  if [ "x$PID" = "x" ]; then
+  if [ "$PID" = "" ]; then
     # PID file is NULL.  Get info from proc table.
     PID=$(/bin/ps axo user,pid,ppid,command | awk '{ if ((($4 ~ /^amavisd$/) || ($4 ~ /^\/opt\/zextras\/common\/sbin\/amavisd$/)) && ($5 ~ /^\(master\)$/)) { print $2 } }')
   fi
   # If PID is still not set, then we cannot find any amavisd (master) process.  Assume amavisd is not running.
-  if [ "x$PID" = "x" ]; then
+  if [ "$PID" = "" ]; then
     RUNNING=0
     return
   fi
@@ -43,11 +43,11 @@ checkrunning() {
   PID=$(/bin/ps axo user,pid,ppid,command | awk '{ if (($2 == '$PID') && (($4 ~ /^amavisd$/) || ($4 ~ /^\/opt\/zextras\/common\/sbin\/amavisd$/)) && ($5 ~ /^\(master\)$/)) { print $2 } }')
   # If PID is NULL now, then the PID stored in the PID file was bogus!
   # Let's try to find the true amavisd (master) process ID
-  if [ "x$PID" = "x" ]; then
+  if [ "$PID" = "" ]; then
     PID=$(/bin/ps axo user,pid,ppid,command | awk '{ if ((($4 ~ /^amavisd$/) || ($4 ~ /^\/opt\/zextras\/common\/sbin\/amavisd$/)) && ($5 ~ /^\(master\)$/)) { print $2 } }')
   fi
   # If the PID is still NULL now, it really must not be running.
-  if [ "x$PID" = "x" ]; then
+  if [ "$PID" = "" ]; then
     RUNNING=0
     return
   else
@@ -58,12 +58,12 @@ checkrunning() {
 
 checkrunning-mc() {
   #  Get PID from scanning the proc table.
-  if [ "x$MCPID" = "x" ]; then
+  if [ "$MCPID" = "" ]; then
     # PID file is NULL.  Get info from proc table.
     MCPID=$(/bin/ps axo user,pid,ppid,command | awk '{ if ((($6 ~ /amavis-mc$/) || ($6 ~ /\/opt\/zextras\/common\/sbin\/amavis-mc$/))) { print $2 } }')
   fi
   # If PID is still not set, then we cannot find any amavisd (master) process.  Assume amavisd is not running.
-  if [ "x$MCPID" = "x" ]; then
+  if [ "$MCPID" = "" ]; then
     MCRUNNING=0
     return
   fi
@@ -92,7 +92,7 @@ case "$1" in
           sleep 1
         done
       fi
-      if [ "x$MCPID" = "x" ]; then
+      if [ "$MCPID" = "" ]; then
         echo "failed."
         exit
       else
@@ -116,7 +116,7 @@ case "$1" in
       if [ ! -d /opt/zextras/data/amavisd/var ]; then
         mkdir /opt/zextras/data/amavisd/var
       fi
-      if [ x$2 = "x" ]; then
+      if [ $2 = "" ]; then
         rewriteconfig
       fi
       /opt/zextras/common/sbin/amavisd -X no_conf_file_writable_check -c \
@@ -128,7 +128,7 @@ case "$1" in
         fi
         sleep 1
       done
-      if [ "x$PID" = "x" ]; then
+      if [ "$PID" = "" ]; then
         echo "failed."
       else
         echo "done."

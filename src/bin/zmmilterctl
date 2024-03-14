@@ -21,7 +21,7 @@ case "$(uname)" in
 esac
 
 java_version=$(${java} -version 2>&1 | grep "java version" | sed -e 's/"//g' | awk '{print $NF}' | awk -F_ '{print $1}')
-if [ x"$java_version" = "x1.6.0" ]; then
+if [ "$java_version" = "1.6.0" ]; then
   java_options="-XX:ErrorFile=${ZMROOT}/log"
 else
   java_options=""
@@ -38,7 +38,7 @@ getpid() {
 
 checkrunning() {
   getpid
-  if [ "x$pid" = "x" ]; then
+  if [ "$pid" = "" ]; then
     running=0
   else
     kill -0 $pid 2>/dev/null
@@ -53,7 +53,7 @@ checkrunning() {
 
 refresh() {
   getpid
-  if [ "x$pid" = "x" ]; then
+  if [ "$pid" = "" ]; then
     echo "milter server is not currently running"
   else
     kill -CONT $pid 2>/dev/null
@@ -72,7 +72,7 @@ case "$1" in
     nohup sh -c "exec ${runcmd} 2>&1" >/opt/zextras/log/milter.out 2>&1 &
 
     pid=$!
-    if [ "x$pid" != 'x' ]; then
+    if [ "$pid" != 'x' ]; then
       echo $pid >$pidfile
     else
       echo "failed."

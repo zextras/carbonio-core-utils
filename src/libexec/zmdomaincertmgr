@@ -79,7 +79,7 @@ loadConfigKey() {
     local zmprov_opts="gacf"
   elif [ $location = "server" ]; then
     local server=$4
-    if [ x"${server}" = "x" ]; then
+    if [ "${server}" = "" ]; then
       server=${zimbra_server_hostname}
     fi
     local zmprov_opts="gs ${server}"
@@ -111,7 +111,7 @@ loadConfigKey() {
 }
 
 deployCerts() {
-  if [ "x$1" = "x-force" ] && [ -d "${zimbra_domain_cert_directory}" ]; then
+  if [ "$1" = "-force" ] && [ -d "${zimbra_domain_cert_directory}" ]; then
     rm -rf "${zimbra_domain_cert_directory}" >/dev/null 2>&1
   fi
 
@@ -142,7 +142,7 @@ saveDomainCertToLdap() {
   domain=$1
   current_crt=$2
   current_key=$3
-  if [ x"$domain" = "x" ]; then
+  if [ "$domain" = "" ]; then
     echo "$ERROR_PREFIX Domain must be specified."
     return
   fi
@@ -161,7 +161,7 @@ saveDomainCertToLdap() {
 
 getDomainCertFromLdap() {
   domain=$1
-  if [ x"$domain" = "x" ]; then
+  if [ "$domain" = "" ]; then
     echo "$ERROR_PREFIX Domain must be specified"
   fi
   if [ ! -d "${zimbra_domain_cert_directory}" ]; then
@@ -175,7 +175,7 @@ getDomainCertFromLdap() {
 }
 
 viewstagedcrt() {
-  if [ x"${1}" = "x" ]; then
+  if [ "${1}" = "" ]; then
     if [ -f "${commercial_crt}" ]; then
       current_crt=${commercial_crt}
     elif [ -f "${server_crt}" ]; then
@@ -183,18 +183,18 @@ viewstagedcrt() {
     else
       usage
     fi
-  elif [ x"${1}" != "xself" -a x"${1}" != "xcomm" ]; then
+  elif [ "${1}" != "self" -a "${1}" != "comm" ]; then
     usage
   else
     type=$1
-    if [ x"$type" = "xself" ]; then
+    if [ "$type" = "self" ]; then
       current_crt=${server_crt}
     else
       current_crt=${commercial_crt}
     fi
   fi
 
-  if [ x"$2" != "x" ]; then
+  if [ "$2" != "" ]; then
     current_crt=${2}
   fi
 
@@ -229,16 +229,16 @@ getsubjectaltnames() {
 
 checkCertExpiration() {
 
-  if [ "x$1" = "x-days" ]; then
+  if [ "$1" = "-days" ]; then
     shift
     exp_thres_days=$1
     shift
     exp_thres_secs=$((exp_thres_days * 24 * 60 * 60))
   fi
 
-  if [ "x$1" = "x" ]; then
+  if [ "$1" = "" ]; then
     VIEW="all"
-  elif [ "x$1" = "xall" -o "x$1" = "xmta" -o "x$1" = "xproxy" -o "x$1" = "xmailboxd" -o "x$1" = "xldap" ]; then
+  elif [ "$1" = "all" -o "$1" = "mta" -o "$1" = "proxy" -o "$1" = "mailboxd" -o "$1" = "ldap" ]; then
     VIEW="$1"
   else
     echo "${ERROR_PREFIX} Can't verify cert expiration for $1.  Unknown service."
@@ -324,9 +324,9 @@ checkCertExpiration() {
 }
 
 viewdeployedcrt() {
-  if [ "x$1" = "x" ]; then
+  if [ "$1" = "" ]; then
     VIEW="all"
-  elif [ "x$1" = "xall" -o "x$1" = "xmta" -o "x$1" = "xproxy" -o "x$1" = "xmailboxd" -o "x$1" = "xldap" ]; then
+  elif [ "$1" = "all" -o "$1" = "mta" -o "$1" = "proxy" -o "$1" = "mailboxd" -o "$1" = "ldap" ]; then
     VIEW="$1"
   else
     echo "${ERROR_PREFIX} Can't view cert for $1.  Unknown service."
@@ -394,14 +394,14 @@ viewdeployedcrt() {
 }
 
 verifycrtkey() {
-  if [ x"${1}" = "x" ] || [ x"${1}" != "xself" -a x"${1}" != "xcomm" ]; then
+  if [ "${1}" = "" ] || [ "${1}" != "self" -a "${1}" != "comm" ]; then
     usage
   else
     type=$1
     shift
     key=$1
     crt=$2
-    if [ x"${key}" = "x" ]; then
+    if [ "${key}" = "" ]; then
       if [ "$type" = "self" ]; then
         key=${server_key}
       elif [ "$type" = "comm" ]; then
@@ -409,7 +409,7 @@ verifycrtkey() {
       fi
     fi
 
-    if [ x"${crt}" = "x" ]; then
+    if [ "${crt}" = "" ]; then
       if [ "$type" = "self" ]; then
         crt=${server_crt}
       elif [ "$type" = "comm" ]; then
@@ -435,7 +435,7 @@ verifycrtkey() {
     #echo "crt_md5=${crt_md5}"
   fi
 
-  if [ x"${key_md5}" != "x" -a x"${key_md5}" = x"${crt_md5}" ]; then
+  if [ "${key_md5}" != "" -a "${key_md5}" = "${crt_md5}" ]; then
     echo "Certificate (${crt}) and private key (${key}) match."
   else
     echo "${ERROR_PREFIX} Unmatching certificate (${crt}) and private key (${key}) pair."
@@ -449,7 +449,7 @@ verifycrtchain() {
 
   result=$(${openssl} verify -purpose sslserver -CAfile $cafile $crt)
 
-  if [ x"${result}" = x"${crt}: OK" ]; then
+  if [ "${result}" = "${crt}: OK" ]; then
     echo "Valid Certificate Chain: $result"
   else
     echo "${ERROR_PREFIX} Invalid Certificate Chain: $result"
@@ -481,11 +481,11 @@ ACTION=$1
 shift
 
 # check for valid usage
-if [ x"$ACTION" = "xdeploycrts" ]; then
+if [ "$ACTION" = "deploycrts" ]; then
   deployCerts $@
-elif [ x"$ACTION" = "xsavecrt" ]; then
+elif [ "$ACTION" = "savecrt" ]; then
   saveDomainCertToLdap $@
-elif [ x"$ACTION" = "x-help" -o x"$ACTION" = "xhelp" -o x"$ACTION" = "x-h" -o x"$ACTION" = "x--help" ]; then
+elif [ "$ACTION" = "-help" -o "$ACTION" = "help" -o "$ACTION" = "-h" -o "$ACTION" = "--help" ]; then
   usage
 else
   usage

@@ -38,7 +38,7 @@ while [ $# -gt 0 ]; do
       exit -1
       ;;
     *)
-      if [ "${SKIN_SRC}x" != "x" ]; then
+      if [ "${SKIN_SRC}x" != "" ]; then
         echo "ERROR: Invalid number arguments" >&2
         usage
         exit -1
@@ -57,7 +57,7 @@ SKIN_WORK_BASE=$(dirname "${skins_directory}")
 #BASE_URL=/`basename "${SKIN_WORK_BASE}"`
 BASE_URL=$(${BIN_ROOT}/zmprov -l gcf zimbraMailURL)
 BASE_URL=${BASE_URL:15}
-if [ x${BASE_URL} = 'x/' ]; then
+if [ ${BASE_URL} = 'x/' ]; then
   BASE_URL=""
 fi
 

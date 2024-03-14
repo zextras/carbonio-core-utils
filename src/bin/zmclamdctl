@@ -36,7 +36,7 @@ getpid() {
 checkrunning() {
   getpid
   # clamd
-  if [ "x$cpid" = "x" ]; then
+  if [ "$cpid" = "" ]; then
     running=0
   else
     if ps --no-headers -p $cpid -o cmd 2>/dev/null | grep clamd >/dev/null 2>&1; then
@@ -64,7 +64,7 @@ pskillall() {
 #
 case "$1" in
   'start')
-    if [ x$2 = "x" ]; then
+    if [ $2 = "" ]; then
       rewriteconfig
     fi
 
@@ -106,7 +106,7 @@ case "$1" in
     if [ $running = 0 ]; then
       echo "clamd is not running."
     else
-      if [ x"$cpid" != "x" ]; then
+      if [ "$cpid" != "" ]; then
         kill "$cpid" 2>/dev/null
       fi
       for ((i = 0; i < 30; i++)); do

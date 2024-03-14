@@ -24,7 +24,7 @@ for i in $extensions; do
 done
 
 for i in $(ls /opt/zextras/common/jetty_home/lib/apache-jsp/*.jar); do
-  if [ x"$class_path" = "x" ]; then
+  if [ "$class_path" = "" ]; then
     class_path="$i"
   else
     class_path="${class_path}:$i"
@@ -32,7 +32,7 @@ for i in $(ls /opt/zextras/common/jetty_home/lib/apache-jsp/*.jar); do
 done
 
 for i in $(ls /opt/zextras/common/jetty_home/lib/apache-jstl/*.jar); do
-  if [ x"$class_path" = "x" ]; then
+  if [ "$class_path" = "" ]; then
     class_path="$i"
   else
     class_path="${class_path}:$i"
@@ -40,7 +40,7 @@ for i in $(ls /opt/zextras/common/jetty_home/lib/apache-jstl/*.jar); do
 done
 
 java_version=$(${zimbra_java_home}/bin/java -version 2>&1 | grep "java version" | sed -e 's/"//g' | awk '{print $NF}' | awk -F_ '{print $1}')
-if [ x"$java_version" = "x1.6.0" ]; then
+if [ "$java_version" = "1.6.0" ]; then
   java_options="-XX:ErrorFile=/opt/zextras/log"
 else
   java_options=""

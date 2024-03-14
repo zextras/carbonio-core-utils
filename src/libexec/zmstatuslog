@@ -26,13 +26,10 @@ my $pidFile="/opt/zextras/log/zmstatuslog.pid";
 my $TIMEOUT=60;
 my $MNTCMD;
 my $DFCMD;
-if ($platform eq "MACOSX") {
-	$MNTCMD = "mount -t hfs";
-	$DFCMD = "df -ml ";
-} else {
-	$MNTCMD = "mount -t ext3";
-	$DFCMD = "df -ml ";
-}
+
+$MNTCMD = "mount -t ext3";
+$DFCMD = "df -ml ";
+
 
 my $dt = qx(date "+%Y-%m-%d %H:%M:%S");
 chomp $dt;

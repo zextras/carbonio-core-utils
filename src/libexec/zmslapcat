@@ -18,7 +18,7 @@ if [ "$(whoami)" != zextras ]; then
   exit 1
 fi
 
-if [ x$1 = "x" -o x$1 = "x-h" -o x$1 = "x--help" ]; then
+if [ $1 = "" -o $1 = "-h" -o $1 = "--help" ]; then
   echo "USAGE: Exports LDAP databases"
   echo "Main database: zmslapcat <DIR>"
   echo "Config database: zmslapcat -c <DIR>"
@@ -30,12 +30,12 @@ D=$(date +%Y%m%d%H%M%S)
 CONFIG=no
 FILE=ldap.bak.${D}
 NFILE=ldap.bak
-if [ x$1 = "x-c" ]; then
+if [ $1 = "-c" ]; then
   CONFIG=yes
   FILE=ldap-config.bak.${D}
   NFILE=ldap-config.bak
   DEST=$2
-elif [ x$1 = "x-a" ]; then
+elif [ $1 = "-a" ]; then
   ALOG=yes
   FILE=ldap-accesslog.bak.${D}
   NFILE=ldap-accesslog.bak
@@ -46,10 +46,10 @@ fi
 
 mkdir -p $DEST
 RC=0
-if [ x$CONFIG = "xyes" ]; then
+if [ $CONFIG = "yes" ]; then
   /opt/zextras/common/sbin/slapcat -F /opt/zextras/data/ldap/config -n 0 -l ${DEST}/${FILE}
   RC=$?
-elif [ x$ALOG = "xyes" ]; then
+elif [ $ALOG = "yes" ]; then
   if [ -d /opt/zextras/data/ldap/accesslog/db ]; then
     /opt/zextras/common/sbin/slapcat -F /opt/zextras/data/ldap/config -b "cn=accesslog" -l ${DEST}/${FILE}
     RC=$?
