@@ -39,14 +39,7 @@ for i in $(ls /opt/zextras/common/jetty_home/lib/apache-jstl/*.jar); do
   fi
 done
 
-java_version=$(${zimbra_java_home}/bin/java -version 2>&1 | grep "java version" | sed -e 's/"//g' | awk '{print $NF}' | awk -F_ '{print $1}')
-if [ "$java_version" = "1.6.0" ]; then
-  java_options="-XX:ErrorFile=/opt/zextras/log"
-else
-  java_options=""
-fi
-
-java_cmd="${zimbra_java_home}/bin/java $java_options \
+java_cmd="${zimbra_java_home}/bin/java \
   -client -Xmx256m \
   -Dzimbra.home=/opt/zextras \
   -Djava.library.path=/opt/zextras/lib \

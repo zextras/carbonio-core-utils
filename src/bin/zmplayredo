@@ -66,13 +66,6 @@ if [ -n "$jm" ]; then
   xms_xmx_options="-Xms${jm}m -Xmx${jm}m"
 fi
 
-java_version=$(${zimbra_java_home}/bin/java -version 2>&1 | grep "java version" | sed -e 's/"//g' | awk '{print $NF}' | awk -F_ '{print $1}')
-if [ "$java_version" = "1.6.0" ]; then
-  java_options="-XX:ErrorFile=/opt/zextras/log"
-else
-  java_options=""
-fi
-
 # Remove "-verbose:gc" and all options that start with "-XX:+PrintGC".  These pollute stdout/stderr.
 for opt in $mailboxd_java_options; do
   if [ "$opt" = "-verbose:gc" ] || [[ "$opt" == "-XX:+PrintGC"* ]]; then
@@ -87,7 +80,6 @@ done
 
 echo $$ >$ropid
 ${zimbra_java_home}/bin/java \
-  ${java_options} \
   ${xms_xmx_options} ${sanitized_options} \
   -Dzimbra.config=/opt/zextras/conf/localconfig.xml \
   -Djava.library.path=/opt/zextras/lib \

@@ -20,14 +20,7 @@ case "$(uname)" in
   *) PATHSEP=":" ;;
 esac
 
-java_version=$(${java} -version 2>&1 | grep "java version" | sed -e 's/"//g' | awk '{print $NF}' | awk -F_ '{print $1}')
-if [ "$java_version" = "1.6.0" ]; then
-  java_options="-XX:ErrorFile=${ZMROOT}/log"
-else
-  java_options=""
-fi
-
-runcmd="${java} ${java_options} -Dlog4j.configurationFile=file:${log4jfile} -Dzimbra.home=\"/opt/zextras\" -Dzimbra.config=\"${configfile}\" \
+runcmd="${java} -Dlog4j.configurationFile=file:${log4jfile} -Dzimbra.home=\"/opt/zextras\" -Dzimbra.config=\"${configfile}\" \
    com.zimbra.cs.milter.MilterServer"
 
 getpid() {
