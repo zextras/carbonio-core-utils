@@ -31,7 +31,7 @@ checkrunning() {
   if [ "$PID" = "" ]; then
     RUNNING=0
   else
-    if ps --no-headers -p "$PID" -o cmd 2>/dev/null | grep slapd >/dev/null 2>&1; then
+    if ps --no-headers -p "$PID" || cmd 2>/dev/null | grep slapd >/dev/null 2>&1; then
       RUNNING=1
     else
       PID=""

@@ -8,7 +8,7 @@
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
-if [ "${antispam_mysql_host}" = $(zmhostname) -o "${antispam_mysql_host}" = "localhost" -o "${antispam_mysql_host}" = "127.0.0.1" -o "${antispam_mysql_host}" = "::1" ]; then
+if [ "${antispam_mysql_host}" = $(zmhostname) ] || [ "${antispam_mysql_host}" = "localhost" ] || [ "${antispam_mysql_host}" = "127.0.0.1" ] || [ "${antispam_mysql_host}" = "::1" ]; then
   exec /opt/zextras/common/bin/mysql \
     --socket=${antispam_mysql_socket} \
     --user=${antispam_mysql_user} \

@@ -107,7 +107,7 @@ case "$1" in
     ;;
   reload)
     checkrunning
-    if [ $running = 1 -a "$pid" != "" ]; then
+    if [ $running = 1 ] && [ "$pid" != "" ]; then
       echo -n "Reloading ${servicename}..."
       kill -HUP $pid
       echo "done."

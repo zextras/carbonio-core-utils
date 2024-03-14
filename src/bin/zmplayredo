@@ -20,7 +20,7 @@ isrunning() {
 
 opth=0
 for opt in $@; do
-  if [ $opt = "-h" -o $opt = "--help" ]; then
+  if [ $opt = "-h" ] || [ $opt = "--help" ]; then
     opth=1
     break
   fi

@@ -14,8 +14,8 @@ if [ "$(whoami)" != zextras ]; then
 fi
 
 optConf=0
-for opt in $@; do
-  if [ $opt = "-c" -o $opt = "--conf" ]; then
+for opt in "$@"; do
+  if [ "$opt" = "-c" ] || [ "$opt" = "--conf" ]; then
     optConf=1
     break
   fi
@@ -34,7 +34,7 @@ else
   if [ -f $conf ]; then
     CONF_TIME=$(stat -c %Z $conf)
   fi
-  if [ $CONFGEN_TIME -gt $CONF_TIME ]; then
+  if [ "$CONFGEN_TIME" -gt "$CONF_TIME" ]; then
     zmstat-chart-config >$confTmp
     rc=$?
     if [ $rc -ne 0 ]; then
