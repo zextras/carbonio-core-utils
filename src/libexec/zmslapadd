@@ -31,7 +31,7 @@ if [ -x $bzcat ]; then
   bgood=yes
 fi
 
-if [ x$1 = "x" -o x$1 = "x-h" -o x$1 = "x--help" ]; then
+if [ $1 = "" -o $1 = "-h" -o $1 = "--help" ]; then
   echo "USAGE: Imports LDAP databases"
   echo "Main database: zmslapadd <FILE> [-w]"
   echo "Config database: zmslapadd -c <FILE>"
@@ -42,15 +42,15 @@ fi
 CONFIG=no
 ALOG=no
 WRITESYNCREPL=""
-if [ x$1 = "x-c" ]; then
+if [ $1 = "-c" ]; then
   CONFIG=yes
   SRC=$2
-elif [ x$1 = "x-a" ]; then
+elif [ $1 = "-a" ]; then
   ALOG=yes
   SRC=$2
 else
   SRC=$1
-  if [ x$2 = "x-w" ]; then
+  if [ $2 = "-w" ]; then
     WRITESYNCREPL=$2
   fi
 fi
@@ -64,14 +64,14 @@ if [ ! -f $SRC ]; then
 fi
 
 if [[ "$SRC" == *".gz" ]]; then
-  if [ x$zgood = "xno" ]; then
+  if [ $zgood = "no" ]; then
     echo "Error: zcat is missing."
     exit 1
   fi
   computil=$zcat
   comp=1
 elif [[ "$SRC" == *".bz2" ]]; then
-  if [ x$bgood = "xno" ]; then
+  if [ $bgood = "no" ]; then
     echo "Error: bzcat is missing."
     exit 1
   fi
@@ -79,16 +79,16 @@ elif [[ "$SRC" == *".bz2" ]]; then
   comp=1
 fi
 
-if [ x$CONFIG = "xyes" ]; then
-  if [ x$comp = "x0" ]; then
+if [ $CONFIG = "yes" ]; then
+  if [ $comp = "0" ]; then
     /opt/zextras/common/sbin/slapadd -q -F /opt/zextras/data/ldap/config -n 0 -l $SRC
     RETVAL=$?
   else
     $computil $SRC | /opt/zextras/common/sbin/slapadd -q -F /opt/zextras/data/ldap/config -n 0
     RETVAL=$?
   fi
-elif [ x$ALOG = "xyes" ]; then
-  if [ x$comp = "x0" ]; then
+elif [ $ALOG = "yes" ]; then
+  if [ $comp = "0" ]; then
     /opt/zextras/common/sbin/slapadd -q -F /opt/zextras/data/ldap/config -b "cn=accesslog" -l $SRC
     RETVAL=$?
   else
@@ -96,7 +96,7 @@ elif [ x$ALOG = "xyes" ]; then
     RETVAL=$?
   fi
 else
-  if [ x$comp = "x0" ]; then
+  if [ $comp = "0" ]; then
     /opt/zextras/common/sbin/slapadd $WRITESYNCREPL -q -F /opt/zextras/data/ldap/config -b "" -l $SRC
     RETVAL=$?
   else

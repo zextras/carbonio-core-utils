@@ -35,7 +35,7 @@ EOF
 #
 # Parse command line
 #
-if [ "x$1" = "x--root" ]; then
+if [ "$1" = "--root" ]; then
   password_key="antispam_mysql_root_password"
   shift # lose --root option
 else

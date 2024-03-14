@@ -32,7 +32,7 @@ getpid() {
 checkrunning() {
   getpid
   # freshclam
-  if [ "x$fpid" = "x" ]; then
+  if [ "$fpid" = "" ]; then
     frunning=0
   else
     if ps --no-headers -p $fpid -o cmd 2>/dev/null | grep freshclam >/dev/null 2>&1; then
@@ -61,7 +61,7 @@ pskillall() {
 case "$1" in
   'start')
 
-    if [ x$2 = "x" ]; then
+    if [ $2 = "" ]; then
       rewriteconfig
     fi
 
@@ -93,7 +93,7 @@ case "$1" in
     if [ $frunning = 0 ]; then
       echo "freshclam is not running."
     else
-      if [ x"$fpid" != "x" ]; then
+      if [ "$fpid" != "" ]; then
         kill "$fpid" 2>/dev/null
         if [ $? = 0 ]; then
           echo "done."

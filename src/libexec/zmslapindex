@@ -18,7 +18,7 @@ if [ "$(whoami)" != zextras ]; then
   exit 1
 fi
 
-if [ x$1 = "x-h" -o x$1 = "x--help" ]; then
+if [ $1 = "-h" -o $1 = "--help" ]; then
   echo "USAGE: Indexes LDAP databases"
   echo "Main database: zmslapindex <key>"
   echo "Config database: zmslapindex -c <key>"
@@ -29,20 +29,20 @@ fi
 D=$(date +%Y%m%d%H%M%S)
 CONFIG=no
 ALOG=no
-if [ x$1 = "x-c" ]; then
+if [ $1 = "-c" ]; then
   CONFIG=yes
   KEY=$2
-elif [ x$1 = "x-a" ]; then
+elif [ $1 = "-a" ]; then
   ALOG=yes
   KEY=$2
 else
   KEY=$1
 fi
 
-if [ x$CONFIG = "xyes" ]; then
+if [ $CONFIG = "yes" ]; then
   /opt/zextras/common/sbin/slapindex -q -F /opt/zextras/data/ldap/config -n 0 $KEY
   RETVAL=$?
-elif [ x$ALOG = "xyes" ]; then
+elif [ $ALOG = "yes" ]; then
   /opt/zextras/common/sbin/slapindex -q -F /opt/zextras/data/ldap/config -b "cn=accesslog" $KEY
   RETVAL=$?
 else

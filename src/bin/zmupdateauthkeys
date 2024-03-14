@@ -27,7 +27,7 @@ replacePubKey() {
 
   while read keyline; do
     linehost=$(echo ${keyline} | awk '{print $4}')
-    if [ x$linehost != x$keyhost ]; then
+    if [ $linehost != $keyhost ]; then
       echo "${keyline}" >>${tempkeysfile}.new
     fi
   done <${tempkeysfile}
@@ -76,14 +76,14 @@ fi
 servers=$(${zmprov} gas)
 
 #
-if [ x$1 == "x-a" ]; then
+if [ $1 == "-a" ]; then
   updateAllServers
 fi
 
 for s in ${servers}; do
   echo "Updating keys for ${s}"
   getPubKey ${s}
-  if [ "x$pubkey" != "x" ]; then
+  if [ "$pubkey" != "" ]; then
     replacePubKey ${s} "${pubkey}"
   else
     echo "Key for ${s} NOT FOUND"

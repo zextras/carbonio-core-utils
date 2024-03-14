@@ -34,20 +34,20 @@ while [ $# -gt 0 ]; do
   fi
 done
 
-if [ "x${DEBUG}" == "x1" ]; then
+if [ "${DEBUG}" == "1" ]; then
   echo "Your hostname:                " ${zimbra_server_hostname}
   echo "Host this should be run from: " ${COMPUTE_HOST}
 fi
 
 # Exit if you are not the chosen one!
-if [ "x${zimbra_server_hostname}" != "x${COMPUTE_HOST}" -a "x${FORCE}" != "x1" ]; then
-  if [ "x${DEBUG}" == "x1" ]; then
+if [ "${zimbra_server_hostname}" != "${COMPUTE_HOST}" -a "${FORCE}" != "1" ]; then
+  if [ "${DEBUG}" == "1" ]; then
     echo "You are not the chosen one!  Run this command from host:  ${COMPUTE_HOST}"
   fi
   exit
 fi
 
-if [ "x${FORCE}" == "x1" -a "x${DEBUG}" == "x1" ]; then
+if [ "${FORCE}" == "1" -a "${DEBUG}" == "1" ]; then
   echo "Forcing execution from un-expected host:  ${zimbra_server_hostname}"
 fi
 

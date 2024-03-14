@@ -7,10 +7,10 @@
 # Find and set local config variables.
 #
 zmsetvars() {
-  if [ "x$1" = "x-f" ]; then
+  if [ "$1" = "-f" ]; then
     shift
   else
-    if [ x${zmsetvars} = "xtrue" ]; then
+    if [ ${zmsetvars} = "true" ]; then
       return
     fi
   fi

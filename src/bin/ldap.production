@@ -13,8 +13,8 @@ mkdir -p "/opt/zextras/data/ldap/state/run/"
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
-if [ "x$ldap_is_master" = "xfalse" ]; then
-  if [ "x$ldap_url" = "x$ldap_master_url" ] && [ "x$1" != "xstop" ]; then
+if [ "$ldap_is_master" = "false" ]; then
+  if [ "$ldap_url" = "$ldap_master_url" ] && [ "$1" != "stop" ]; then
     echo "ldap_url and ldap_master_url cannot be the same on an ldap replica"
     exit 1
   fi
@@ -28,7 +28,7 @@ getpid() {
 
 checkrunning() {
   getpid
-  if [ "x$PID" = "x" ]; then
+  if [ "$PID" = "" ]; then
     RUNNING=0
   else
     if ps --no-headers -p "$PID" -o cmd 2>/dev/null | grep slapd >/dev/null 2>&1; then
@@ -42,7 +42,7 @@ checkrunning() {
 
 checkListening() {
   SEARCHTIMEOUT=30 #timelimit for ldapsearch
-  if [ x"$ldap_common_require_tls" = "x0" ]; then
+  if [ "$ldap_common_require_tls" = "0" ]; then
     /opt/zextras/common/bin/ldapsearch -x -l $SEARCHTIMEOUT -b "" -s base -H ldapi:/// >/dev/null 2>&1
   else
     /opt/zextras/common/bin/ldapsearch -ZZ -x -l $SEARCHTIMEOUT -b "" -s base -H ldapi:/// >/dev/null 2>&1
@@ -78,7 +78,7 @@ start() {
   fi
   # Our ldap url should be the first in the list in localconfig
   bind_url=$ldap_bind_url
-  if [ x"$bind_url" = "x" ]; then
+  if [ "$bind_url" = "" ]; then
     bind_url=$(echo "${ldap_url}" | awk '{print $1}')
   fi
   for ((i = 0; i <= 30; i++)); do
@@ -93,7 +93,7 @@ start() {
     fi
     sleep 1
   done
-  if [ "x$PID" = "x" ]; then
+  if [ "$PID" = "" ]; then
     echo "Failed to start slapd.  Attempting debug start to determine error."
     doDebugStart
   else

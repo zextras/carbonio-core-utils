@@ -67,7 +67,7 @@ if [ -n "$jm" ]; then
 fi
 
 java_version=$(${zimbra_java_home}/bin/java -version 2>&1 | grep "java version" | sed -e 's/"//g' | awk '{print $NF}' | awk -F_ '{print $1}')
-if [ x"$java_version" = "x1.6.0" ]; then
+if [ "$java_version" = "1.6.0" ]; then
   java_options="-XX:ErrorFile=/opt/zextras/log"
 else
   java_options=""

@@ -14,14 +14,14 @@ if [ "$(whoami)" != zextras ]; then
 fi
 
 antispam_mysql_enabled=$(echo ${antispam_mysql_enabled} | tr '[:upper:]' '[:lower:]')
-if [ x${antispam_mysql_enabled} != x"true" -a \( x"$1" != x"stop" -a x"$1" != x"restart" -a x"$1" != x"reload" \) ]; then
+if [ ${antispam_mysql_enabled} != "true" -a \( "$1" != "stop" -a "$1" != "restart" -a "$1" != "reload" \) ]; then
   # antispam is not configured to use mysql db, so nothing to do here.
   exit 0
 fi
 
 # If antispam_mysql_host is set to the local host then setup and use local MySQL db.
 # Otherwise, reconfigure the salocal.cf file to point to a remote MySQL db.
-if [ x${antispam_mysql_host} != "x127.0.0.1" -a x${antispam_mysql_host} != x$(zmhostname) -a x${antispam_mysql_host} != "xlocalhost" ]; then
+if [ ${antispam_mysql_host} != "127.0.0.1" -a ${antispam_mysql_host} != $(zmhostname) -a ${antispam_mysql_host} != "localhost" ]; then
   # antispam is not configured to use DB on this (local) host
   exit 0
 fi
@@ -44,7 +44,7 @@ initlockfile=${zimbra_tmp_directory}/antispam-mysql/antispam-mysql.server.lock
 checkInitLock() {
   if [ -f "$initlockfile" ]; then
     initpid=$(cat $initlockfile)
-    if [ x"$initpid" != "x" ]; then
+    if [ "$initpid" != "" ]; then
       kill -0 $initpid 2>/dev/null
       if [ $? = 0 ]; then
         echo "$0 already running with pid $initpid"
@@ -84,7 +84,7 @@ case "$1" in
     fi
     zmassert -r ${antispam_mysql_mycnf}
     zmassert -d $(dirname ${antispam_mysql_pidfile})
-    if [ "x$pid" != "x" ]; then
+    if [ "$pid" != "" ]; then
       kill -0 $pid 2>/dev/null
       if [ $? = 0 ]; then
         echo "mysqld_safe for anti-spam already running with pid $pid"
@@ -116,10 +116,10 @@ case "$1" in
 
   'stop')
     checkInitLock
-    if [ "x${pid}" = "x" ]; then
+    if [ "${pid}" = "" ]; then
       # If mysql for antispam is enabled, then print the warning message.  Otherwise, we
       # shouldn't care that there is no PID file.
-      if [ x"${antispam_mysql_enabled}" == x"TRUE" ]; then
+      if [ "${antispam_mysql_enabled}" == "TRUE" ]; then
         echo "mysqld for anti-spam not running: no pid in '${antispam_mysql_pidfile}'"
       fi
       quit 0

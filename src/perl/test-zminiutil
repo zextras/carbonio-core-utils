@@ -32,7 +32,7 @@ ase() {
   shift
   run=$@
   actual="$($run)"
-  if [ "x$expected" != "x$actual" ]; then
+  if [ "$expected" != "$actual" ]; then
     echo "==== test failed"
     exit 1
   fi

@@ -28,7 +28,7 @@ getpid() {
 
 checkrunning() {
   getpid
-  if [ "x$PID" = "x" ]; then
+  if [ "$PID" = "" ]; then
     RUNNING=0
     if [ -f $pidfile ]; then
       rm -f $pidfile
@@ -70,7 +70,7 @@ case "$1" in
           exit 1
         fi
       fi
-      if [ x$2 = "x" ]; then
+      if [ $2 = "" ]; then
         rewriteconfig
       fi
       /opt/zextras/common/bin/cbpolicyd --config /opt/zextras/conf/cbpolicyd.conf 2>/dev/null
@@ -81,7 +81,7 @@ case "$1" in
           break
         fi
       done
-      if [ "x$PID" = "x" ]; then
+      if [ "$PID" = "" ]; then
         echo "failed."
         exit 1
       else

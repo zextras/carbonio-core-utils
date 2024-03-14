@@ -52,7 +52,7 @@ flushDirtyPages() {
 
 case "$1" in
   start)
-    if [ x$2 = "x" ]; then
+    if [ $2 = "" ]; then
       # Call tlsctl to get all the mailbox config files
       /opt/zextras/bin/zmtlsctl >/dev/null 2>&1
     fi
@@ -89,7 +89,7 @@ case "$1" in
         STATUS=$R
       fi
     done
-    if [ x$2 = "x" ]; then
+    if [ $2 = "" ]; then
       # Call tlsctl to get all the mailbox config files
       /opt/zextras/bin/zmtlsctl >/dev/null 2>&1
     fi
@@ -112,7 +112,7 @@ case "$1" in
       R=$?
       if [ $R -ne "0" ]; then
         echo "$i is not running."
-        if [ x"$i" != "xzmconfigdctl" ]; then
+        if [ "$i" != "zmconfigdctl" ]; then
           STATUS=$R
         fi
       fi

@@ -26,7 +26,7 @@ getpid() {
 
 checkrunning() {
   getpid
-  if [ "x$pid" = "x" ]; then
+  if [ "$pid" = "" ]; then
     running=0
   else
     if ps --no-headers -p $pid -o cmd 2>/dev/null | grep memcached >/dev/null 2>&1; then
@@ -56,7 +56,7 @@ case "$1" in
     addr=$(/opt/zextras/bin/zmprov -l gs ${zimbra_server_hostname} zimbraMemcachedBindAddress | awk '/^zimbraMemcachedBindAddress:/{ print $2 }')
     addr="${addr//$'\n'/,}"
     port=$(/opt/zextras/bin/zmprov -l gs ${zimbra_server_hostname} zimbraMemcachedBindPort | awk '/^zimbraMemcachedBindPort:/{ print $2 }')
-    if [ x"$addr" = "x" ]; then
+    if [ "$addr" = "" ]; then
       /opt/zextras/common/bin/${servicename} -d -P ${pidfile} -U 0 -l 127.0.1.1,127.0.0.1 -p ${port:-11211}
     else
       /opt/zextras/common/bin/${servicename} -d -P ${pidfile} -U 0 -l ${addr} -p ${port:-11211}
@@ -68,7 +68,7 @@ case "$1" in
       fi
       sleep 1
     done
-    if [ "x$pid" != "x" ]; then
+    if [ "$pid" != "" ]; then
       echo "done."
       exit 0
     else
@@ -107,7 +107,7 @@ case "$1" in
     ;;
   reload)
     checkrunning
-    if [ $running = 1 -a "x$pid" != "x" ]; then
+    if [ $running = 1 -a "$pid" != "" ]; then
       echo -n "Reloading ${servicename}..."
       kill -HUP $pid
       echo "done."

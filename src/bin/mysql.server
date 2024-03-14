@@ -36,7 +36,7 @@ initlockfile=${zimbra_tmp_directory}/mysql/mysql.server.lock
 checkInitLock() {
   if [ -f "$initlockfile" ]; then
     initpid=$(cat $initlockfile)
-    if [ x"$initpid" != "x" ]; then
+    if [ "$initpid" != "" ]; then
       kill -0 $initpid 2>/dev/null
       if [ $? = 0 ]; then
         echo "$0 already running with pid $initpid"
@@ -68,7 +68,7 @@ fi
 case "$1" in
   'start')
     checkInitLock
-    if [ "x$pid" != "x" ]; then
+    if [ "$pid" != "" ]; then
       kill -0 $pid 2>/dev/null
       if [ $? = 0 ]; then
         echo "mysqld_safe already running with pid $pid"
@@ -101,7 +101,7 @@ case "$1" in
 
   'stop')
     checkInitLock
-    if [ "x${pid}" = "x" ]; then
+    if [ "${pid}" = "" ]; then
       echo "mysqld not running: no pid in '${mysql_pidfile}'"
       quit 0
     else

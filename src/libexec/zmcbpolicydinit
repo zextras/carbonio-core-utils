@@ -23,7 +23,7 @@ dbdir=$(dirname $dbfile)
 cbpolicyDir=/opt/zextras/common
 sqlite3=$(which sqlite3)
 
-if [ x${sqlite3} = "x" ]; then
+if [ ${sqlite3} = "" ]; then
   echo "cbpolicyd requires sqlite3 to be installed."
   exit 1
 fi
@@ -37,7 +37,7 @@ fi
 
 initCBPolicyd() {
   if [ -f ${dbfile} ]; then
-    if [ x"$force" = "x" ]; then
+    if [ "$force" = "" ]; then
       echo "Must use -force to overwrite existing database."
       exit 1
     else

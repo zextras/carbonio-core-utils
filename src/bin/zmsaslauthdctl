@@ -28,7 +28,7 @@ getpid() {
 
 checkrunning() {
   getpid
-  if [ "x$pid" = "x" ]; then
+  if [ "$pid" = "" ]; then
     running=0
   else
     if ps --no-headers -p $pid -o cmd 2>/dev/null | grep saslauthd >/dev/null 2>&1; then
@@ -52,7 +52,7 @@ case "$1" in
       exit 0
     fi
     mkdir -p /opt/zextras/data/sasl2/state
-    if [ x$2 = "x" ]; then
+    if [ $2 = "" ]; then
       rewriteconfig
     fi
     /opt/zextras/common/sbin/saslauthd -r -a zimbra

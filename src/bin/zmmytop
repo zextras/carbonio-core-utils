@@ -15,7 +15,7 @@ if [ ! -x /opt/zextras/common/bin/mysql ]; then
   exit 1
 fi
 
-if [ x"$1" = "x-h" ]; then
+if [ "$1" = "-h" ]; then
   echo "Usage"
   echo "zmmytop [-h] [-r]"
   echo "-h: Display this message"
@@ -35,7 +35,7 @@ source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
 if [ -x "/opt/zextras/common/bin/mytop" ]; then
-  if [ x"$1" = "x-r" ]; then
+  if [ "$1" = "-r" ]; then
     shift
     /opt/zextras/common/bin/mytop -u root -S $mysql_socket -p $mysql_root_password $@
   else
