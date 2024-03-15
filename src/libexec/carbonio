@@ -22,13 +22,6 @@
 # Description: Loads all the services required by your Carbonio installation
 ### END INIT INFO
 
-command() {
-  if [ -f /opt/zextras/redolog/redo.log ]; then
-    chown -f zextras:zextras /opt/zextras/redolog/redo.log
-  fi
-  su - zextras -c "zmcontrol $1 </dev/null"
-}
-
 case "$1" in
   restart)
     command shutdown

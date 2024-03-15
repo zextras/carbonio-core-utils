@@ -61,7 +61,7 @@ case "$1" in
       /opt/zextras/bin/zmtlsctl >/dev/null 2>&1
     fi
     for i in $START_ORDER; do
-      "/opt/zextras/bin/$i" start norewrite >/dev/null 2>&1
+      /opt/zextras/bin/"$i" start norewrite >/dev/null 2>&1
       R=$?
       if [ $R -ne "0" ]; then
         STATUS=$R
@@ -74,7 +74,7 @@ case "$1" in
       if [ "$i" = "mysql.server" ]; then
         flushDirtyPages
       fi
-      "/opt/zextras/bin/$i" stop
+      /opt/zextras/bin/"$i" stop
       R=$?
       if [ $R -ne "0" ]; then
         STATUS=$R
@@ -87,7 +87,7 @@ case "$1" in
       if [ "$i" = "mysql.server" ]; then
         flushDirtyPages
       fi
-      "/opt/zextras/bin/$i" stop
+      /opt/zextras/bin/"$i" stop
       R=$?
       if [ $R -ne "0" ]; then
         STATUS=$R
@@ -98,7 +98,7 @@ case "$1" in
       /opt/zextras/bin/zmtlsctl >/dev/null 2>&1
     fi
     for i in $START_ORDER; do
-      "/opt/zextras/bin/$i" start norewrite
+      /opt/zextras/bin/"$i" start norewrite
       R=$?
       if [ $R -ne "0" ]; then
         STATUS=$R
@@ -111,7 +111,7 @@ case "$1" in
       if [ "$i" = "mysql.server" ]; then
         /opt/zextras/bin/mysqladmin status >/dev/null 2>&1
       else
-        "/opt/zextras/bin/$i" status >/dev/null 2>&1
+        /opt/zextras/bin/"$i" status >/dev/null 2>&1
       fi
       R=$?
       if [ $R -ne "0" ]; then
