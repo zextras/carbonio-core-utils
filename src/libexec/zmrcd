@@ -13,11 +13,15 @@ use strict;
 # is allowed - specially beware of any shell special characters.
 #
 my %SIMPLE_COMMANDS = (
+   "start amavis"       => "/opt/zextras/bin/zmamavisdctl start",
+   "start freshclam"    => "/opt/zextras/bin/zmfreshclamctl start",
    "start mailbox"    => "/opt/zextras/bin/zmstorectl start",
    "start ldap"       => "/opt/zextras/bin/ldap start",
    "start mta"        => "/opt/zextras/bin/zmmtactl start",
    "start antispam"   => "/opt/zextras/bin/zmantispamctl start",
    "start antivirus"  => "/opt/zextras/bin/zmantivirusctl start",
+   "stop amavis"      => "/opt/zextras/bin/zmamavisdctl stop",
+   "stop freshclam"   => "/opt/zextras/bin/zmfreshclamctl stop",
    "stop mailbox"     => "/opt/zextras/bin/zmstorectl stop",
    "stop ldap"        => "/opt/zextras/bin/ldap stop",
    "stop mta"         => "/opt/zextras/bin/zmmtactl stop",
@@ -40,7 +44,9 @@ my %SIMPLE_COMMANDS = (
    "zmqstat corrupt"  => "sudo /opt/zextras/libexec/zmqstat corrupt",
    "zmcollectconfigfiles" => "tar cv /opt/zextras/conf | gzip -cf",
    "zmcollectldapzimbra" => "/opt/zextras/common/sbin/slapcat -F /opt/zextras/data/ldap/config -b '' -s cn=zimbra | gzip -cf",
-   "zmschedulebackup" => "/opt/zextras/bin/zmschedulebackup",
+   "zmproxyconfgen"     => "/opt/zextras/bin/zmproxyconfgen",
+   "zmproxyctl reload"  => "/opt/zextras/bin/zmproxyctl reload",
+   "zmaltermimeconfig"  => "/opt/zextras/libexec/zmaltermimeconfig",
    "downloadcsr"      => "cat /opt/zextras/ssl/carbonio/commercial/commercial.csr"
 );
 
@@ -87,7 +93,10 @@ my %REGEX_CHECKED_COMMANDS = (
     program => "rsync"},
   "certbot" => {
     regex => '(certonly)\s?[a-zA-Z0-9\\/\\.\\-\\\_:@\\,\\=\\\'\\"\\* ]*',
-    program => "/opt/zextras/libexec/certbot"}
+    program => "/opt/zextras/libexec/certbot"},
+  "dkimutil" => {
+    regex => '(-[a|r])?\s?(-d\s(([\w-]+\.)+[\w-]{2,4}))?',
+    program => "/opt/zextras/libexec/zmdkimkeyutil"}
 );
 
 my %allhosts = ();
@@ -335,6 +344,8 @@ while (<>) {
     logError("Invalid hostlist");
     exit 1;
   }
+  # strip args to be able to use via CLI(using CLI \n added to the end of SIMPLE_COMMAND)
+  chomp $args;
 
   foreach my $h (@$hostlist) {
     runCommand ($h, $command, $args);
