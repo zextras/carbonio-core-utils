@@ -1,0 +1,107 @@
+#!/bin/bash
+# shellcheck disable=SC2154
+
+eval "$(/opt/zextras/common/bin/java \
+  -client \
+  -cp '/opt/zextras/lib/jars/*' \
+  -Djava.library.path=/opt/zextras/lib \
+  -Dzimbra.home=/opt/zextras com.zimbra.cs.localconfig.LocalConfigCLI -q -m shell || true)"
+
+# java
+if [[ -d ${zimbra_java_home}/jre ]]; then
+  JRE_EXT_DIR=${zimbra_java_home}/jre/lib/ext
+else
+  JRE_EXT_DIR=${zimbra_java_home}/lib/ext
+fi
+
+EXTENSIONS="backup clamscanner network zimbrahsm zimbrasync twofactorauth"
+EXT_DIR="/opt/zextras/lib/ext-common/*"
+for i in ${EXTENSIONS}; do
+  if [[ -d "/opt/zextras/lib/ext/${i}" ]]; then
+    EXT_DIR="${EXT_DIR}:/opt/zextras/lib/ext/${i}/*"
+  fi
+done
+
+if [[ "${zimbra_zmjava_java_library_path}" = "" ]]; then
+  zimbra_zmjava_java_library_path=/opt/zextras/lib
+fi
+
+if [[ "${zimbra_zmjava_java_ext_dirs}" = "" ]]; then
+  zimbra_zmjava_java_ext_dirs=${JRE_EXT_DIR}:/opt/zextras/lib/jars:${EXT_DIR}
+fi
+
+if [[ -n "${EXT_JAR_PATH}" ]]; then
+  zimbra_zmjava_java_ext_dirs=${zimbra_zmjava_java_ext_dirs}:${EXT_JAR_PATH}
+fi
+
+# openldap
+if [[ "${ldap_bind_url}" = "" ]]; then
+  bind_url="${ldap_url}"
+else
+  bind_url="${ldap_bind_url}"
+fi
+
+if [[ "${ldap_common_require_tls}" = "0" ]]; then
+  ldapsearch_flags="-x -l 30 -b "" -s base -H ldapi:///"
+else
+  ldapsearch_flags="-ZZ -x -l 30 -b "" -s base -H ldapi:///"
+fi
+
+# memcached
+addr=$(/opt/zextras/bin/zmprov \
+  -l gs "${zimbra_server_hostname}" zimbraMemcachedBindAddress |
+  awk '/^zimbraMemcachedBindAddress:/{ print $2 }' || true)
+addr="${addr//$'\n'/,}"
+port=$(/opt/zextras/bin/zmprov -l \
+  gs "${zimbra_server_hostname}" zimbraMemcachedBindPort |
+  awk '/^zimbraMemcachedBindPort:/{ print $2 }' || true)
+if [[ "${addr}" = "" ]]; then
+  memcached_flags="-U 0 -l 127.0.1.1,127.0.0.1 -p ${port:-11211}"
+else
+  memcached_flags="-U 0 -l ${addr} -p ${port:-11211}"
+fi
+
+# mailboxdmgr
+# Memory for use by JVM.
+#
+javaXmx=${mailboxd_java_heap_size:=512}
+javaXms=${javaXmx}
+mailboxd_java_heap_new_size_percent=${mailboxd_java_heap_new_size_percent:=25}
+
+# mailboxd
+if [[ ! -d ${mailboxd_directory}/work/service/jsp ]]; then
+  mkdir -p "${mailboxd_directory}/work/service/jsp"
+fi
+
+mailboxd_thread_stack_size=${mailboxd_thread_stack_size:=256k}
+if ! echo "${mailboxd_java_options}" | grep 'Xss'; then
+  mailboxd_java_options="${mailboxd_java_options} -Xss${mailboxd_thread_stack_size}"
+fi
+
+networkaddress_cache_ttl=${networkaddress_cache_ttl:=60}
+if ! echo "${mailboxd_java_options}" | grep -q 'sun.net.inetaddr.ttl'; then
+  mailboxd_java_options="${mailboxd_java_options} -Dsun.net.inetaddr.ttl=${networkaddress_cache_ttl}"
+fi
+
+if ! echo "${mailboxd_java_options}" | grep -q 'log4j'; then
+  mailboxd_java_options="${mailboxd_java_options} -Dlog4j.configurationFile=${zimbra_log4j_properties}"
+fi
+
+{
+  echo "bind_url=${bind_url}"
+  echo "configd_listen_port=${zmconfigd_listen_port}"
+  echo "configd_rewrite_timeout=${zimbra_configrewrite_timeout}"
+  echo "java_ext_dirs=${zimbra_zmjava_java_ext_dirs}"
+  echo "java_library_path=${zimbra_zmjava_java_library_path}"
+  echo "java_options=${zimbra_zmjava_options}"
+  echo "java_xms=${javaXms}"
+  echo "java_xmx=${javaXmx}"
+  echo "ldapsearch_flags=${ldapsearch_flags}"
+  echo "log_directory=${zimbra_log_directory}"
+  echo "mailboxd_directory=${mailboxd_directory}"
+  echo "mailboxd_java_heap_new_size_percent=${mailboxd_java_heap_new_size_percent}"
+  echo "mailboxd_java_options=${mailboxd_java_options}"
+  echo "memcached_flags=${memcached_flags}"
+  echo "mysql_errlogfile=${mysql_errlogfile}"
+  echo "mysql_mycnf=${mysql_mycnf}"
+} >/opt/zextras/data/systemd.env
