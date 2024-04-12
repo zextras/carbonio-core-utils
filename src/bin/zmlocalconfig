@@ -16,7 +16,7 @@ umask 0027
 
 java="${ROOT}/common/bin/java"
 
-CP="${ROOT}/lib/jars/*"
+CP="${ROOT}/mailbox/jars/*"
 
 exec ${java} -client -cp "$CP" \
   -Djava.library.path=${ROOT}/lib -Dzimbra.home="${ROOT}" \
