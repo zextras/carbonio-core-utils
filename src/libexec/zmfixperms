@@ -348,8 +348,8 @@ if [ -d /opt/zextras/lib ]; then
     chown ${root_user}:${root_group} "$i"
     chmod 755 "$i"
   done
-  if [ -d /opt/zextras/lib/jars ]; then
-    for i in /opt/zextras/lib/jars/*; do
+  if [ -d /opt/zextras/mailbox/jars ]; then
+    for i in /opt/zextras/mailbox/jars/*; do
       chown ${root_user}:${root_group} "$i"
       chmod 444 "$i"
     done
