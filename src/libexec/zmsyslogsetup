@@ -35,7 +35,6 @@ if ( !-d $zimbra_tmp_directory ) {
 }
 
 my $logfile = "-/var/log/carbonio.log";
-my $statsfile = "-/var/log/carbonio-stats.log";
 my $LOCALHOST ||= (gethostbyname(Sys::Hostname::hostname))[0];
 
 my $junk;
@@ -113,13 +112,11 @@ sub updateSyslogNG {
   print TMPFH "filter zimbra_mail { facility(mail); }; # zextras\n";
   if ( $TYPE eq "local" ) {
     print TMPFH "destination zimbra_mail { file(\"/var/log/carbonio.log\" owner(\"zextras\")); }; # zextras\n";
-    print TMPFH "destination zimbra_local1 { file(\"/var/log/carbonio-stats.log\" owner(\"zextras\")); }; # zextras\n";
     print TMPFH "destination zimbra_local0 { file(\"/var/log/carbonio.log\" owner(\"zextras\")); }; # zextras\n";
     print TMPFH "destination zimbra_auth { file(\"/var/log/carbonio.log\" owner(\"zextras\")); }; # zextras\n";
   } else {
     my $remoteIp=inet_ntoa(scalar(gethostbyname($LOGHOST)));
     print TMPFH "destination zimbra_mail { udp(\"$remoteIp\" port(514) ); file(\"/var/log/carbonio.log\" owner(\"zextras\")); }; # zextras\n";
-    print TMPFH "destination zimbra_local1 { udp(\"$remoteIp\" port(514) ); file(\"/var/log/carbonio-stats.log\" owner(\"zextras\")); }; # zextras\n";
     print TMPFH "destination zimbra_local0 { udp(\"$remoteIp\" port(514) ); file(\"/var/log/carbonio.log\" owner(\"zextras\")); }; # zextras\n";
     print TMPFH "destination zimbra_auth { udp(\"$remoteIp\" port(514) ); file(\"/var/log/carbonio.log\" owner(\"zextras\")); }; # zextras\n";
   }
@@ -162,12 +159,7 @@ sub updateSyslogNG {
   if ( !-f "/var/log/carbonio.log") {
     open(my $tlog, ">/var/log/carbonio.log");
   }
-  if ( !-f "/var/log/carbonio-stats.log") {
-    open(my $tlog, ">/var/log/carbonio-stats.log");
-  }
   chown $uid,$gid,"/var/log/carbonio.log";
-  chown $uid,$gid,"/var/log/carbonio-stats.log";
-  chmod 0644, "/var/log/carbonio.log", "/var/log/carbonio-stats.log";
   if ( -f "/etc/logrotate.d/carbonio~" ){
     unlink("/etc/logrotate.d/carbonio~" );
   }
@@ -238,7 +230,6 @@ sub updateSyslog {
     print TMPFH "auth.*                  @".$LOGHOST."\n";
   }
   print TMPFH "local0.*                $logfile\n";
-  print TMPFH "local1.*                $statsfile\n";
   print TMPFH "auth.*                  $logfile\n";
 
   if ($TYPE eq "remote" ) {
@@ -252,12 +243,7 @@ sub updateSyslog {
   if ( !-f "/var/log/carbonio.log") {
     open(my $tlog, ">/var/log/carbonio.log");
   }
-  if ( !-f "/var/log/carbonio-stats.log") {
-    open(my $tlog, ">/var/log/carbonio-stats.log");
-  }
   chown $uid,$gid,"/var/log/carbonio.log";
-  chown $uid,$gid,"/var/log/carbonio-stats.log";
-  chmod 0644,"/var/log/carbonio.log","/var/log/carbonio-stats.log";
 
   if ( -f "/etc/logrotate.d/carbonio" ) {
     local $^I="~";
@@ -323,18 +309,21 @@ sub updateRsyslogd {
   close(SYSFH);
   close (TMPFH);
   cp($tmpfile,$conf);
-
+  
+  #Remove old files	
   if (-f "/etc/rsyslog.d/60-zimbra.conf") {
     unlink("/etc/rsyslog.d/60-zimbra.conf");
   }
-  open(ZFH, ">/etc/rsyslog.d/60-zimbra.conf");
+  if (-f "/etc/rsyslog.d/60-carbonio.conf") {
+    unlink("/etc/rsyslog.d/60-carbonio.conf");
+  }
+  open(ZFH, ">/etc/rsyslog.d/60-carbonio.conf");
   if ( $TYPE eq "remote" ) {
     print ZFH "local0.*                @".$LOGHOST."\n";
     print ZFH "local1.*                @".$LOGHOST."\n";
     print ZFH "auth.*                  @".$LOGHOST."\n";
   }
   print ZFH "local0.*                $logfile\n";
-  print ZFH "local1.*                $statsfile\n";
   print ZFH "auth.*                  $logfile\n";
 
   if ($TYPE eq "remote" ) {
@@ -347,34 +336,29 @@ sub updateRsyslogd {
   if ( !-f "/var/log/carbonio.log") {
     open(my $tlog, ">/var/log/carbonio.log");
   }
-  if ( !-f "/var/log/carbonio-stats.log") {
-    open(my $tlog, ">/var/log/carbonio-stats.log");
-  }
-  if ($platform eq "UBUNTU18_64" || $platform eq "UBUNTU20_64" ) {
+
+  if ($platform eq "UBUNTU22_64" || $platform eq "UBUNTU20_64" ) {
     my $junk;
     ($junk, $junk, $uid, $junk) = getpwnam("syslog");
     $gid = getgrnam("adm");
     chown $uid,$gid,"/var/log/carbonio.log";
-    chown $uid,$gid,"/var/log/carbonio-stats.log";
   } else {
     chown $uid,$gid,"/var/log/carbonio.log";
-    chown $uid,$gid,"/var/log/carbonio-stats.log";
   }
-  chmod 0644,"/var/log/carbonio.log","/var/log/carbonio-stats.log";
 
   if ( -f "/etc/logrotate.d/carbonio" ) {
     local $^I="~";
     local @ARGV=("/etc/logrotate.d/carbonio");
     while (<>) {
       s/kill\s+\-HUP\s+.+syslog\*\.pid.+\/dev\/null/\/usr\/sbin\/service rsyslog restart >\/dev\/null/g;
-      if ($platform eq "UBUNTU18_64" || $platform eq "UBUNTU20_64" ) {
+      if ($platform eq "UBUNTU22_64" || $platform eq "UBUNTU20_64" ) {
         s/USER/syslog/;
         s/GROUP/adm/;
       } else {
         s/USER/zextras/;
         s/GROUP/zextras/;
       }
-      if ($platform eq "UBUNTU18_64" || $platform eq "UBUNTU20_64") {
+      if ($platform eq "UBUNTU22_64" || $platform eq "UBUNTU20_64") {
       	s/#su zextras zextras/su zextras zextras/;
       }
       print;
@@ -395,7 +379,7 @@ if ( -f "/etc/syslog-ng/syslog-ng.conf" ||
   $edited=1;
 }
 
-if ( (-f "/etc/rsyslog.conf" && -d "/etc/rsyslog.d") && $edited == 0 && ($platform eq "UBUNTU18_64" || $platform eq "UBUNTU20_64" )) {
+if ( (-f "/etc/rsyslog.conf" && -d "/etc/rsyslog.d") && $edited == 0 && ($platform eq "UBUNTU22_64" || $platform eq "UBUNTU20_64" )) {
   &updateRsyslogd;
   $edited=1;
 }
