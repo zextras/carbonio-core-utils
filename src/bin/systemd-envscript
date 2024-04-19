@@ -41,11 +41,12 @@ else
   bind_url="${ldap_bind_url}"
 fi
 
-if [[ "${ldap_common_require_tls}" = "0" ]]; then
-  ldapsearch_flags="-x -l 30 -b "" -s base -H ldapi:///"
-else
-  ldapsearch_flags="-ZZ -x -l 30 -b "" -s base -H ldapi:///"
-fi
+# Remove the protocol
+url=${bind_url#*//}
+
+# Split the domain and port
+ldap_domain=${url%:*}
+ldap_port=${url#*:}
 
 # memcached
 addr=$(/opt/zextras/bin/zmprov \
@@ -96,7 +97,8 @@ fi
   echo "java_options=${zimbra_zmjava_options}"
   echo "java_xms=${javaXms}"
   echo "java_xmx=${javaXmx}"
-  echo "ldapsearch_flags=${ldapsearch_flags}"
+  echo "ldap_domain=${ldap_domain}"
+  echo "ldap_port=${ldap_port}"
   echo "log_directory=${zimbra_log_directory}"
   echo "mailboxd_directory=${mailboxd_directory}"
   echo "mailboxd_java_heap_new_size_percent=${mailboxd_java_heap_new_size_percent}"
