@@ -42,7 +42,7 @@ our %loaded = ();
 getopts('a:defhH:i:mop:rstwx:cCn:uU',\%options) or die "Unable to set options\n";
 
 our $ZMPROV = "/opt/zextras/bin/zmprov -l 1>/dev/null";
-our $platform = qx(/opt/zextras/libexec/get_plat_tag.sh);
+our $platform = qx(grep -oP '(?<=^ID=).+' /etc/os-release);
 chomp ($platform);
 
 my $id = getpwuid($<);
@@ -681,7 +681,7 @@ sub isInstalled {
     if ($options{r}) {      
         return checkPackage("zimbraServiceInstalled", $pkg);
     } else {               
-      if ($platform =~ /DEBIAN/ || $platform =~ /UBUNTU/) {
+      if ($platform =~ /ubuntu/) {
         $pkgQuery = "dpkg -s $pkg";
       } else {
         $pkgQuery = "rpm -q $pkg";
@@ -689,7 +689,7 @@ sub isInstalled {
     
       my $rc = 0xffff & system ("$pkgQuery > /dev/null 2>&1");
       $rc >>= 8;
-      if (($platform =~ /DEBIAN/ || $platform =~ /UBUNTU/) && $rc == 0 ) {
+      if (($platform =~ /ubuntu/) && $rc == 0 ) {
         $good = 1;
         $pkgQuery = "dpkg -s $pkg | egrep '^Status: ' | grep 'not-installed'";
         $rc = 0xffff & system ("$pkgQuery > /dev/null 2>&1");

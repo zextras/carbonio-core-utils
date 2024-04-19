@@ -23,7 +23,7 @@ if ( $id ne "root" ) {
   exit 1;
 }
 
-my $platform=qx(/opt/zextras/libexec/get_plat_tag.sh);
+my $platform=qx(grep -oP '(?<=^ID=).+' /etc/os-release);
 chomp($platform);
 
 my $zimbra_tmp_directory=getLocalConfig("zimbra_tmp_directory");
@@ -212,7 +212,7 @@ sub updateSyslog {
       }
       if ($rsyslog == 1 ) {
         s/;mail.none//g;
-        if ($platform =~ /RHEL8/) {
+        if ($platform =~ /rhel/) {
           s/^\*\.info/\*\.info;local0.none;local1.none;mail.none;auth.none/;
         }
         s/^\*\.\*;auth,authpriv.none/\*\.\*;auth,authpriv.none;local0.none;local1.none;mail.none/;
@@ -251,7 +251,7 @@ sub updateSyslog {
     while (<>) {
       if ( $rsyslog == 1 ) {
         s/syslogd\*.pid/rsyslogd.pid/g;
-	if ($platform eq "RHEL8_64") {
+	if ($platform eq "rhel") {
 		s/syslog\*.pid/rsyslogd.pid/g;
 	}
       }
@@ -337,7 +337,7 @@ sub updateRsyslogd {
     open(my $tlog, ">/var/log/carbonio.log");
   }
 
-  if ($platform eq "UBUNTU22_64" || $platform eq "UBUNTU20_64" ) {
+  if ($platform eq "ubuntu") {
     my $junk;
     ($junk, $junk, $uid, $junk) = getpwnam("syslog");
     $gid = getgrnam("adm");
@@ -351,14 +351,14 @@ sub updateRsyslogd {
     local @ARGV=("/etc/logrotate.d/carbonio");
     while (<>) {
       s/kill\s+\-HUP\s+.+syslog\*\.pid.+\/dev\/null/\/usr\/sbin\/service rsyslog restart >\/dev\/null/g;
-      if ($platform eq "UBUNTU22_64" || $platform eq "UBUNTU20_64" ) {
+      if ($platform eq "ubuntu") {
         s/USER/syslog/;
         s/GROUP/adm/;
       } else {
         s/USER/zextras/;
         s/GROUP/zextras/;
       }
-      if ($platform eq "UBUNTU22_64" || $platform eq "UBUNTU20_64") {
+      if ($platform eq "ubuntu") {
       	s/#su zextras zextras/su zextras zextras/;
       }
       print;
@@ -379,7 +379,7 @@ if ( -f "/etc/syslog-ng/syslog-ng.conf" ||
   $edited=1;
 }
 
-if ( (-f "/etc/rsyslog.conf" && -d "/etc/rsyslog.d") && $edited == 0 && ($platform eq "UBUNTU22_64" || $platform eq "UBUNTU20_64" )) {
+if ( (-f "/etc/rsyslog.conf" && -d "/etc/rsyslog.d") && $edited == 0 && ($platform eq "ubuntu" )) {
   &updateRsyslogd;
   $edited=1;
 }
@@ -394,26 +394,12 @@ if ( !$edited ) {
   exit 1;
 }
 
-if ($platform =~ /UBUNTU/ && -f "/etc/rsyslog.conf" ) {
-  if ( -e "/usr/sbin/service" ) {
-    qx(/usr/sbin/service rsyslog restart);
-    exit 0;
-  } else {
-    print "Unable to restart syslog.  Please do it manually.\n";
-    exit 1;
-  }
-}
-if ( $platform =~ /RHEL8/ ) {
-  if ( -e "/usr/lib/systemd/system/rsyslog.service" ) {
-    qx(/usr/bin/systemctl restart rsyslog.service >/dev/null 2>&1);
-    exit 0;
-  } else {
-    print "Unable to restart rsyslog.  Please do it manually.\n";
-    exit 1;
-  }
+if ( -e "/usr/lib/systemd/system/rsyslog.service" ) {
+  qx(/usr/bin/systemctl restart rsyslog.service >/dev/null 2>&1);
+  exit 0;
 } else {
-  my $syslog_PID=qx(cat /var/run/*syslog*.pid);
-  qx(kill -HUP $syslog_PID);
+  print "Unable to restart rsyslog.  Please do it manually.\n";
+  exit 1;
 }
 
 sub getLocalConfig {
