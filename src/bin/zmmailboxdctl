@@ -55,25 +55,9 @@ case "$1" in
 
     mkdir -p "${mailboxd_directory}/work/service/jsp"
 
-    mailboxd_thread_stack_size=${mailboxd_thread_stack_size:=256k}
-    if ! echo "${mailboxd_java_options}" | grep -q 'Xss'; then
-      mailboxd_java_options="${mailboxd_java_options} -Xss${mailboxd_thread_stack_size}"
-    fi
-
-    networkaddress_cache_ttl=${networkaddress_cache_ttl:=60}
-    if ! echo "${mailboxd_java_options}" | grep -q 'sun.net.inetaddr.ttl'; then
-      mailboxd_java_options="${mailboxd_java_options} -Dsun.net.inetaddr.ttl=${networkaddress_cache_ttl}"
-    fi
-
-    if ! echo "${mailboxd_java_options}" | grep -q "log4j"; then
-      mailboxd_java_options="${mailboxd_java_options} -Dlog4j.configurationFile=${zimbra_log4j_properties}"
-    fi
-
     echo -n "Starting mailboxd..."
     # shellcheck disable=SC2086
-    /opt/zextras/libexec/zmmailboxdmgr start \
-      -Dfile.encoding=UTF-8 ${mailboxd_java_options} ${spnegoJavaOptions} -Xms${javaXms}m \
-      "-Xmx${javaXmx}m" </dev/null >/dev/null 2>&1
+    /opt/zextras/libexec/zmmailboxdmgr start </dev/null >/dev/null 2>&1
     rc=$?
     if [ $rc != 0 ]; then
       echo "failed."
