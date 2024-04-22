@@ -5,6 +5,8 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+export LD_PRELOAD=/opt/zextras/common/lib/libjemalloc.so
+
 umask 027
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
@@ -41,7 +43,6 @@ fi
 
 CONFIG=no
 ALOG=no
-WRITESYNCREPL=""
 if [ "$1" = "-c" ]; then
   CONFIG=yes
   SRC=$2
@@ -50,9 +51,6 @@ elif [ "$1" = "-a" ]; then
   SRC=$2
 else
   SRC=$1
-  if [ "$2" = "-w" ]; then
-    WRITESYNCREPL=$2
-  fi
 fi
 
 comp=0
@@ -97,10 +95,10 @@ elif [ $ALOG = "yes" ]; then
   fi
 else
   if [ $comp = "0" ]; then
-    /opt/zextras/common/sbin/slapadd "$WRITESYNCREPL" -q -F /opt/zextras/data/ldap/config -b "" -l "$SRC"
+    /opt/zextras/common/sbin/slapadd -w -q -F /opt/zextras/data/ldap/config -b "" -l "$SRC"
     RETVAL=$?
   else
-    $computil "$SRC" | /opt/zextras/common/sbin/slapadd "$WRITESYNCREPL" -q -F /opt/zextras/data/ldap/config -b ""
+    $computil "$SRC" | /opt/zextras/common/sbin/slapadd -w -q -F /opt/zextras/data/ldap/config -b ""
     RETVAL=$?
   fi
 fi
