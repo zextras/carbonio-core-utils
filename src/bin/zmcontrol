@@ -572,14 +572,13 @@ sub displayVersion {
 sub displayPackagesVersion {
     my $release = qx(cat /opt/zextras/.version);
     chomp $release;
-    my $distro = `cat /etc/os-release | grep ID= | head -n1 | cut -f2 -d'='`;
+    my $distro = `grep -oP '(?<=^ID=).+' /etc/os-release`;
     chomp $distro;
 
     my $packages = "";
     if ($distro eq "ubuntu") {
         $packages = qx'dpkg-query -W -f\'${Package} ${Version}\n\' carbonio\*';
-    }
-    if ($distro eq '"rhel"' or $distro eq '"rocky"' or $distro eq '"centos"') {
+    } else {
         $packages = qx'dnf list installed 2>/dev/null | grep carbonio* | awk -F\' \' \'{{ print $1 " " $2 }}\''
     }
 
