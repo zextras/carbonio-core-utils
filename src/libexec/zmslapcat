@@ -5,6 +5,8 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+export LD_PRELOAD=/opt/zextras/common/lib/libjemalloc.so
+
 umask 027
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars

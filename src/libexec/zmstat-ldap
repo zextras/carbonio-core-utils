@@ -61,11 +61,11 @@ sub usage() {
 Usage: zmstat-ldap [options]
 Monitor LDAP statistics
 -i, --interval: output a line every N seconds
--l, --log:      log file (default is /opt/zextras/zmstat/ldap.csv)
+-l, --log:      log file (default is /opt/zextras/zmstat/slapd.csv)
 -c, --console:  output to stdout
 
 If logging to a file, rotation occurs when HUP signal is sent or when
-date changes.  Current log is renamed to <dir>/YYYY-MM-DD/ldap.csv
+date changes.  Current log is renamed to <dir>/YYYY-MM-DD/slapd.csv
 and a new file is created.
 _USAGE_
     exit(1);
@@ -112,7 +112,7 @@ if (!$opts_good) {
 }
 
 if (!defined($LOGFILE) || $LOGFILE eq '') {
-    $LOGFILE = getLogFilePath('ldap.csv');
+    $LOGFILE = getLogFilePath('slapd.csv');
 } elsif ($LOGFILE eq '-') {
     $CONSOLE = 1;
 }
