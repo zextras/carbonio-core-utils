@@ -13,12 +13,12 @@ sql_root_pw=$1
 #
 # Sanity checks
 #
-zmassert -x /opt/zextras/bin/antispam-mysqladmin
-zmassert -x /opt/zextras/bin/antispam-mysql
-zmassert -x /opt/zextras/bin/zmlocalconfig
-zmassert -x /opt/zextras/bin/zmantispamdbpasswd
-zmassert -x /opt/zextras/common/share/mysql/scripts/mysql_install_db
-zmassert -r /opt/zextras/data/amavisd/mysql/antispamdb.sql
+assert -x /opt/zextras/bin/antispam-mysqladmin
+assert -x /opt/zextras/bin/antispam-mysql
+assert -x /opt/zextras/bin/zmlocalconfig
+assert -x /opt/zextras/bin/zmantispamdbpasswd
+assert -x /opt/zextras/common/share/mysql/scripts/mysql_install_db
+assert -r /opt/zextras/data/amavisd/mysql/antispamdb.sql
 
 # Check if log directory exists.  If not, create.
 if [ ! -d "${zimbra_log_directory}" ]; then
@@ -45,10 +45,7 @@ echo "* Creating database in ${antispam_mysql_data_directory}"
 #
 # Start mysql server for antispam db
 #
-zmassert -d "$(dirname "${antispam_mysql_pidfile}")"
-if [ -f "${antispam_mysql_pidfile}" ]; then
-  pid=$(cat "${antispam_mysql_pidfile}")
-fi
+pid=$(pgrep -f '/opt/zextras/.*/mysqld.*conf/my.cnf')
 if [ "$pid" != "" ]; then
   kill -0 "$pid" 2>/dev/null
   rc=$?

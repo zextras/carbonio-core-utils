@@ -39,8 +39,7 @@ cat <<EOF
 
 basedir        = /opt/zextras/common
 datadir        = ${antispam_mysql_data_directory}
-socket         = ${antispam_mysql_socket}
-pid-file       = ${antispam_mysql_pidfile}
+socket         = /run/carbonio/antispam-mysql.sock
 bind-address   = 0.0.0.0
 port           = ${antispam_mysql_port}
 user           = ${antispam_mysql_user}
@@ -83,7 +82,6 @@ innodb_flush_log_at_trx_commit = 0
 [mysqld_safe]
 
 log-error    = ${zimbra_log_directory}/antispam-mysqld.log
-pid-file     = ${antispam_mysql_pidfile}
 
 
 EOF

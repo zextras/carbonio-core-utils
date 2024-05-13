@@ -13,15 +13,11 @@ fi
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
-servicename=proxy
 configfile=/opt/zextras/conf/nginx.conf
-pidfile="${zimbra_log_directory}/nginx.pid"
 pid=""
 
 getpid() {
-  if [ -f "${pidfile}" ]; then
-    pid=$(cat "${pidfile}")
-  fi
+  pid=$(pgrep -f '/opt/zextras/.*/nginx.*conf')
 }
 
 checkrunning() {
@@ -29,12 +25,7 @@ checkrunning() {
   if [ "$pid" = "" ]; then
     running=0
   else
-    if ps --no-headers -p "$pid" -o cmd 2>/dev/null | grep nginx >/dev/null 2>&1; then
-      running=1
-    else
-      pid=""
-      running=0
-    fi
+    running=1
   fi
 }
 
@@ -46,9 +37,9 @@ case "$1" in
     fi
 
     checkrunning
-    echo -n "Starting ${servicename}..."
+    echo -n "Starting proxy..."
     if [ $running = 1 ]; then
-      echo "${servicename} is already running."
+      echo "proxy is already running."
       exit 0
     fi
     if [ "$2" = "" ]; then
@@ -97,19 +88,19 @@ case "$1" in
     ;;
   stop)
     checkrunning
-    echo -n "Stopping ${servicename}..."
+    echo -n "Stopping proxy..."
     if [ $running = 0 ]; then
-      echo "${servicename} is not running."
+      echo "proxy is not running."
       exit 0
     else
       /opt/zextras/common/sbin/nginx -c /opt/zextras/conf/nginx.conf -s stop
-      sleep 1
-    fi
-    if [ -s "${pidfile}" ]; then
-      echo "failed."
-      exit 1
-    else
-      echo "done."
+      rc=$?
+      if [ "$rc" -ne 0 ]; then
+        echo "failed."
+        exit 1
+      else
+        echo "done."
+      fi
     fi
     exit 0
     ;;
@@ -120,14 +111,14 @@ case "$1" in
   reload)
     checkrunning
     if [ $running = 1 ] && [ "$pid" != "" ]; then
-      echo -n "Reloading ${servicename}..."
+      echo -n "Reloading proxy..."
       /opt/zextras/common/sbin/nginx -c /opt/zextras/conf/nginx.conf -s reload
       echo "done."
     fi
 
     ;;
   status)
-    echo -n "${servicename} is "
+    echo -n "proxy is "
     checkrunning
     if [ $running = 0 ]; then
       echo "not running."

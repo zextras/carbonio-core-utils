@@ -24,22 +24,17 @@ if [ "$JYTHONPATH" = "" ]; then
 fi
 
 pid=""
-pidfile="${zimbra_log_directory}/zmconfigd.pid"
 
 NC=$(command -v nc 2>/dev/null)
 NC=${NC:-$(command -v netcat 2>/dev/null)}
 
 getpid() {
-  if [[ -f ${pidfile} ]]; then
-    pid=$(cat "${pidfile}")
-  fi
+  pid=$(pgrep -f '/opt/zextras/.*/java.*configd')
 }
 
 checkrunning() {
   getpid
-  if [[ "${pid}" = "0" ]]; then
-    pid=$(pgrep -f zmconfigd)
-  fi
+
   if [[ "${pid}" = "" ]]; then
     running=0
   else
@@ -55,44 +50,48 @@ checkrunning() {
 
 startzmconfigd() {
   err=0
-  checkrunning
+
   echo -n "Starting zmconfigd..."
-  if [[ ${running} = 1 ]]; then
+  checkrunning
+
+  if [[ ${running} -eq 1 ]]; then
     echo "zmconfigd is already running."
     return
   fi
-  if [[ ${JYTHONPATH} = "" ]]; then
-    echo "JYTHONPATH is unset!"
+
+  if [[ -z "${JYTHONPATH}" ]]; then
+    echo "Error: JYTHONPATH is unset!"
     err=1
     return
   fi
-  if [[ "${pid}" != "" ]]; then
-    kill "${pid}"
+
+  executable="/opt/zextras/libexec/zmconfigd"
+  if [[ ! -x "${executable}" ]]; then
+    echo "Error: zmconfigd executable does not exist or is not executable."
+    err=1
+    return
   fi
-  rm -rf "${pidfile}"
-  /opt/zextras/libexec/zmconfigd >/dev/null 2>&1 &
-  for ((i = 0; i < 30; i++)); do
-    if [[ -f ${pidfile} ]]; then
-      break
-    fi
-    sleep 1
-  done
-  for ((i = 0; i < zmconfigd_startup_pause; i++)); do
+
+  # Kill existing process if PID is found
+  if [[ -n "${pid}" ]]; then
+    kill "${pid}" || { echo "Warning: Failed to kill existing zmconfigd process."; }
+  fi
+
+  # Start new process
+  "${executable}" >/dev/null 2>&1 &
+
+  # Wait for the process to start
+  for ((i = 0; i < 10; i++)); do
     checkrunning
-    if [[ ${running} = 1 ]]; then
+    if [[ ${running} -eq 1 ]]; then
       echo "done."
       return
     fi
-    if [[ ${running} = -1 ]]; then
-      echo "Failed to start"
-      err=1
-      return
-    fi
-    sleep 1
+    sleep 3
   done
-  echo "failed."
+
+  echo "Failed to start zmconfigd."
   err=1
-  return
 }
 
 case "$1" in
@@ -108,22 +107,18 @@ case "$1" in
       echo "zmconfigd is not running."
       exit 0
     else
-      for ((i = 0; i < 30; i++)); do
+      kill "${pid}" 2>/dev/null
+      for ((i = 0; i < 10; i++)); do
         if ! kill -0 "${pid}" 2>/dev/null; then
-          rm -rf "${pidfile}"
-          break
+          echo "done."
+          exit 0
         fi
-        kill "${pid}"
-        sleep 1
+        sleep 3
       done
-    fi
-    if [[ -s ${pidfile} ]]; then
-      echo "failed."
+      kill -9 "${pid}" 2>/dev/null
+      echo "failed to stop gracefully, process killed."
       exit 1
-    else
-      echo "done."
     fi
-    exit 0
     ;;
 
   'restart' | 'reload')

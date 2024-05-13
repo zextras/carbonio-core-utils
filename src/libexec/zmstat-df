@@ -99,7 +99,7 @@ if (!$opts_good) {
     print STDERR "\n";
     usage();
 }
-createPidFile('zmstat-df.pid');
+createPidFile('df.pid');
 
 my $date = getDate();
 if ($CONSOLE) {

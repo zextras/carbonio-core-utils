@@ -42,7 +42,7 @@ $DLOGDIR = "zmdiaglog-$ZMHOSTNAME."
   . strftime( "%Y%m%d-%H%M%S", localtime() ) . "."
   . $$;
 $DEFAULT_TIMEOUT                    = 120;
-$PID_FILE                           = '/opt/zextras/log/zmmailboxd_java.pid';
+$PID_FILE                           = '/run/carbonio/zmmailboxd_java.pid';
 $JMAP                               = '/opt/zextras/common/bin/jmap';
 $JAVA                               = '/opt/zextras/common/lib/jvm/java/bin/java';
 $JINFO                              = '/opt/zextras/common/lib/jvm/java/bin/jinfo';

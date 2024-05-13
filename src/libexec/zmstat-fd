@@ -25,7 +25,7 @@ my ($zuid,$zgid) = (getpwnam($zuser))[2,3];
 
 if (@ARGV > 0 && $ARGV[0] eq 'stop') {
 	my $dir = getPidFileDir();
-	my $pidFile = "$dir/zmstat-fd-real.pid";
+	my $pidFile = "$dir/fd-real.pid";
 	my $pid = readPidFile($pidFile);
     if (!kill(0, $pid)) {
         unlink($pidFile);
@@ -38,14 +38,14 @@ if (@ARGV > 0 && $ARGV[0] eq 'stop') {
 }
 if (@ARGV > 0 && $ARGV[0] eq 'rotate') {
 	my $dir = getPidFileDir();
-	my $pidFile = "$dir/zmstat-fd-real.pid";
+	my $pidFile = "$dir/fd-real.pid";
 	my $pid = readPidFile($pidFile);
 	kill(1, $pid);
 }
 
 if ($< != 0) {
     Zimbra::Mon::Zmstat::userCheck();
-    createPidFile('zmstat-fd.pid');
+    createPidFile('fd.pid');
     $SIG{TERM} = sub {
     	system("sudo /opt/zextras/libexec/zmstat-fd stop");
     };
@@ -182,7 +182,7 @@ unless ($match) {
   exit(1);
 }
 
-createPidFile('zmstat-fd-real.pid');
+createPidFile('fd-real.pid');
 
 my $date = getDate();
 if ($CONSOLE) {

@@ -26,16 +26,16 @@ for opt in "$@"; do
   fi
 done
 
-ropid=${zimbra_log_directory}/zmplayredo.pid
+pid=$(pgrep -f '/opt/zextras/.*/java.*redolog.util.PlaybackUtil')
 
 if [ $opth -eq 0 ]; then
   if isrunning; then
     echo "Error: mailboxd still running.  Stop mailboxd before running zmplayredo."
     exit 1
   fi
-  if [ -s "$ropid" ]; then
-    echo "Error: another instance of zmplayredo (pid=$(cat "$ropid")) is already running"
-    echo "       remove $ropid if this is not the case"
+  if [ "$pid" != "" ]; then
+    echo "Error: another instance of zmplayredo (pid=$pid) is already running"
+    echo "       remove $pid if this is not the case"
     exit 1
   fi
 fi
@@ -78,7 +78,6 @@ for opt in $mailboxd_java_options; do
   fi
 done
 
-echo $$ >"$ropid"
 # shellcheck disable=SC2086
 ${zimbra_java_home}/bin/java \
   ${xms_xmx_options} ${sanitized_options} \
@@ -87,5 +86,4 @@ ${zimbra_java_home}/bin/java \
   -classpath ${jardirs} \
   com.zimbra.cs.redolog.util.PlaybackUtil "$@"
 rc=$?
-rm -f "$ropid"
 exit $rc

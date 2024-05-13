@@ -17,8 +17,6 @@ fi
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
-pidfile=${zimbra_log_directory}/clamd.pid
-
 if [ ! -d "/opt/zextras/data/clamav/db" ]; then
   mkdir -p /opt/zextras/data/clamav/db
 fi
@@ -28,24 +26,16 @@ rewriteconfig() {
 }
 
 getpid() {
-  if [ -f "$pidfile" ]; then
-    cpid=$(cat "$pidfile")
-  fi
+  pid=$(pidof /opt/zextras/common/sbin/clamd)
 }
 
 checkrunning() {
   getpid
   # clamd
-  if [ "$cpid" = "" ]; then
+  if [ "$pid" = "" ]; then
     running=0
   else
-    if ps --no-headers -p "$cpid" -o cmd 2>/dev/null | grep clamd >/dev/null 2>&1; then
-      running=1
-    else
-      rm "$pidfile"
-      cpid=""
-      running=0
-    fi
+    running=1
   fi
 }
 
@@ -88,10 +78,8 @@ case "$1" in
     ;;
 
   'kill')
-    if [ -f /opt/zextras/log/clamd.pid ]; then
-      cpid=$(cat /opt/zextras/log/clamd.pid)
-      kill "$cpid" 2>/dev/null
-    fi
+    pid=$(pidof /opt/zextras/common/sbin/clamd)
+    kill "$pid" 2>/dev/null
     pskillall /opt/zextras/common/sbin/clamd
     exit 0
     ;;
@@ -102,24 +90,22 @@ case "$1" in
     if [ $running = 0 ]; then
       echo "clamd is not running."
     else
-      if [ "$cpid" != "" ]; then
-        kill "$cpid" 2>/dev/null
-      fi
+      kill "$pid" 2>/dev/null
       for ((i = 0; i < 30; i++)); do
         sleep 2
-        kill -0 "$cpid" 2>/dev/null
+        kill -0 "$pid" 2>/dev/null
         rc=$?
         if [ $rc -ne 0 ]; then
-          rm -f "${pidfile}"
           break
         fi
-        kill "$cpid"
+        kill "$pid"
       done
-      if [ -s "${pidfile}" ]; then
+      rc=$?
+      if [ $rc -ne 0 ]; then
         echo "failed."
-        exit 1
+        quit 1
       else
-        echo "done."
+        echo " done."
       fi
     fi
     exit 0

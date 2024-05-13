@@ -58,7 +58,7 @@
     create 0660 zextras zextras
     dateext
     postrotate
-      kill -HUP `cat /opt/zextras/log/clamd.pid 2> /dev/null` 2> /dev/null || true
+      kill -HUP $(pidof /opt/zextras/common/sbin/clamd 2> /dev/null) 2> /dev/null || true
     endscript
     compress
     size 5000k
@@ -74,7 +74,7 @@
     create 0660 zextras zextras
     dateext
     postrotate
-      kill -HUP `cat /opt/zextras/log/freshclam.pid 2> /dev/null` 2> /dev/null || true
+      kill -HUP $(pidof /opt/zextras/common/bin/freshclam 2> /dev/null) 2> /dev/null || true
     endscript
     compress
     size 1000k
@@ -90,7 +90,7 @@
     create 0644 zextras zextras
     dateext
     postrotate
-      kill -USR1 `cat /opt/zextras/log/nginx.pid 2> /dev/null` 2> /dev/null || true
+      kill -USR1 $(pgrep -f '/opt/zextras/.*/nginx.*conf' 2> /dev/null) 2> /dev/null || true
     endscript
     rotate 7
     compress

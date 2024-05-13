@@ -179,7 +179,7 @@ sub getMailboxProcess() {
 # Use this if mysqld is a single multi-threaded process. (dynamically linked build)
 sub getMysqlProcess() {
     my $zimbraHome = "/opt/zextras";
-    my $ps         = qx(cat $zimbraHome/db/mysql.pid);
+    my $ps         = qx(cat /run/carbonio/mysql.pid);
     chomp($ps) if ( defined($ps) );
     my @ret = ( { 'pid' => $ps } );
     return @ret;
@@ -496,7 +496,7 @@ if ($CONSOLE) {
     $LOGFILE = '-';
 }
 
-createPidFile('zmstat-proc.pid');
+createPidFile('proc.pid');
 
 local $SIG{__WARN__} = \&Carp::cluck;
 

@@ -120,7 +120,7 @@ if ($CONSOLE) {
     $LOGFILE = '-';
 }
 
-createPidFile('zmstat-ldap.pid');
+createPidFile('ldap.pid');
 
 $SIG{HUP} = \&sighup;
 

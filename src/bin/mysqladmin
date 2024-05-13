@@ -8,4 +8,7 @@
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
-exec /opt/zextras/common/bin/mysqladmin -S "${mysql_socket}" -u root --password="${mysql_root_password}" "$@"
+exec /opt/zextras/common/bin/mysqladmin \
+  -S /run/carbonio/mysql.sock \
+  -u root \
+  --password="${mysql_root_password}" "$@"

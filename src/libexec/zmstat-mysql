@@ -98,7 +98,7 @@ if ($CONSOLE) {
     $LOGFILE = '-';
 }
 
-createPidFile('zmstat-mysql.pid');
+createPidFile('mysql.pid');
 
 local $SIG{__WARN__} = \&Carp::cluck;
 

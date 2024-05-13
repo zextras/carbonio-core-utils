@@ -17,31 +17,21 @@ fi
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
-fpidfile=${zimbra_log_directory}/freshclam.pid
-
 rewriteconfig() {
   /opt/zextras/libexec/configrewrite antivirus >/dev/null 2>&1
 }
 
 getpid() {
-  if [ -f "$fpidfile" ]; then
-    fpid=$(cat "$fpidfile")
-  fi
+  pid=$(pidof /opt/zextras/common/bin/freshclam)
 }
 
 checkrunning() {
   getpid
   # freshclam
-  if [ "$fpid" = "" ]; then
-    frunning=0
+  if [ "$pid" = "" ]; then
+    running=0
   else
-    if ps --no-headers -p "$fpid" -o cmd 2>/dev/null | grep freshclam >/dev/null 2>&1; then
-      frunning=1
-    else
-      rm "$fpidfile"
-      fpid=""
-      frunning=0
-    fi
+    running=1
   fi
 }
 
@@ -63,7 +53,7 @@ case "$1" in
 
     checkrunning
     echo -n "Starting freshclam..."
-    if [ $frunning = 1 ]; then
+    if [ $running = 1 ]; then
       echo "freshclam is already running."
     else
       /opt/zextras/common/bin/freshclam \
@@ -75,8 +65,8 @@ case "$1" in
     ;;
 
   'kill')
-    if [ -f /opt/zextras/log/freshclam.pid ]; then
-      cpid=$(cat /opt/zextras/log/freshclam.pid)
+    if [[ "${pid}" != "" ]]; then
+      pid=$(pidof /opt/zextras/common/bin/freshclam)
       kill "$cpid" 2>/dev/null
     fi
     pskillall /opt/zextras/common/bin/freshclam
@@ -86,17 +76,15 @@ case "$1" in
   'stop')
     checkrunning
     echo -n "Stopping freshclam..."
-    if [ $frunning = 0 ]; then
+    if [ $running = 0 ]; then
       echo "freshclam is not running."
     else
-      if [ "$fpid" != "" ]; then
-        kill "$fpid" 2>/dev/null
-        rc=$?
-        if [ $rc -eq 0 ]; then
-          echo "done."
-        else
-          echo "failed."
-        fi
+      kill "$pid" 2>/dev/null
+      rc=$?
+      if [ $rc -eq 0 ]; then
+        echo "done."
+      else
+        echo "failed."
       fi
     fi
 
@@ -111,7 +99,7 @@ case "$1" in
   'status')
     checkrunning
     echo -n "freshclam is "
-    if [ $frunning = 1 ]; then
+    if [ $running = 1 ]; then
       echo "running."
       exit 0
     else

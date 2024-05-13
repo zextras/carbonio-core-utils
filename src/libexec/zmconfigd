@@ -169,11 +169,6 @@ if len(sys.argv) > 1:
 		dt = time.clock()-t0
 		Log.logMsg(4, "%s completed in %.2f seconds" % (myConfig.progname,dt));
 		sys.exit(0)
-else:
-	if myState.isrunning():
-		Log.logMsg(0, "zmconfigd already running, exiting")
-	else:
-		myState.writepid()
 
 # Removed this to speed up startup at the cost of some slowdown in the first fetch
 # We don't really care about this thread, but should make sure it's done
