@@ -44,8 +44,8 @@ cat <<EOF
 
 basedir        = /opt/zextras/common
 datadir        = ${mysql_data_directory}
-socket         = ${mysql_socket}
-pid-file       = ${mysql_pidfile}
+socket         = /run/carbonio/mysql.sock
+pid-file       = /run/carbonio/mysql.pid
 bind-address   = ${mysql_bind_address}
 port           = ${mysql_port}
 user           = ${zimbra_mysql_user}
@@ -89,7 +89,7 @@ max_allowed_packet             = 16777216
 [mysqld_safe]
 
 log-error      = ${zimbra_log_directory}/mysqld.log
-pid-file     = ${mysql_pidfile}
+pid-file     = /run/carbonio/mysql.pid
 
 
 EOF

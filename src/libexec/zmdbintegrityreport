@@ -68,7 +68,7 @@ sub usage {
 
 sub checkDbs() {
   my $mysql_root_passwd = getLocalConfig("mysql_root_password");
-  my $mysql_socket = getLocalConfig("mysql_socket") || "/opt/zextras/db/mysql.sock";
+  my $mysql_socket = "/run/carbonio/mysql.sock";
   my $mysql_mycnf = getLocalConfig("mysql_mycnf") || "/opt/zextras/conf/my.cnf";
 
   prepareDataDirectoryForChecks($mysql_mycnf);
@@ -83,7 +83,7 @@ sub checkDbs() {
     exit 1;
   }
   $cmd .= " --defaults-file=${mysql_mycnf}";
-  $cmd .= " -S ${mysql_socket}";
+  $cmd .= " -S /run/carbonio/mysql.sock";
   $cmd .= " -A";
   $cmd .= " -C" unless $options{o};
   $cmd .= " -s" unless $debug;

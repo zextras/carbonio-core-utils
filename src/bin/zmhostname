@@ -6,5 +6,5 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 source /opt/zextras/bin/zmshutil || exit 1
-zmassert -r /opt/zextras/conf/localconfig.xml
+assert -r /opt/zextras/conf/localconfig.xml
 /opt/zextras/bin/zmlocalconfig -m nokey zimbra_server_hostname

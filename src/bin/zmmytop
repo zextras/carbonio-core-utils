@@ -37,8 +37,12 @@ zmsetvars
 if [ -x "/opt/zextras/common/bin/mytop" ]; then
   if [ "$1" = "-r" ]; then
     shift
-    /opt/zextras/common/bin/mytop -u root -S "$mysql_socket" -p "$mysql_root_password" "$@"
+    /opt/zextras/common/bin/mytop \
+      -u root -S /run/carbonio/mysql.sock -p "$mysql_root_password" "$@"
   else
-    /opt/zextras/common/bin/mytop -u "$zimbra_mysql_user" -S "$mysql_socket" -p "$zimbra_mysql_password" "$@"
+    /opt/zextras/common/bin/mytop \
+      -u "$zimbra_mysql_user" \
+      -S /run/carbonio/mysql.sock \
+      -p "$zimbra_mysql_password" "$@"
   fi
 fi

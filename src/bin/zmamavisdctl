@@ -27,48 +27,48 @@ rewriteconfig() {
 }
 
 checkrunning() {
-  # Get PID from scanning the proc table.
-  if [ "$PID" = "" ]; then
-    # PID file is NULL.  Get info from proc table.
-    PID=$(ps axo user,pid,ppid,command | awk '{ if ((($4 ~ /^amavisd$/) || ($4 ~ /^\/opt\/zextras\/common\/sbin\/amavisd$/)) && ($5 ~ /^\(master\)$/)) { print $2 } }')
+  # Get pid from scanning the proc table.
+  if [ "$pid" = "" ]; then
+    # pid file is NULL.  Get info from proc table.
+    pid=$(ps axo user,pid,ppid,command | awk '{ if ((($4 ~ /^amavisd$/) || ($4 ~ /^\/opt\/zextras\/common\/sbin\/amavisd$/)) && ($5 ~ /^\(master\)$/)) { print $2 } }')
   fi
-  # If PID is still not set, then we cannot find any amavisd (master) process.  Assume amavisd is not running.
-  if [ "$PID" = "" ]; then
-    RUNNING=0
+  # If pid is still not set, then we cannot find any amavisd (master) process.  Assume amavisd is not running.
+  if [ "$pid" = "" ]; then
+    running=0
     return
   fi
 
-  # If we get to this point the PID was defined in the PID file.  But we're not sure we trust it's validity
+  # If we get to this point the pid was defined in the pid file.  But we're not sure we trust it's validity
   # so we're going the verify it from ps output!
-  PID=$(ps axo user,pid,ppid,command | awk '{ if (($2 == "$PID") && (($4 ~ /^amavisd$/) || ($4 ~ /^\/opt\/zextras\/common\/sbin\/amavisd$/)) && ($5 ~ /^\(master\)$/)) { print $2 } }')
-  # If PID is NULL now, then the PID stored in the PID file was bogus!
+  pid=$(ps axo user,pid,ppid,command | awk '{ if (($2 == "$pid") && (($4 ~ /^amavisd$/) || ($4 ~ /^\/opt\/zextras\/common\/sbin\/amavisd$/)) && ($5 ~ /^\(master\)$/)) { print $2 } }')
+  # If pid is NULL now, then the pid stored in the pid file was bogus!
   # Let's try to find the true amavisd (master) process ID
-  if [ "$PID" = "" ]; then
-    PID=$(ps axo user,pid,ppid,command | awk '{ if ((($4 ~ /^amavisd$/) || ($4 ~ /^\/opt\/zextras\/common\/sbin\/amavisd$/)) && ($5 ~ /^\(master\)$/)) { print $2 } }')
+  if [ "$pid" = "" ]; then
+    pid=$(ps axo user,pid,ppid,command | awk '{ if ((($4 ~ /^amavisd$/) || ($4 ~ /^\/opt\/zextras\/common\/sbin\/amavisd$/)) && ($5 ~ /^\(master\)$/)) { print $2 } }')
   fi
-  # If the PID is still NULL now, it really must not be running.
-  if [ "$PID" = "" ]; then
-    RUNNING=0
+  # If the pid is still NULL now, it really must not be running.
+  if [ "$pid" = "" ]; then
+    running=0
     return
   else
-    RUNNING=1
+    running=1
     return
   fi
 }
 
 checkrunning-mc() {
-  #  Get PID from scanning the proc table.
-  if [ "$MCPID" = "" ]; then
-    # PID file is NULL.  Get info from proc table.
-    MCPID=$(ps axo user,pid,ppid,command | awk '{ if ((($6 ~ /amavis-mc$/) || ($6 ~ /\/opt\/zextras\/common\/sbin\/amavis-mc$/))) { print $2 } }')
+  #  Get pid from scanning the proc table.
+  if [ "$mcpid" = "" ]; then
+    # pid file is NULL.  Get info from proc table.
+    mcpid=$(ps axo user,pid,ppid,command | awk '{ if ((($6 ~ /amavis-mc$/) || ($6 ~ /\/opt\/zextras\/common\/sbin\/amavis-mc$/))) { print $2 } }')
   fi
-  # If PID is still not set, then we cannot find any amavisd (master) process.  Assume amavisd is not running.
-  if [ "$MCPID" = "" ]; then
-    MCRUNNING=0
+  # If pid is still not set, then we cannot find any amavisd (master) process.  Assume amavisd is not running.
+  if [ "$mcpid" = "" ]; then
+    mcrunning=0
     return
   fi
 
-  MCRUNNING=1
+  mcrunning=1
   return
 }
 
@@ -79,20 +79,20 @@ case "$1" in
   'start')
     checkrunning-mc
     echo -n "Starting amavisd-mc..."
-    if [ $MCRUNNING = 1 ]; then
+    if [ $mcrunning = 1 ]; then
       echo "amavisd-mc is already running."
     else
-      if [ $MCRUNNING = 0 ]; then
+      if [ $mcrunning = 0 ]; then
         sudo /opt/zextras/common/sbin/amavis-mc
         for ((i = 0; i < 30; i++)); do
           checkrunning-mc
-          if [ $MCRUNNING = 1 ]; then
+          if [ $mcrunning = 1 ]; then
             break
           fi
           sleep 1
         done
       fi
-      if [ "$MCPID" = "" ]; then
+      if [ "$mcpid" = "" ]; then
         echo "failed."
         exit
       else
@@ -101,7 +101,7 @@ case "$1" in
     fi
     checkrunning
     echo -n "Starting amavisd..."
-    if [ $RUNNING = 1 ]; then
+    if [ $running = 1 ]; then
       echo "amavisd is already running."
       exit 0
     else
@@ -123,12 +123,12 @@ case "$1" in
         /opt/zextras/conf/amavisd.conf &
       for ((i = 0; i < 30; i++)); do
         checkrunning
-        if [ $RUNNING = 1 ]; then
+        if [ $running = 1 ]; then
           break
         fi
         sleep 1
       done
-      if [ "$PID" = "" ]; then
+      if [ "$pid" = "" ]; then
         echo "failed."
       else
         echo "done."
@@ -143,47 +143,47 @@ case "$1" in
   'stop')
     checkrunning
     echo -n "Stopping amavisd..."
-    if [ $RUNNING = 0 ]; then
+    if [ $running = 0 ]; then
       echo "amavisd is not running."
     else
-      kill "$PID" 2>/dev/null
+      kill "$pid" 2>/dev/null
       for ((i = 0; i < 300; i++)); do
         sleep 5
-        kill -0 "$PID" 2>/dev/null
+        kill -0 "$pid" 2>/dev/null
         rc=$?
         if [ $rc -ne 0 ]; then
           break
         fi
       done
-      kill "$PID" 2>/dev/null
+      kill "$pid" 2>/dev/null
       rc=$?
       if [ $rc -ne 0 ]; then
         echo " done."
       else
-        echo " failed to stop $PID"
+        echo " failed to stop $pid"
         exit 1
       fi
     fi
     checkrunning-mc
     echo -n "Stopping amavisd-mc..."
-    if [ $MCRUNNING = 0 ]; then
+    if [ $mcrunning = 0 ]; then
       echo "amavisd-mc is not running."
     else
-      kill "$MCPID" 2>/dev/null
+      kill "$mcpid" 2>/dev/null
       for ((i = 0; i < 300; i++)); do
         sleep 5
-        kill -0 "$MCPID" 2>/dev/null
+        kill -0 "$mcpid" 2>/dev/null
         rc=$?
         if [ $rc -ne 0 ]; then
           break
         fi
       done
-      kill "$MCPID" 2>/dev/null
+      kill "$mcpid" 2>/dev/null
       rc=$?
       if [ $rc -ne 0 ]; then
         echo " done."
       else
-        echo " failed to stop $PID"
+        echo " failed to stop $pid"
         exit 1
       fi
     fi
@@ -198,7 +198,7 @@ case "$1" in
   'status')
     checkrunning
     echo -n "amavisd is "
-    if [ $RUNNING = 0 ]; then
+    if [ $running = 0 ]; then
       echo "not running."
       exit 1
     else
@@ -206,7 +206,7 @@ case "$1" in
     fi
     checkrunning-mc
     echo -n "amavisd-mc is "
-    if [ $MCRUNNING = 0 ]; then
+    if [ $mcrunning = 0 ]; then
       echo "not running."
       exit 1
     else

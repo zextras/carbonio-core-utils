@@ -92,7 +92,7 @@ if ($CONSOLE) {
     $LOGFILE = '-';
 }
 
-createPidFile('zmstat-mtaqueue.pid');
+createPidFile('mtaqueue.pid');
 
 $SIG{HUP} = \&sighup;
 

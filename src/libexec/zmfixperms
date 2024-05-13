@@ -383,15 +383,6 @@ if [ -d /opt/zextras/common/share/database ]; then
   chown -R ${zextras_user}:${zextras_group} /opt/zextras/data/cbpolicyd
 fi
 
-if [ -x /opt/zextras/common/sbin/saslauthd ]; then
-  printMsg "Fixing ownership and permissions on /opt/zextras/data/sasl2/state"
-  if [ ! -d /opt/zextras/data/sasl2/state ]; then
-    mkdir -p /opt/zextras/data/sasl2/state
-  fi
-  chown -R ${zextras_user}:${zextras_group} /opt/zextras/data/sasl2/state
-  chmod 755 /opt/zextras/data/sasl2/state
-fi
-
 if [ -x /opt/zextras/common/bin/altermime ]; then
   if [ ! -d "/opt/zextras/data/altermime" ]; then
     mkdir -p /opt/zextras/data/altermime

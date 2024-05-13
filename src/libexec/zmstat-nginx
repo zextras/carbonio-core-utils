@@ -92,7 +92,7 @@ sub collect_stats($$$) {
 
 sub get_nginx_pid {
     my $pid = 0;
-    if (open(PID, "</opt/zextras/log/nginx.pid")) {
+    if (open(PID, "</run/carbonio/nginx.pid")) {
         chomp($pid = <PID>);
         close(PID);
     } else {
@@ -246,7 +246,7 @@ if (!$opts_good) {
 	print STDERR "\n";
 	usage();
 }
-createPidFile("zmstat-nginx.pid");
+createPidFile("nginx.pid");
 $SIG{HUP} = \&sighup;
 
 $date = getDate();

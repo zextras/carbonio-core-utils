@@ -13,7 +13,7 @@ if [ "${antispam_mysql_host}" = "$(zmhostname)" ] ||
   [ "${antispam_mysql_host}" = "127.0.0.1" ] ||
   [ "${antispam_mysql_host}" = "::1" ]; then
   exec /opt/zextras/common/bin/mysql \
-    --socket="${antispam_mysql_socket}" \
+    --socket=/run/carbonio/antispam-mysql.sock \
     --user="${antispam_mysql_user}" \
     --password="${antispam_mysql_password}" "$@"
 else

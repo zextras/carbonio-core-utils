@@ -38,18 +38,28 @@ if [ -e ${spnego_options_file} ]; then
   spnegoJavaOptions=$(cat $spnego_options_file)
 fi
 
-#
-# Main
-#
+getpid() {
+  pid=$(pgrep -f '/opt/zextras/.*/java.*mailboxd')
+}
+
+checkrunning() {
+  getpid
+  if [ "$pid" = "" ]; then
+    running=0
+  else
+    running=1
+  fi
+}
+
 case "$1" in
   'start')
     if [ "$2" = "" ]; then
       /opt/zextras/bin/zmtlsctl >/dev/null 2>&1
     fi
-    /opt/zextras/libexec/zmmailboxdmgr status
-    rc=$?
-    if [ $rc -eq 0 ]; then
-      echo "mailboxd already running."
+
+    checkrunning
+    if [ $running = 1 ]; then
+      echo "mailboxd is already running."
       exit 0
     fi
 
@@ -71,9 +81,23 @@ case "$1" in
 
     echo -n "Starting mailboxd..."
     # shellcheck disable=SC2086
-    /opt/zextras/libexec/zmmailboxdmgr start \
-      -Dfile.encoding=UTF-8 ${mailboxd_java_options} ${spnegoJavaOptions} -Xms${javaXms}m \
-      "-Xmx${javaXmx}m" </dev/null >/dev/null 2>&1
+    /opt/zextras/common/bin/java \
+      -Dfile.encoding=UTF-8 \
+      $mailboxd_java_options \
+      -Xms${javaXms}m \
+      -Xmx${javaXmx}m \
+      -Djava.io.tmpdir=/opt/zextras/mailboxd/work \
+      -Djava.library.path=/opt/zextras/lib \
+      -Dzimbra.config=/opt/zextras/conf/localconfig.xml \
+      --module-path /opt/zextras/mailboxd/common/endorsed \
+      -Djetty.base=/opt/zextras/mailboxd \
+      -Djetty.home=/opt/zextras/common/jetty_home \
+      -DSTART=/opt/zextras/mailboxd/etc/start.config \
+      -jar /opt/zextras/common/jetty_home/start.jar \
+      --module=zimbra,server,mail,servlet,servlets,jsp,jstl,jmx,resources,websocket,ext,plus,rewrite,continuation,webapp,setuid \
+      jetty.home=/opt/zextras/common/jetty_home \
+      jetty.base=/opt/zextras/mailboxd \
+      /opt/zextras/mailboxd/etc/jetty.xml >/dev/null 2>&1 &
     rc=$?
     if [ $rc != 0 ]; then
       echo "failed."
@@ -100,16 +124,16 @@ case "$1" in
     ;;
 
   'kill' | 'stop')
+    checkrunning
     echo -n "Stopping mailboxd..."
-    /opt/zextras/libexec/zmmailboxdmgr status
-    rc=$?
-    if [ $rc -ne 0 ]; then
-      echo "mailboxd is not running."
+    if [ $running = 0 ]; then
+      echo "${servicename} is not running."
       exit 0
+    else
+      /opt/zextras/bin/zmthrdump -i -o /opt/zextras/log/stacktrace.$$."$(date +%Y%m%d%H%M%S)" 2>/dev/null
+      kill "$pid" 2>/dev/null
+      rc=$?
     fi
-    /opt/zextras/bin/zmthrdump -i -o /opt/zextras/log/stacktrace.$$."$(date +%Y%m%d%H%M%S)" 2>/dev/null
-    /opt/zextras/libexec/zmmailboxdmgr stop
-    rc=$?
     if [ $rc -eq 0 ]; then
       echo "done."
     else
@@ -125,14 +149,13 @@ case "$1" in
 
   'status')
     echo -n "mailboxd is "
-    /opt/zextras/libexec/zmmailboxdmgr status
-    rc=$?
-    if [ $rc -eq 0 ]; then
-      echo "running."
-      exit 0
-    else
+    checkrunning
+    if [ $running = 0 ]; then
       echo "not running."
       exit 1
+    else
+      echo "running."
+      exit 0
     fi
     ;;
 

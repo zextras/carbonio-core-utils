@@ -22,7 +22,7 @@ use vars qw($logger_directory $log_file);
 # Exit if software-only node.
 exit(0) unless (-f '/opt/zextras/conf/localconfig.xml');
 
-my $pid_file = "/opt/zextras/log/zmlogprocess.pid";
+my $pid_file = "/run/carbonio/zmlogprocess.pid";
 my $state_file = "/opt/zextras/log/zmlogprocess.state";
 $logger_directory = getLocalConfig("logger_data_directory");
 $log_file = '/var/log/carbonio.log';
