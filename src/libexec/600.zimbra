@@ -55,10 +55,9 @@ for i in myslow.log logger_myslow.log sync.log zcs.log zmmtaconfig.log httpd_acc
 done
 echo ""
 
-if [ -f /var/run/syslog.pid ]; then
-  echo "Sending sighup to syslogd"
-  kill -HUP "$(head -1 /var/run/syslog.pid)"
-fi
+echo "Sending sighup to syslogd"
+systemctl kill -s HUP rsyslog.service >/dev/null 2>&1 || true
+
 if [ -f /opt/zextras/log/logswatch.pid ]; then
   echo "Restarting zmlogswatch"
   $SU "/opt/zextras/bin/zmlogswatchctl reload"

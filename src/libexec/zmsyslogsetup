@@ -249,12 +249,6 @@ sub updateSyslog {
     local $^I="~";
     local @ARGV=("/etc/logrotate.d/carbonio");
     while (<>) {
-      if ( $rsyslog == 1 ) {
-        s/syslogd\*.pid/rsyslogd.pid/g;
-	if ($platform ne "ubuntu") {
-		s/syslog\*.pid/rsyslogd.pid/g;
-	}
-      }
       s/USER/zextras/;
       s/GROUP/zextras/;
       print;
@@ -350,16 +344,13 @@ sub updateRsyslogd {
     local $^I="~";
     local @ARGV=("/etc/logrotate.d/carbonio");
     while (<>) {
-      s/kill\s+\-HUP\s+.+syslog\*\.pid.+\/dev\/null/\/usr\/sbin\/service rsyslog restart >\/dev\/null/g;
       if ($platform eq "ubuntu") {
         s/USER/syslog/;
         s/GROUP/adm/;
+      	s/#su zextras zextras/su zextras zextras/;
       } else {
         s/USER/zextras/;
         s/GROUP/zextras/;
-      }
-      if ($platform eq "ubuntu") {
-      	s/#su zextras zextras/su zextras zextras/;
       }
       print;
     }
