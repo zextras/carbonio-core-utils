@@ -5,7 +5,7 @@
     create 0644 syslog adm
     dateext
     postrotate
-      kill -HUP `cat /var/run/syslog*.pid 2> /dev/null` 2> /dev/null || true
+      systemctl kill -s HUP rsyslog.service >/dev/null 2>&1 || true
       su - zextras -c "/opt/zextras/bin/zmconfigdctl restart" > /dev/null 2>&1 || true
     endscript
     compress
@@ -19,7 +19,7 @@
     create 0644 syslog adm
     dateext
     postrotate
-      kill -HUP `cat /var/run/syslog*.pid 2> /dev/null` 2> /dev/null || true
+      systemctl kill -s HUP rsyslog.service >/dev/null 2>&1 || true
       su - zextras -c "/opt/zextras/bin/zmconfigdctl restart" > /dev/null 2>&1 || true
     endscript
     rotate 0
@@ -58,7 +58,7 @@
     create 0660 zextras zextras
     dateext
     postrotate
-     kill -HUP `cat /opt/zextras/log/clamd.pid 2> /dev/null` 2> /dev/null || true
+      kill -HUP `cat /opt/zextras/log/clamd.pid 2> /dev/null` 2> /dev/null || true
     endscript
     compress
     size 5000k
@@ -74,7 +74,7 @@
     create 0660 zextras zextras
     dateext
     postrotate
-     kill -HUP `cat /opt/zextras/log/freshclam.pid 2> /dev/null` 2> /dev/null || true
+      kill -HUP `cat /opt/zextras/log/freshclam.pid 2> /dev/null` 2> /dev/null || true
     endscript
     compress
     size 1000k
