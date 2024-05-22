@@ -371,7 +371,7 @@ if [ -d /opt/zextras/db ]; then
     mkdir -p /opt/zextras/db/data
   fi
   chown -R ${zextras_user}:${zextras_group} /opt/zextras/db
-  chmod 444 /opt/zextras/db/*.sql /opt/zextras/db/*.sql.in
+  find /opt/zextras/db -maxdepth 1 -type f -exec chmod 444 {} \;
 fi
 
 if [ -d /opt/zextras/common/share/database ]; then
