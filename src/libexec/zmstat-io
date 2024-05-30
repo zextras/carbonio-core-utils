@@ -163,7 +163,7 @@ if ($xtended) {
     $iostatOpts .= ' -x';
 }
 
-createPidFile( $xtended ? 'zmstat-io-x.pid' : 'zmstat-io.pid' );
+createPidFile( $xtended ? 'io-x.pid' : 'io.pid' );
 
 $SIG{HUP} = \&sighup;
 

@@ -25,8 +25,8 @@ clearPid();
 exit 0;
 
 sub checkPid {
-	if (-f "/opt/zextras/log/zmqueuelog.pid") {
-		my $P = qx(cat /opt/zextras/log/zmqueuelog.pid);
+	if (-f "/run/carbonio/zmqueuelog.pid") {
+		my $P = qx(cat /run/carbonio/zmqueuelog.pid);
 		chomp $P;
 		if ($P ne "") {
       system("kill -0 $P 2> /dev/null");
@@ -36,11 +36,11 @@ sub checkPid {
       }
 		}
 	}
-	qx(echo $$ > "/opt/zextras/log/zmqueuelog.pid");
+	qx(echo $$ > "/run/carbonio/zmqueuelog.pid");
 }
 
 sub clearPid {
-	unlink ("/opt/zextras/log/zmqueuelog.pid");
+	unlink ("/run/carbonio/zmqueuelog.pid");
 }
 
 sub logQueue {

@@ -33,7 +33,7 @@ zmsetvars() {
 #
 # Check if a conditional expression is true.
 #
-zmassert() {
+assert() {
   if [ "$@" ]; then
     return
   fi

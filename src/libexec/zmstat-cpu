@@ -169,7 +169,7 @@ if ($CONSOLE) {
     $LOGFILE = '-';
 }
 
-createPidFile('zmstat-cpu.pid');
+createPidFile('cpu.pid');
 
 $SIG{HUP} = \&sighup;
 

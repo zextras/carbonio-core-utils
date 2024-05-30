@@ -159,7 +159,7 @@ if ($CONSOLE) {
     $LOGFILE = '-';
 }
 
-createPidFile('zmstat-vm.pid');
+createPidFile('vm.pid');
 
 $SIG{HUP} = \&sighup;
 

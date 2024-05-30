@@ -16,6 +16,6 @@ if [ "127.0.0.1" != "${antispam_mysql_host}" ] &&
 fi
 
 exec /opt/zextras/common/bin/mysqladmin \
-  --socket="${antispam_mysql_socket}" \
+  --socket=/run/carbonio/antispam-mysql.sock \
   --user=root \
   --password="${antispam_mysql_root_password}" "$@"

@@ -82,7 +82,7 @@ GetOptions("help" => \$ARG{HELP},
 	   "thread-dump-delay=i" => \$ARG{TWAIT},
 	   "thread-dump-file=s" => \$ARG{LOG}) || usage();
 
-my $DEFAULT_PID = qx(cat '/opt/zextras/log/zmmailboxd_java.pid');
+my $DEFAULT_PID = qx(cat '/run/carbonio/zmmailboxd_java.pid');
 chomp($DEFAULT_PID);
 usage() if (defined $ARG{HELP});
 $ARG{PID} = $DEFAULT_PID if (!defined $ARG{PID});

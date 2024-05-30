@@ -84,7 +84,7 @@ sub getPidFiles() {
         my @pidfiles = readdir(DIR);
         foreach my $file (@pidfiles) {
             next
-              if ( $file =~ /zmstat-fd-real/ )
+              if ( $file =~ /fd-real/ )
               ;    # can't kill/test: running as root
             if ( $file =~ /\.pid$/ ) {
                 push( @pids, "$piddir/$file" );

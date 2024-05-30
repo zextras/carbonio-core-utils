@@ -25,14 +25,14 @@ zmsetvars -f
 #
 # Sanity checks
 #
-zmassert -x /opt/zextras/libexec/zmmycnf
-zmassert -x /opt/zextras/bin/mysqladmin
-zmassert -x /opt/zextras/bin/mysql
-zmassert -x /opt/zextras/bin/zmlocalconfig
-zmassert -x /opt/zextras/bin/zmmypasswd
-zmassert -x /opt/zextras/common/share/mysql/scripts/mysql_install_db
-zmassert -r "${zimbra_db_directory}/db.sql"
-zmassert -r "${zimbra_db_directory}/versions-init.sql"
+assert -x /opt/zextras/libexec/zmmycnf
+assert -x /opt/zextras/bin/mysqladmin
+assert -x /opt/zextras/bin/mysql
+assert -x /opt/zextras/bin/zmlocalconfig
+assert -x /opt/zextras/bin/zmmypasswd
+assert -x /opt/zextras/common/share/mysql/scripts/mysql_install_db
+assert -r "${zimbra_db_directory}/db.sql"
+assert -r "${zimbra_db_directory}/versions-init.sql"
 
 for opt in "$@"; do
   case "$opt" in

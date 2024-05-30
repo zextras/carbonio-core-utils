@@ -8,7 +8,7 @@
 use strict;
 use Getopt::Std;
 
-my $pid_file  = '/opt/zextras/log/zmmailboxd_java.pid';
+my $pid_file  = '/run/carbonio/zmmailboxd_java.pid';
 my $log_file  = '/opt/zextras/log/zmmailboxd.out';
 my $outhandle = \*STDOUT;
 my $timeout   = 25;

@@ -371,7 +371,7 @@ if [ -d /opt/zextras/db ]; then
     mkdir -p /opt/zextras/db/data
   fi
   chown -R ${zextras_user}:${zextras_group} /opt/zextras/db
-  chmod 444 /opt/zextras/db/*.sql /opt/zextras/db/*.sql.in
+  find /opt/zextras/db -maxdepth 1 -type f -exec chmod 444 {} \;
 fi
 
 if [ -d /opt/zextras/common/share/database ]; then
@@ -381,15 +381,6 @@ if [ -d /opt/zextras/common/share/database ]; then
     fi
   done
   chown -R ${zextras_user}:${zextras_group} /opt/zextras/data/cbpolicyd
-fi
-
-if [ -x /opt/zextras/common/sbin/saslauthd ]; then
-  printMsg "Fixing ownership and permissions on /opt/zextras/data/sasl2/state"
-  if [ ! -d /opt/zextras/data/sasl2/state ]; then
-    mkdir -p /opt/zextras/data/sasl2/state
-  fi
-  chown -R ${zextras_user}:${zextras_group} /opt/zextras/data/sasl2/state
-  chmod 755 /opt/zextras/data/sasl2/state
 fi
 
 if [ -x /opt/zextras/common/bin/altermime ]; then

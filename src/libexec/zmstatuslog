@@ -18,7 +18,7 @@ exit(0) unless (-f "/opt/zextras/conf/localconfig.xml");
 
 $SIG{ALRM} = \&catchAlarm;
 
-my $pidFile="/opt/zextras/log/zmstatuslog.pid";
+my $pidFile="/run/carbonio/zmstatuslog.pid";
 
 my $TIMEOUT=60;
 my $DFCMD;

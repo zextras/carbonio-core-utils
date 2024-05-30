@@ -91,7 +91,7 @@ sub collect_stats($$$) {
 }
 
 sub get_convertd_pid {
-    open(PID, "</opt/zextras/log/convertd.pid") || die "cannot open convertd.pid: $!";
+    open(PID, "</run/carbonio/convertd.pid") || die "cannot open convertd.pid: $!";
     chomp(my $pid = <PID>);
     close(PID);
     $pid;
@@ -235,7 +235,7 @@ if (!$opts_good) {
 	print STDERR "\n";
 	usage();
 }
-createPidFile("zmstat-convertd.pid");
+createPidFile("convertd.pid");
 $SIG{HUP} = \&sighup;
 
 $date = getDate();

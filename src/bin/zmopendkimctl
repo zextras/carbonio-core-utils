@@ -28,15 +28,15 @@ rewriteconfig() {
 
 checkrunning() {
   if pidof "${odk}" >/dev/null 2>&1; then
-    RUNNING=1
+    running=1
   else
-    RUNNING=0
+    running=0
   fi
 }
 
 start() {
   checkrunning
-  if [ $RUNNING = 0 ]; then
+  if [ $running = 0 ]; then
     if [ "$1" == "" ]; then
       rewriteconfig
     fi
@@ -54,7 +54,7 @@ start() {
 
 stop() {
   checkrunning
-  if [ $RUNNING = 0 ]; then
+  if [ $running = 0 ]; then
     echo "zmopendkimctl not running"
     exit 0
   else
@@ -72,7 +72,7 @@ stop() {
 status() {
   checkrunning
   echo -n "zmopendkimctl is "
-  if [ $RUNNING = 0 ]; then
+  if [ $running = 0 ]; then
     echo "not running."
     exit 1
   else

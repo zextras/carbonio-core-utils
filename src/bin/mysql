@@ -8,5 +8,5 @@
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
-exec /opt/zextras/common/bin/mysql -S "${mysql_socket}" \
+exec /opt/zextras/common/bin/mysql -S /run/carbonio/mysql.sock \
   -u "${zimbra_mysql_user}" --password="${zimbra_mysql_password}" "$@"

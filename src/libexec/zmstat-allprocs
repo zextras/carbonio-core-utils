@@ -283,7 +283,7 @@ if (!$opts_good) {
 	print STDERR "\n";
 	usage();
 }
-createPidFile("zmstat-allprocs.pid");
+createPidFile("allprocs.pid");
 $SIG{HUP} = \&sighup;
 
 $date = getDate();
