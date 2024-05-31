@@ -65,10 +65,34 @@ case "$1" in
 
     mkdir -p "${mailboxd_directory}/work/service/jsp"
 
+    mailboxd_thread_stack_size=${mailboxd_thread_stack_size:=256k}
+    if ! echo "${mailboxd_java_options}" | grep -q 'Xss'; then
+      mailboxd_java_options="${mailboxd_java_options} -Xss${mailboxd_thread_stack_size}"
+    fi
+
+    networkaddress_cache_ttl=${networkaddress_cache_ttl:=60}
+    if ! echo "${mailboxd_java_options}" | grep -q 'sun.net.inetaddr.ttl'; then
+      mailboxd_java_options="${mailboxd_java_options} -Dsun.net.inetaddr.ttl=${networkaddress_cache_ttl}"
+    fi
+
+    if ! echo "${mailboxd_java_options}" | grep -q "log4j"; then
+      mailboxd_java_options="${mailboxd_java_options} -Dlog4j.configurationFile=${zimbra_log4j_properties}"
+    fi
+
     echo -n "Starting mailboxd..."
 
     # shellcheck disable=SC2086
-    /usr/bin/carbonio-appserver>/dev/null 2>&1 &
+    /opt/zextras/common/bin/java \
+                -Dfile.encoding=UTF-8 \
+                $mailboxd_java_options \
+                -Xms${java_xms}m \
+                -Xmx${java_xmx}m \
+                -Djava.io.tmpdir=/opt/zextras/mailboxd/work \
+                -Dlog4j.configurationFile=/opt/zextras/conf/log4j.properties \
+                -Djava.library.path=/opt/zextras/lib \
+                -Dzimbra.config=/opt/zextras/conf/localconfig.xml \
+                -cp /opt/zextras/mailbox/jars/mailbox.jar:/opt/zextras/mailbox/jars/* \
+                com.zextras.mailbox.Mailbox >/dev/null 2>&1 &
     rc=$?
     if [ $rc != 0 ]; then
       echo "failed."
