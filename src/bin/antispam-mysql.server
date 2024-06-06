@@ -38,7 +38,7 @@ assert -d "${zimbra_tmp_directory}"
 assert -x /opt/zextras/common/bin/mysqld_safe
 
 getpid() {
-  pid=$(pgrep -f '/opt/zextras/.*/mysqld.*conf/antispam-my.cnf')
+  pid=$(pgrep -f '/opt/zextras/.*conf/antispam-my.cnf')
 }
 
 checkrunning() {
