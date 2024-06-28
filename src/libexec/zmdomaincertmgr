@@ -45,7 +45,7 @@ saveConfigKey() {
   fi
 
   echo -n "** Saving $location config key $key..."
-  /opt/zextras/bin/zmprov -m -l "${zmprov_opts[@]}" "${key}" "$content" 2>/dev/null
+  /opt/zextras/bin/zmprov -m -l ${zmprov_opts[@]} "${key}" "$content" 2>/dev/null
   rc=$?
   if [ $rc -eq 0 ]; then
     echo "done."
@@ -84,7 +84,7 @@ loadConfigKey() {
     cp -a "${file}" "${file}.$(date +%Y%m%d)"
   fi
   echo -n "** Retrieving $location config key $key..."
-  /opt/zextras/bin/zmprov -m -l "${zmprov_opts[@]}" "${key}" | sed -e "s/^${key}: //" >"${tmpfile}" 2>/dev/null
+  /opt/zextras/bin/zmprov -m -l ${zmprov_opts[@]} "${key}" | sed -e "s/^${key}: //" >"${tmpfile}" 2>/dev/null
   rc=$?
   if [ $rc -eq 0 ] && [ -s "${tmpfile}" ]; then
     chmod 400 "${tmpfile}"
