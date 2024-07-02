@@ -29,7 +29,7 @@ assert -d "${zimbra_tmp_directory}"
 assert -r "${mysql_mycnf}"
 
 getpid() {
-  pid=$(pgrep -f '/opt/zextras/.*/mysqld.*conf/my.cnf')
+  pid=$(pgrep -f '/opt/zextras/.*conf/my.cnf')
 }
 
 checkrunning() {

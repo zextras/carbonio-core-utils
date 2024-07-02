@@ -14,7 +14,6 @@ source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
 configfile=/opt/zextras/conf/nginx.conf
-pid=""
 
 getpid() {
   pid=$(pgrep -f '/opt/zextras/.*/nginx.*conf')
@@ -95,6 +94,13 @@ case "$1" in
     else
       /opt/zextras/common/sbin/nginx -c /opt/zextras/conf/nginx.conf -s stop
       rc=$?
+      # this further check is necessary to wait for the proxy
+      # to actually shut down, especially in the restart phase.
+      checkrunning
+      while [ $running = 1 ]; do
+        checkrunning
+        sleep 1
+      done
       if [ "$rc" -ne 0 ]; then
         echo "failed."
         exit 1

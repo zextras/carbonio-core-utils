@@ -31,20 +31,21 @@ saveConfigKey() {
   local location=$3
   local content
   content=$(cat "${file}")
+  zmprov_opts=()
   if [ "$location" = "global" ]; then
-    local zmprov_opts="mcf"
+    zmprov_opts=("${zmprov_opts[@]}" mcf)
   elif [ "$location" = "server" ]; then
-    local zmprov_opts="ms ${zimbra_server_hostname}"
+    zmprov_opts=("${zmprov_opts[@]}" ms "${zimbra_server_hostname}")
   elif [ "$location" = "domain" ]; then
     local domain=$4
-    local zmprov_opts="md ${domain}"
+    zmprov_opts=("${zmprov_opts[@]}" md "${domain}")
   else
     echo "Unknown config section $location"
     return
   fi
 
   echo -n "** Saving $location config key $key..."
-  /opt/zextras/bin/zmprov -m -l "${zmprov_opts}" "${key}" "$content" 2>/dev/null
+  /opt/zextras/bin/zmprov -m -l "${zmprov_opts[@]}" "${key}" "$content" 2>/dev/null
   rc=$?
   if [ $rc -eq 0 ]; then
     echo "done."
@@ -57,17 +58,18 @@ loadConfigKey() {
   local key=$1
   local file=$2
   local location=$3
+  zmprov_opts=()
   if [ "$location" = "global" ]; then
-    local zmprov_opts="gacf"
+    zmprov_opts=("${zmprov_opts[@]}" gacf)
   elif [ "$location" = "server" ]; then
     local server=$4
     if [ "${server}" = "" ]; then
       server=${zimbra_server_hostname}
     fi
-    local zmprov_opts="gs ${server}"
+    zmprov_opts=("${zmprov_opts[@]}" gs "${server}")
   elif [ "$location" = "domain" ]; then
     local domain=$4
-    local zmprov_opts="gd ${domain}"
+    zmprov_opts=("${zmprov_opts[@]}" gd "${domain}")
   else
     echo "Unknown config section $location"
     return
@@ -82,7 +84,7 @@ loadConfigKey() {
     cp -a "${file}" "${file}.$(date +%Y%m%d)"
   fi
   echo -n "** Retrieving $location config key $key..."
-  /opt/zextras/bin/zmprov -m -l "${zmprov_opts}" "${key}" | sed -e "s/^${key}: //" >"${tmpfile}" 2>/dev/null
+  /opt/zextras/bin/zmprov -m -l "${zmprov_opts[@]}" "${key}" | sed -e "s/^${key}: //" >"${tmpfile}" 2>/dev/null
   rc=$?
   if [ $rc -eq 0 ] && [ -s "${tmpfile}" ]; then
     chmod 400 "${tmpfile}"
