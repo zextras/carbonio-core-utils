@@ -47,7 +47,7 @@ else
   #JRE_EXT_DIR=${zimbra_java_home}/lib/ext
 fi
 
-jardirs="${JRE_EXT_DIR}:/opt/zextras/mailboxd/lib/*:/opt/zextras/mailboxd/common/lib/*:/opt/zextras/lib/jars/*"
+jardirs="${JRE_EXT_DIR}:/opt/zextras/mailbox/jars/*:"
 if [ -e /opt/zextras/lib/ext-common ]; then
   jardirs="${jardirs}:/opt/zextras/lib/ext-common/*"
 fi
@@ -56,7 +56,6 @@ while IFS= read -r -d '' jd; do
     jardirs="${jardirs}:${jd}/*"
   fi
 done < <(find /opt/zextras/lib/ext -type d -print0)
-jardirs="${jardirs}:/opt/zextras/jetty/common/lib/*:/opt/zextras/jetty/webapps/service/WEB-INF/lib/*"
 
 #
 # Memory for use by JVM
