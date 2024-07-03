@@ -83,15 +83,15 @@ case "$1" in
 
     # shellcheck disable=SC2086
     /opt/zextras/common/bin/java \
-                -Dfile.encoding=UTF-8 \
-                $mailboxd_java_options \
+      -Dfile.encoding=UTF-8 \
+      $mailboxd_java_options \
       -Xms${javaXms}m \
       -Xmx${javaXmx}m \
-                -Djava.io.tmpdir=/opt/zextras/mailboxd/work \
-                -Djava.library.path=/opt/zextras/lib \
-                -Dzimbra.config=/opt/zextras/conf/localconfig.xml \
-                -cp /opt/zextras/mailbox/jars/mailbox.jar:/opt/zextras/mailbox/jars/* \
-                com.zextras.mailbox.Mailbox >/dev/null 2>&1 &
+      -Djava.io.tmpdir=/opt/zextras/mailboxd/work \
+      -Djava.library.path=/opt/zextras/lib \
+      -Dzimbra.config=/opt/zextras/conf/localconfig.xml \
+      -cp /opt/zextras/mailbox/jars/mailbox.jar:/opt/zextras/mailbox/jars/* \
+      com.zextras.mailbox.Mailbox >/dev/null 2>&1 &
     rc=$?
     if [ $rc != 0 ]; then
       echo "failed."
