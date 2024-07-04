@@ -13,7 +13,7 @@ fi
 zimbra_java_home=/opt/zextras/common/lib/jvm/java
 jspc_src_dir=/opt/zextras/mailboxd/webapps/zimbra
 jspc_build_dir=/opt/zextras/mailboxd/work/zimbra/jsp
-jspc_class_path="/opt/zextras/lib/jars/*:/opt/zextras/common/jetty_home/lib/*:/opt/zextras/common/jetty_home/lib/apache-jsp/*:/opt/zextras/common/jetty_home/lib/apache-jstl/*:/opt/zextras/lib/jars/*:/opt/zextras/jetty/lib/ext/*:/opt/zextras/jetty/lib/plus/*:/opt/zextras/jetty/lib/naming/*:/opt/zextras/lib/ext/*:/opt/zextras/jetty/common/lib/*:/opt/zextras/jetty/webapps/zimbra/WEB-INF/lib/*"
+jspc_class_path="/opt/zextras/mailbox/jars/*:/opt/zextras/common/jetty_home/lib/*:/opt/zextras/common/jetty_home/lib/apache-jsp/*:/opt/zextras/common/jetty_home/lib/apache-jstl/*:/opt/zextras/mailbox/jars/*:/opt/zextras/jetty/lib/ext/*:/opt/zextras/jetty/lib/plus/*:/opt/zextras/jetty/lib/naming/*:/opt/zextras/lib/ext/*:/opt/zextras/jetty/common/lib/*:/opt/zextras/jetty/webapps/zimbra/WEB-INF/lib/*"
 
 extensions="backup clamscanner network carbonio-license zimbrahsm zimbrasync"
 ext_dir="/opt/zextras/lib/ext-common"

@@ -80,6 +80,7 @@ case "$1" in
     fi
 
     echo -n "Starting mailboxd..."
+
     # shellcheck disable=SC2086
     /opt/zextras/common/bin/java \
       -Dfile.encoding=UTF-8 \
@@ -89,15 +90,8 @@ case "$1" in
       -Djava.io.tmpdir=/opt/zextras/mailboxd/work \
       -Djava.library.path=/opt/zextras/lib \
       -Dzimbra.config=/opt/zextras/conf/localconfig.xml \
-      --module-path /opt/zextras/mailboxd/common/endorsed \
-      -Djetty.base=/opt/zextras/mailboxd \
-      -Djetty.home=/opt/zextras/common/jetty_home \
-      -DSTART=/opt/zextras/mailboxd/etc/start.config \
-      -jar /opt/zextras/common/jetty_home/start.jar \
-      --module=zimbra,server,mail,servlet,servlets,jsp,jstl,jmx,resources,websocket,ext,plus,rewrite,continuation,webapp,setuid \
-      jetty.home=/opt/zextras/common/jetty_home \
-      jetty.base=/opt/zextras/mailboxd \
-      /opt/zextras/mailboxd/etc/jetty.xml >/dev/null 2>&1 &
+      -cp /opt/zextras/mailbox/jars/mailbox.jar:/opt/zextras/mailbox/jars/* \
+      com.zextras.mailbox.Mailbox >/dev/null 2>&1 &
     rc=$?
     if [ $rc != 0 ]; then
       echo "failed."
