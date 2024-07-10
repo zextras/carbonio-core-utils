@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# SPDX-FileCopyrightText: 2024 Zextras <https://www.zextras.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+TARGET_MODULE_CONF_FILE="/opt/zextras/data/ldap/config/cn=config/cn=module{0}.ldif"
+SOURCE_MODULE_CONF_FILE="/opt/zextras/common/etc/openldap/zimbra/config/cn=config/cn=module{0}.ldif"
+
+# update module conf if required
+if ! diff "$TARGET_MODULE_CONF_FILE" "$SOURCE_MODULE_CONF_FILE" > /dev/null; then
+    echo "* Updating module config $TARGET_MODULE_CONF_FILE"
+    cp "$SOURCE_MODULE_CONF_FILE" "$TARGET_MODULE_CONF_FILE"
+fi
