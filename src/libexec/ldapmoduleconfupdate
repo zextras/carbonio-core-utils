@@ -4,11 +4,39 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+set -e
+
 TARGET_MODULE_CONF_FILE="/opt/zextras/data/ldap/config/cn=config/cn=module{0}.ldif"
 SOURCE_MODULE_CONF_FILE="/opt/zextras/common/etc/openldap/zimbra/config/cn=config/cn=module{0}.ldif"
+BACKUP_DIR="/opt/zextras/data/ldap-post-install-backup/"
+BACKUP_FILE="$BACKUP_DIR/cn=module{0}.ldif.bak"
 
-# update module conf if required
-if ! diff "$TARGET_MODULE_CONF_FILE" "$SOURCE_MODULE_CONF_FILE" > /dev/null; then
+backup_config() {
+    echo "* Creating backup of module config file at $BACKUP_FILE"
+    su - zextras -c "mkdir -p $BACKUP_DIR"
+    cp "$TARGET_MODULE_CONF_FILE" "$BACKUP_FILE"
+}
+
+update_config() {
     echo "* Updating module config $TARGET_MODULE_CONF_FILE"
     cp "$SOURCE_MODULE_CONF_FILE" "$TARGET_MODULE_CONF_FILE"
-fi
+}
+
+main() {
+    if [ ! -f "$TARGET_MODULE_CONF_FILE" ]; then
+        echo "Error: Target module config file $TARGET_MODULE_CONF_FILE does not exist."
+        exit 1
+    fi
+
+    if [ ! -f "$SOURCE_MODULE_CONF_FILE" ]; then
+        echo "Error: Source module config file $SOURCE_MODULE_CONF_FILE does not exist."
+        exit 1
+    fi
+
+    if ! diff "$TARGET_MODULE_CONF_FILE" "$SOURCE_MODULE_CONF_FILE" > /dev/null; then
+        backup_config
+        update_config
+    fi
+}
+
+main
