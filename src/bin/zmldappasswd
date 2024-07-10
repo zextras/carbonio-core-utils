@@ -91,7 +91,7 @@ if ( !$options{r} && !$options{c} ) {
 }
 else {
     $ldap = Net::LDAP->new(
-        'ldapi://%2fopt%2fzextras%2fdata%2fldap%2fstate%2frun%2fldapi/')
+        'ldapi://%2frun%2fcarbonio%2frun%2fldapi/')
       or die "$@";
 }
 
