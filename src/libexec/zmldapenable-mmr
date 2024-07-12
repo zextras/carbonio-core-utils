@@ -65,7 +65,7 @@ my $ldap_starttls_supported = $localxml->{key}->{ldap_starttls_supported}->{valu
 my $zimbra_require_interprocess_security = $localxml->{key}->{zimbra_require_interprocess_security}->{value};
 
 if(lc($ldap_is_master) eq "true") {
-  my $ldap = Net::LDAP->new('ldapi://%2fopt%2fzextras%2fdata%2fldap%2fstate%2frun%2fldapi/') or die "$@";
+  my $ldap = Net::LDAP->new('ldapi://%2frun%2fcarbonio%2frun%2fldapi/') or die "$@";
   my $mesg = $ldap->bind("cn=config", password=>"$ldap_root_password");
   $mesg->code && die "Bind: ". $mesg->error . "\n"; 
 

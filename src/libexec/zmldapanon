@@ -64,7 +64,7 @@ if ($options{e}) {
 );
 }
 
-my $ldap = Net::LDAP->new('ldapi://%2fopt%2fzextras%2fdata%2fldap%2fstate%2frun%2fldapi/') or die "$@";
+my $ldap = Net::LDAP->new('ldapi://%2frun%2fcarbonio%2frun%2fldapi/') or die "$@";
 
 my $mesg = $ldap->bind("cn=config", password=>"$ldap_root_password");
 

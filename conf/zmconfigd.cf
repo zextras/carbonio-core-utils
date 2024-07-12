@@ -330,11 +330,6 @@ SECTION mailbox
 	LOCAL zimbra_gid
 	REWRITE conf/log4j.properties.in conf/log4j.properties
 	REWRITE conf/spnego_java_options.in conf/spnego_java_options
-	REWRITE mailboxd/modules/setuid.mod.in mailboxd/modules/setuid.mod
-	REWRITE mailboxd/start.d/setuid.ini.in mailboxd/start.d/setuid.ini	
-	REWRITE mailboxd/etc/krb5.ini.in mailboxd/etc/krb5.ini
-	REWRITE mailboxd/etc/spnego.conf.in mailboxd/etc/spnego.conf
-	REWRITE mailboxd/etc/spnego.properties.in mailboxd/etc/spnego.properties
 	RESTART mailboxd
 
 SECTION service
