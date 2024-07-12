@@ -13,8 +13,9 @@ BACKUP_MODULE_CONF_FILE="$BACKUP_DIR/cn=module{0}.ldif.bak"
 
 backup_module_config() {
   echo "* Creating backup of module config file at $BACKUP_MODULE_CONF_FILE"
-  su - zextras -c "mkdir -p $BACKUP_DIR"
+  mkdir -p "$BACKUP_DIR"
   cp "$TARGET_MODULE_CONF_FILE" "$BACKUP_MODULE_CONF_FILE"
+  chown -R "zextras:" "$BACKUP_DIR"
 }
 
 update_module_config() {
