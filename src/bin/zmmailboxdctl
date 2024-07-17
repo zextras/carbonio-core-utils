@@ -8,10 +8,6 @@
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars
 
-if [ ! -d "${mailboxd_directory}" ]; then
-  exit 0
-fi
-
 if [ ! -x /opt/zextras/common/bin/mysql ]; then
   exit 0
 fi
@@ -63,7 +59,7 @@ case "$1" in
       exit 0
     fi
 
-    mkdir -p "${mailboxd_directory}/work/service/jsp"
+    mkdir -p "/opt/zextras/mailbox/work"
 
     mailboxd_thread_stack_size=${mailboxd_thread_stack_size:=256k}
     if ! echo "${mailboxd_java_options}" | grep -q 'Xss'; then

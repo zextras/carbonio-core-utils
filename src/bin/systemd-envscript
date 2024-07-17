@@ -70,9 +70,9 @@ javaXms=${javaXmx}
 mailboxd_java_heap_new_size_percent=${mailboxd_java_heap_new_size_percent:=25}
 
 # mailboxd
-if [[ -d ${mailboxd_directory} ]]; then
-  if [[ ! -d ${mailboxd_directory}/work/service/jsp ]]; then
-    mkdir -p "${mailboxd_directory}/work/service/jsp"
+if [[ -d "/opt/zextras/mailbox" ]]; then
+  if [[ ! -d /opt/zextras/mailbox/work ]]; then
+    mkdir -p "/opt/zextras/mailbox/work"
   fi
 fi
 
@@ -102,7 +102,6 @@ fi
   echo "ldap_domain=${ldap_domain}"
   echo "ldap_port=${ldap_port}"
   echo "log_directory=${zimbra_log_directory}"
-  echo "mailboxd_directory=${mailboxd_directory}"
   echo "mailboxd_java_heap_new_size_percent=${mailboxd_java_heap_new_size_percent}"
   echo "mailboxd_java_options=${mailboxd_java_options}"
   echo "memcached_flags=${memcached_flags}"
