@@ -21,7 +21,7 @@ my $DISK_WARN_THRESHOLD = getLocalConfig("zmdisklog_warn_threshold") || 85;
 my $hostname = qx(/opt/zextras/bin/zmhostname);
 chomp $hostname;
 
-my $DF = 'df -k';
+my $DF = 'df -k -x squashfs -x udev -x devtmpfs -x overlay -x efivarfs';
 my $HEADING = 'timestamp, path, disk, disk_use, disk_space, disk_pct_used';
 
 my @DF_EXCLUDES = split(/:/, getLocalConfig("zmstat_df_excludes") || "");
