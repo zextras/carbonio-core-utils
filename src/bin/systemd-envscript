@@ -3,9 +3,10 @@
 
 eval "$(/opt/zextras/common/bin/java \
   -client \
-  -cp '/opt/zextras/lib/jars/*' \
+  -cp '/opt/zextras/mailbox/jars/*' \
   -Djava.library.path=/opt/zextras/lib \
-  -Dzimbra.home=/opt/zextras com.zimbra.cs.localconfig.LocalConfigCLI -q -m shell || true)"
+  -Dzimbra.home=/opt/zextras \
+  com.zimbra.cs.localconfig.LocalConfigCLI -q -m shell || true)"
 
 # java
 if [[ -d ${zimbra_java_home}/jre ]]; then
@@ -27,7 +28,7 @@ if [[ "${zimbra_zmjava_java_library_path}" = "" ]]; then
 fi
 
 if [[ "${zimbra_zmjava_java_ext_dirs}" = "" ]]; then
-  zimbra_zmjava_java_ext_dirs=${JRE_EXT_DIR}:/opt/zextras/lib/jars:${EXT_DIR}
+  zimbra_zmjava_java_ext_dirs=${JRE_EXT_DIR}:/opt/zextras/mailbox/jars:${EXT_DIR}
 fi
 
 if [[ -n "${EXT_JAR_PATH}" ]]; then
