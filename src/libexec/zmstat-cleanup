@@ -45,8 +45,8 @@ done
 
 cd /opt/zextras/zmstat || return 1
 rc=$?
-if [ $rc -ne 0 ] || [ "${PWD}" != "$zmstat_dir" ]; then
-  echo "ERROR: Cannot change to the zmstats log directory $zmstat_dir."
+if [ $rc -ne 0 ] || [ "${PWD}" != "/opt/zextras/zmstat" ]; then
+  echo "ERROR: Cannot change to the zmstats log directory /opt/zextras/zmstat."
   exit 1
 fi
 
