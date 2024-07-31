@@ -20,7 +20,7 @@ rewriteconfig() {
 }
 
 getpid() {
-  pid=$(pidof /opt/zextras/common/bin/cbpolicyd)
+  pid=$(pgrep -f /opt/zextras/common/bin/cbpolicyd)
 }
 
 checkrunning() {
@@ -93,7 +93,7 @@ case "$1" in
       kill "$pid" 2>/dev/null
       for ((i = 0; i < 300; i++)); do
         sleep 5
-        kill -0 "$pid" 2>/dev/null
+        echo "$pid" | xargs kill 2>/dev/null
         rc=$?
         if [ $rc -ne 0 ]; then
           echo " done."
