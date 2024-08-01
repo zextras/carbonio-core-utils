@@ -15,20 +15,12 @@ else
   JRE_EXT_DIR=${zimbra_java_home}/lib/ext
 fi
 
-EXTENSIONS="backup clamscanner network zimbrahsm zimbrasync twofactorauth"
-EXT_DIR="/opt/zextras/lib/ext-common/*"
-for i in ${EXTENSIONS}; do
-  if [[ -d "/opt/zextras/lib/ext/${i}" ]]; then
-    EXT_DIR="${EXT_DIR}:/opt/zextras/lib/ext/${i}/*"
-  fi
-done
-
 if [[ "${zimbra_zmjava_java_library_path}" = "" ]]; then
   zimbra_zmjava_java_library_path=/opt/zextras/lib
 fi
 
 if [[ "${zimbra_zmjava_java_ext_dirs}" = "" ]]; then
-  zimbra_zmjava_java_ext_dirs=${JRE_EXT_DIR}:/opt/zextras/mailbox/jars:${EXT_DIR}
+  zimbra_zmjava_java_ext_dirs=${JRE_EXT_DIR}:/opt/zextras/mailbox/jars:/opt/zextras/lib/ext/clamscanner
 fi
 
 if [[ -n "${EXT_JAR_PATH}" ]]; then
@@ -36,18 +28,16 @@ if [[ -n "${EXT_JAR_PATH}" ]]; then
 fi
 
 # openldap
-if [[ "${ldap_bind_url}" = "" ]]; then
-  bind_url="${ldap_url}"
-else
-  bind_url="${ldap_bind_url}"
-fi
+# Read LDAP bind urls as bash array
+read -ra bind_url <<<"$ldap_url"
 
+# Our ldap url should be the first in the list in localconfig as stated in
+# ldap.production script.
+first_url=${bind_url[0]}
 # Remove the protocol
-url=${bind_url#*//}
-
-# Split the domain and port
-ldap_domain=${url%:*}
-ldap_port=${url#*:}
+url="${first_url#*//}"
+# Retrieve the hostname
+ldap_domain="${url%:*}"
 
 # memcached
 addr=$(/opt/zextras/bin/zmprov \
