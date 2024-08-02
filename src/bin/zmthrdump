@@ -8,7 +8,6 @@
 use strict;
 use Getopt::Std;
 
-my $pid_file  = '/run/carbonio/zmmailboxd_java.pid';
 my $log_file  = '/opt/zextras/log/zmmailboxd.out';
 my $outhandle = \*STDOUT;
 my $timeout   = 25;
@@ -37,7 +36,7 @@ Usage: zmthrdump [-h] [-i] [-t timeout] [-p pid] [-f file] [-o out-file]
 
     -h        prints this help message
     -i        append timestamp to LOGFILE prior to invoking SIGQUIT
-    -p        PID to send SIGQUIT (default:  value in zmmailboxd_java.pid)
+    -p        PID to send SIGQUIT
     -f        LOGFILE to tail for thread dump output (default:  zmmailboxd.out)
     -o        output file of threaddump (default:  stdout)
     -t        TIMEOUT (seconds) to exit if unresponsive (default: $timeout)
@@ -84,9 +83,7 @@ if ( exists $opts{'p'} ) {
     usage() if ( !defined($pid) || $pid !~ /^\d+$/ );
 }
 else {
-    open( PID, "<$pid_file" ) || die "$pid_file: $!";
-    $pid = <PID>;
-    close(PID);
+    $pid = qx(pgrep -f '/opt/zextras/.*/java.*mailboxd');
     chomp($pid);
 }
 

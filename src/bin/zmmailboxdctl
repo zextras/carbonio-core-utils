@@ -82,7 +82,7 @@ case "$1" in
       -Djava.library.path=/opt/zextras/lib \
       -Dzimbra.config=/opt/zextras/conf/localconfig.xml \
       -cp /opt/zextras/mailbox/jars/mailbox.jar:/opt/zextras/mailbox/jars/* \
-      com.zextras.mailbox.Mailbox >/dev/null 2>&1 &
+      com.zextras.mailbox.Mailbox &>>/opt/zextras/log/zmmailboxd.out &
     rc=$?
     if [ $rc != 0 ]; then
       echo "failed."
