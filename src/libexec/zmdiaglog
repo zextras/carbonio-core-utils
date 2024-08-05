@@ -73,31 +73,9 @@ sub logmsg($) {
 }
 
 sub get_java_version() {
-    my $version = "UNKNOWN";
     open( JAVA, "$JAVA -version 2>&1 |" )
       || die "Cannot determine java version: $!";
-    my $version_line = <JAVA>;
-    if ( $version_line =~ /"13\.0/ ) {
-        $version = "13.0";
-    }
-    elsif ( $version_line =~ /"11\.0/ ) {
-        $version = "11.0";
-    }
-    elsif ( $version_line =~ /"1\.8/ ) {
-        $version = "1.8";
-    }
-    elsif ( $version_line =~ /"1\.7/ ) {
-        $version = "1.7";
-    }
-    elsif ( $version_line =~ /"1\.6/ ) {
-        $version = "1.6";
-    }
-    elsif ( $version_line =~ /"1\.5/ ) {
-        $version = "1.5";
-    }
-    else {
-        die "Unknown java version: $version_line";
-    }
+    my $version = <JAVA>;
     close(JAVA);
     $version;
 }
