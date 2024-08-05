@@ -42,7 +42,6 @@ $DLOGDIR = "zmdiaglog-$ZMHOSTNAME."
   . strftime( "%Y%m%d-%H%M%S", localtime() ) . "."
   . $$;
 $DEFAULT_TIMEOUT                    = 120;
-$PID_FILE                           = '/run/carbonio/zmmailboxd_java.pid';
 $JMAP                               = '/opt/zextras/common/bin/jmap';
 $JAVA                               = '/opt/zextras/common/lib/jvm/java/bin/java';
 $JINFO                              = '/opt/zextras/common/lib/jvm/java/bin/jinfo';
@@ -156,31 +155,12 @@ sub has_cmd($) {
 
 sub get_pid() {
     my $pid = 0;
-    if ( -f $PID_FILE ) {
-        eval {
-            open( PID_FILE, "<$PID_FILE" ) || die $!;
-            $pid = <PID_FILE>;
-            chomp($pid);
-            chomp($pid);
-            close PID_FILE;
-        };
-        if ($@) {
-            logmsg "Unable to find pid file, falling back: $@\n";
-        }
-    }
     if ( !$pid ) {
         eval {
-            open( PS, "ps -ef | grep [j]etty.xml | awk '{ print \$2 }' |" )
-              || die $!;
-            $pid = <PS>;
+            $pid = qx(pgrep -f '/opt/zextras/.*/java.*mailboxd');
             chomp($pid);
-            chomp($pid);
-            close(PS);
         };
-        if ($@) {
-            logmsg "Unable to manually obtain mailboxd pid: $@\n";
-        }
-        elsif ( !$pid ) {
+        if ( !$pid ) {
             logmsg "Unable to determine mailboxd pid\n";
         }
     }
