@@ -115,14 +115,21 @@ case "$1" in
       echo "${servicename} is not running."
       exit 0
     else
-      /opt/zextras/bin/zmthrdump -i -o /opt/zextras/log/stacktrace.$$."$(date +%Y%m%d%H%M%S)" 2>/dev/null
       kill "$pid" 2>/dev/null
       rc=$?
-    fi
-    if [ $rc -eq 0 ]; then
-      echo "done."
-    else
-      echo "failed."
+      for ((i = 0; i < 10; i++)); do
+        checkrunning
+        if [ $running = 0 ]; then
+          break
+        fi
+        sleep 1
+      done
+      if [ "$rc" -ne 0 ]; then
+        echo "failed."
+        exit 1
+      else
+        echo "done."
+      fi
     fi
     exit 0
     ;;

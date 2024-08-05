@@ -67,7 +67,7 @@ case "$1" in
     fi
 
     /opt/zextras/common/sbin/nginx -c ${configfile}
-    for ((i = 0; i < 30; i++)); do
+    for ((i = 0; i < 10; i++)); do
       checkrunning
       if [ $running = 1 ]; then
         break
@@ -94,11 +94,11 @@ case "$1" in
     else
       /opt/zextras/common/sbin/nginx -c /opt/zextras/conf/nginx.conf -s stop
       rc=$?
-      # this further check is necessary to wait for the proxy
-      # to actually shut down, especially in the restart phase.
-      checkrunning
-      while [ $running = 1 ]; do
+      for ((i = 0; i < 10; i++)); do
         checkrunning
+        if [ $running = 0 ]; then
+          break
+        fi
         sleep 1
       done
       if [ "$rc" -ne 0 ]; then

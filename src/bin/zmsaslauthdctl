@@ -45,39 +45,44 @@ case "$1" in
       rewriteconfig
     fi
     /opt/zextras/common/sbin/saslauthd -r -a zimbra
-    for ((i = 0; i < 30; i++)); do
+    for ((i = 0; i < 10; i++)); do
       checkrunning
       if [ $running = 1 ]; then
-        echo "done."
-        exit 0
+        break
       fi
       sleep 1
     done
-    echo "failed."
-    exit 1
+    if [ "$pid" != "" ]; then
+      echo "done."
+      exit 0
+    else
+      echo "failed."
+      exit 1
+    fi
     ;;
 
   'kill' | 'stop')
     checkrunning
+    echo -n "Stopping saslauthd..."
     if [ $running = 0 ]; then
       echo "saslauthd is not running."
       exit 0
     else
-      echo -n "Stopping saslauthd..."
-      for ((i = 0; i < 30; i++)); do
-        echo "$pid" | xargs kill 2>/dev/null
-        rc=$?
-        if [ $rc -eq 0 ]; then
+      echo "$pid" | xargs kill 2>/dev/null
+      rc=$?
+      for ((i = 0; i < 10; i++)); do
+        checkrunning
+        if [ $running = 0 ]; then
           break
         fi
         sleep 1
       done
-    fi
-    checkrunning
-    if [[ "${pid}" != "" ]]; then
-      exit 1
-    else
-      echo "done."
+      if [ "$rc" -ne 0 ]; then
+        echo "failed."
+        exit 1
+      else
+        echo "done."
+      fi
     fi
     exit 0
     ;;

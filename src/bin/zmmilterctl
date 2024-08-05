@@ -67,8 +67,11 @@ case "$1" in
     else
       kill "$pid" 2>/dev/null
       rc=$?
-      while [ $running = 1 ]; do
+      for ((i = 0; i < 10; i++)); do
         checkrunning
+        if [ $running = 0 ]; then
+          break
+        fi
         sleep 1
       done
       if [ "$rc" -ne 0 ]; then

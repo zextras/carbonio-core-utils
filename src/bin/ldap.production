@@ -71,7 +71,7 @@ start() {
   else
     echo "Started slapd: pid $pid"
   fi
-  for ((i = 0; i < 30; i++)); do
+  for ((i = 0; i < 10; i++)); do
     checkListening
     if [ $listening = 1 ]; then
       break

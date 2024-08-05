@@ -51,7 +51,7 @@ case "$1" in
     else
       /opt/zextras/common/bin/memcached -d -U 0 -l "${addr}" -p "${port:-11211}"
     fi
-    for ((i = 0; i < 30; i++)); do
+    for ((i = 0; i < 10; i++)); do
       checkrunning
       if [ $running = 1 ]; then
         break
@@ -73,21 +73,21 @@ case "$1" in
       echo "memcached is not running."
       exit 0
     else
-      for ((i = 0; i < 30; i++)); do
-        kill -0 "$pid" 2>/dev/null
-        rc=$?
-        if [ $rc -ne 0 ]; then
+      kill "$pid" 2>/dev/null
+      rc=$?
+      for ((i = 0; i < 10; i++)); do
+        checkrunning
+        if [ $running = 0 ]; then
           break
         fi
-        kill "$pid" 2>/dev/null
+        sleep 1
       done
-    fi
-    rc=$?
-    if [ $rc -ne 0 ]; then
-      echo "failed."
-      exit 1
-    else
-      echo "done."
+      if [ "$rc" -ne 0 ]; then
+        echo "failed."
+        exit 1
+      else
+        echo "done."
+      fi
     fi
     exit 0
     ;;

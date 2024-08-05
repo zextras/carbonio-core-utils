@@ -76,28 +76,25 @@ case "$1" in
 
   'stop')
     checkrunning
+    echo -n "Stopping mysqld..."
     if [ $running = 0 ]; then
       echo "mysqld not running: no pid"
       exit 0
     else
-      echo -n "Stopping mysqld..."
       echo "$pid" | xargs kill >>"${mysql_errlogfile}" 2>&1
-      # wait for mysqld pid file to be removed
+      rc=$?
       for ((i = 0; i < zimbra_mysql_shutdown_timeout; i++)); do
-        sleep 2
-        echo "$pid" | xargs kill -0 2>/dev/null
-        rc=$?
-        if [ $rc -ne 0 ]; then
+        checkrunning
+        if [ $running = 0 ]; then
           break
         fi
-        echo "$pid" | xargs kill >>"${mysql_errlogfile}" 2>&1
+        sleep 1
       done
-      rc=$?
-      if [ $rc -ne 0 ]; then
+      if [ "$rc" -ne 0 ]; then
         echo "failed."
         exit 1
       else
-        echo " done."
+        echo "done."
       fi
     fi
     exit 0

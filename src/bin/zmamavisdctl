@@ -84,7 +84,7 @@ case "$1" in
     else
       if [ $mcrunning = 0 ]; then
         sudo /opt/zextras/common/sbin/amavis-mc
-        for ((i = 0; i < 30; i++)); do
+        for ((i = 0; i < 10; i++)); do
           checkrunning-mc
           if [ $mcrunning = 1 ]; then
             break
@@ -121,7 +121,7 @@ case "$1" in
       fi
       /opt/zextras/common/sbin/amavisd -X no_conf_file_writable_check -c \
         /opt/zextras/conf/amavisd.conf &
-      for ((i = 0; i < 30; i++)); do
+      for ((i = 0; i < 10; i++)); do
         checkrunning
         if [ $running = 1 ]; then
           break
@@ -136,55 +136,48 @@ case "$1" in
     fi
     ;;
 
-  'kill')
-    $0 stop
-    ;;
-
-  'stop')
+  'kill' | 'stop')
     checkrunning
     echo -n "Stopping amavisd..."
     if [ $running = 0 ]; then
       echo "amavisd is not running."
     else
       kill "$pid" 2>/dev/null
-      for ((i = 0; i < 300; i++)); do
-        sleep 5
-        kill -0 "$pid" 2>/dev/null
-        rc=$?
-        if [ $rc -ne 0 ]; then
+      rc=$?
+      for ((i = 0; i < 10; i++)); do
+        checkrunning
+        if [ $running = 0 ]; then
           break
         fi
+        sleep 1
       done
-      kill "$pid" 2>/dev/null
-      rc=$?
-      if [ $rc -ne 0 ]; then
-        echo " done."
-      else
-        echo " failed to stop $pid"
+      if [ "$rc" -ne 0 ]; then
+        echo "failed."
         exit 1
+      else
+        echo "done."
       fi
     fi
+
     checkrunning-mc
     echo -n "Stopping amavisd-mc..."
     if [ $mcrunning = 0 ]; then
       echo "amavisd-mc is not running."
     else
       kill "$mcpid" 2>/dev/null
-      for ((i = 0; i < 300; i++)); do
-        sleep 5
-        kill -0 "$mcpid" 2>/dev/null
-        rc=$?
-        if [ $rc -ne 0 ]; then
+      rc=$?
+      for ((i = 0; i < 10; i++)); do
+        checkrunning-mc
+        if [ $mcrunning = 0 ]; then
           break
         fi
+        sleep 1
       done
-      kill "$mcpid" 2>/dev/null
-      rc=$?
-      if [ $rc -ne 0 ]; then
-        echo " done."
-      else
-        echo " failed to stop $pid"
+      if [ "$rc" -ne 0 ]; then
+        echo "failed."
         exit 1
+      else
+        echo "done."
       fi
     fi
     exit 0

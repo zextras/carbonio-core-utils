@@ -107,18 +107,23 @@ case "$1" in
       echo "zmconfigd is not running."
       exit 0
     else
-      kill "${pid}" 2>/dev/null
+      kill "$pid" 2>/dev/null
+      rc=$?
       for ((i = 0; i < 10; i++)); do
-        if ! kill -0 "${pid}" 2>/dev/null; then
-          echo "done."
-          exit 0
+        checkrunning
+        if [ $running = 0 ]; then
+          break
         fi
-        sleep 3
+        sleep 1
       done
-      kill -9 "${pid}" 2>/dev/null
-      echo "failed to stop gracefully, process killed."
-      exit 1
+      if [ "$rc" -ne 0 ]; then
+        echo "failed."
+        exit 1
+      else
+        echo "done."
+      fi
     fi
+    exit 0
     ;;
 
   'restart' | 'reload')

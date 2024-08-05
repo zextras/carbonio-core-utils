@@ -91,16 +91,15 @@ case "$1" in
       echo "clamd is not running."
     else
       kill "$pid" 2>/dev/null
-      for ((i = 0; i < 30; i++)); do
-        sleep 2
-        kill -0 "$pid" 2>/dev/null
-        rc=$?
-        if [ $rc -ne 0 ]; then
+
+      rc=$?
+      for ((i = 0; i < 10; i++)); do
+        checkrunning
+        if [ $running = 1 ]; then
           break
         fi
-        kill "$pid"
+        sleep 1
       done
-      rc=$?
       if [ $rc -ne 0 ]; then
         echo "failed."
         quit 1
