@@ -82,7 +82,7 @@ if ! echo "${mailboxd_java_options}" | grep -q 'log4j'; then
 fi
 
 {
-  echo "bind_url=${bind_url}"
+  echo "bind_url=${first_url}"
   echo "configd_listen_port=${zmconfigd_listen_port}"
   echo "configd_rewrite_timeout=${zimbra_configrewrite_timeout}"
   echo "java_ext_dirs=${zimbra_zmjava_java_ext_dirs}"
