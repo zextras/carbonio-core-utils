@@ -84,34 +84,14 @@ sub get_mbox_stat() {
     return scalar @ents;
 }
 
-my $MBOX_PID_FILE = '/opt/zextras/log/zmmailboxd_java.pid';
 sub get_mboxd_pid() {
     my $pid = 0;
-    if (-f $MBOX_PID_FILE) {
+    if ( !$pid ) {
         eval {
-            open(PID_FILE, "<$MBOX_PID_FILE") || die $!;
-            $pid = <PID_FILE>;
-            chomp($pid); chomp($pid);
-            close PID_FILE;
+            $pid = qx(pgrep -f '/opt/zextras/.*/java.*mailboxd');
+            chomp($pid);
         };
-        if ($@) {
-            print STDERR "Unable to find pid file, falling back: $@\n";
-        }
-    } else {
-      return 0;
-    }
-
-    if (!$pid) {
-        eval {
-            open(PS, "ps -ef | grep [j]etty.xml | awk '{ print \$2 }' |")
-                    || die $!;
-            $pid = <PS>;
-            chomp($pid); chomp($pid);
-            close(PS);
-        };
-        if ($@) {
-            print STDERR "Unable to manually obtain mailboxd pid: $@\n";
-        } elsif (!$pid) {
+        if ( !$pid ) {
             print STDERR "Unable to determine mailboxd pid\n";
         }
     }
