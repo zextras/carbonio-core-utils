@@ -297,7 +297,7 @@ sub run() {
     my $JAVA_VERSION = get_java_version();
     logmsg "Java version: $JAVA_VERSION\n";
     if ($mailboxd_pid) {
-        logmsg "ZCS mailboxd pid: $mailboxd_pid\n";
+        logmsg "mailboxd pid: $mailboxd_pid\n";
         save_jinfo($mailboxd_pid);
 
         for ( my $i = 1 ; $i <= 10 ; $i++ ) {
@@ -569,7 +569,7 @@ sub run() {
     mkdir("$destination/confs/ld.so.conf");
 
     if ( !-f $ZMSTAT_CONF ) {
-        logmsg "Saving ZCS statistics chart config\n";
+        logmsg "Saving statistics chart config\n";
         open( CONF,     "$SU '/opt/zextras/bin/zmstat-chart-config' |" );
         open( CONF_OUT, ">stats/zmstat-chart.xml" );
         while (<CONF>) {
@@ -579,13 +579,13 @@ sub run() {
         close(CONF_OUT);
     }
     else {
-        logmsg "Copying ZCS statistics chart config\n";
+        logmsg "Copying statistics chart config\n";
         cp $ZMSTAT_CONF, "$destination/stats";
     }
     my $today   = strftime( "%Y-%m-%d", localtime( time() ) );
     my $t_today = strftime( "%Y_%m_%d", localtime( time() ) );
 
-    logmsg "Copying current ZCS logs\n";
+    logmsg "Copying current logs\n";
     my @log_files = (
         "/opt/zextras/log/access_log.$today",
         "/opt/zextras/log/audit.log",
@@ -619,13 +619,13 @@ sub run() {
 
     cp $_, "$destination" for @static_info;
 
-    logmsg "Copying today's ZCS statistics\n";
+    logmsg "Copying today's statistics\n";
     cp $_, "$destination/stats" for glob("/opt/zextras/zmstat/*.csv");
 
     my $yesterday = time() - ( 24 * 60 * 60 );
     my $yesterday_stats_dir = strftime( "%Y-%m-%d", localtime($yesterday) );
     if ( -d "/opt/zextras/zmstat/$yesterday_stats_dir" ) {
-        logmsg "Copying yesterday's ZCS statistics\n";
+        logmsg "Copying yesterday's statistics\n";
         mkdir("$destination/stats/$yesterday_stats_dir");
         my $zuser = $Zimbra::Mon::Zmstat::LC{zimbra_user};
         my ( $zuid, $zgid ) = ( getpwnam($zuser) )[ 2, 3 ];

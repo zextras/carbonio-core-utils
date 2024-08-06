@@ -61,11 +61,9 @@ Find any email sent by an email address starting with 'p' to anyone at
 
 =head1 DESCRIPTION
 
-This utility, zmmsgtrace, is intended to act as a replacement for the
-original zmmsgtrace utility that was removed from ZCS distribution
-starting with ZCS 6.  This utility relies on a (centralized sys)log
+This utility relies on a (centralized sys)log
 host that hold mail log (aka carbonio.log) files which contain log
-entries for amavis and postfix for the ZCS platform.
+entries for amavis and postfix for Carbonio.
 
 This utility reads a lot of data into memory so beware of running this
 on platforms that have limited memory available.
@@ -92,14 +90,7 @@ L<https://bugzilla.zimbra.com/show_bug.cgi?id=41078>
 
 =back
 
-The old zmmsgtrace relied on the ZCS "logger database" which was
-removed/replaced in ZCS 6, this version reads syslog files.
-
-Command line arguments and output of this tool, is very similar to the
-original zmmsgtrace utility.
-
-This utility combines logic from zmlogger, zmlogprocess and zmmsgtrace
-from ZCS 5.
+This utility combines logic from zmlogger, zmlogprocess and zmmsgtrace.
 
 =cut
 

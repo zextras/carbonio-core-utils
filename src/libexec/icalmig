@@ -173,8 +173,8 @@ sub help
          from list displayed on screen.
          Date/Recurrence information would be
          modified to add the TZ information.
-         Takes TZ information from ZCS's timezonesfile.\n\n";
-  print "-tzx         <TZID from ZCS's timezonesfile>\n";
+         Takes TZ information from Carbonio timezones file.\n\n";
+  print "-tzx         <TZID from Carbonio timezones file>\n";
   print "       - Specify TZID for no question conversion.\n\n";
   print "-nonStandardDTSTART        \n";
   print "       - If master event has DTSTART later than

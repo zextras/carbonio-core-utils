@@ -19,7 +19,7 @@
 
 =head1 NAME
 
-zmcertmgr - certificate management tool for ZCS
+zmcertmgr - certificate management tool for Carbonio
 
 =head1 SYNOPSIS
 
@@ -186,7 +186,7 @@ current zmhostname unless the B<-noDefaultSubjectAltName> argument is
 used.
 
 For B<createcrt>, the use of B<-allservers> will set the CR
-SubjectAltNames to contain the names of all servers in the ZCS
+SubjectAltNames to contain the names of all servers in the Carbonio
 deployment (zmprov gas).
 
 =back
@@ -226,7 +226,7 @@ instead of as a per-server setting (getServer/modifyServer).
 Deploys a certificate.
 
 For B<deploycrt>, the use of B<-allservers> will cause zmcertmgr to
-iterate through all servers in the ZCS deployment (zmprov gas, minus
+iterate through all servers in the Carbonio deployment (zmprov gas, minus
 the initiating zmcertmgr host).  On each server, the following two
 commands are run:
 
@@ -268,8 +268,6 @@ certificate are kept. You can use the staging area to verify that you
 are ready to deploy a certificate.
 
 =item B<migrate>
-
-Moves certs and keys from ZCS installs prior to version 5.0.x.
 
 =back
 
@@ -363,8 +361,6 @@ Distinguished Names
 =back
 
 =head1 CAVEATS
-
-As of ZCS 8.7, this tool must be run as user 'zextras' not 'root'.
 
 =cut
 

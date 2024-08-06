@@ -48,7 +48,7 @@ qx(zmprov -l gs $server zimbraServiceEnabled | grep -i zimbraServiceEnabled | se
     }
     if ( scalar(@services) < 1 ) {
         print STDERR
-          "Unable to determine ZCS service list on this host.  Assuming all.\n";
+          "Unable to determine service list on this host. Assuming all.\n";
         $all = 1;
     }
 

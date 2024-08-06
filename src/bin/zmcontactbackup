@@ -67,7 +67,7 @@ Examples :
 This utility is used to schedule contact backup for
 specified mailbox server(s).
 It can be used to start/stop contact backup immediately.
-It uses the ZCS Admin SOAP APIs.
+It uses the Carbonio Admin SOAP APIs.
 
 Specifically, this utility was created to meet the following
 requirements:
