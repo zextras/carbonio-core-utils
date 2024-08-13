@@ -36,7 +36,7 @@ call_cli() {
       "$@"
   else
     exec /opt/zextras/bin/zmjava \
-      -cp "${carbonio_cli_path}/*" \
+      -cp "/opt/zextras/mailbox/jars/*:${carbonio_cli_path}/*" \
       -Xmx128m com.zextras.cli.AdvancedCLI \
       --columns "$TTY_COLS" \
       "$@"
