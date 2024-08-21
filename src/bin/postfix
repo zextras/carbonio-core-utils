@@ -12,6 +12,10 @@ if [ ! -x /opt/zextras/common/sbin/postfix ]; then
   exit 1
 fi
 
+is_systemd
+if [ $? -eq 1 ]; then
+  systemd_print
+fi
 zmsetvars
 
 rewritemtaconfig() {

@@ -11,9 +11,11 @@ if [ "$(whoami)" != zextras ]; then
 fi
 
 source /opt/zextras/bin/zmshutil || exit 1
+is_systemd
+if [ $? -eq 1 ]; then
+  systemd_print
+fi
 zmsetvars
-
-pid=""
 
 getpid() {
   pid=$(pidof /opt/zextras/common/bin/memcached)

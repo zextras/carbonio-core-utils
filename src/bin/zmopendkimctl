@@ -17,6 +17,10 @@ if [ ! -x "/opt/zextras/common/sbin/opendkim" ]; then
 fi
 
 source /opt/zextras/bin/zmshutil || exit 1
+is_systemd
+if [ $? -eq 1 ]; then
+  systemd_print
+fi
 zmsetvars
 
 odk=/opt/zextras/common/sbin/opendkim

@@ -11,6 +11,10 @@ if [ "$(whoami)" != zextras ]; then
 fi
 
 source /opt/zextras/bin/zmshutil || exit 1
+is_systemd
+if [ $? -eq 1 ]; then
+  systemd_print
+fi
 zmsetvars
 
 dbfile=${cbpolicyd_db_file:=/opt/zextras/data/cbpolicyd/db/cbpolicyd.sqlitedb}

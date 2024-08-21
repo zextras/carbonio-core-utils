@@ -586,8 +586,7 @@ sub systemdPrint {
             print "  - $target.target\n"  # At least one target is enabled
         }
     }
-    print "  systemctl list-dependencies <target>\n\n";
-    print "Please check the documentation for further details.\nExiting.\n";
+    print "\nPlease check the documentation for further details.\nExiting.\n";
     exit 1
 }
 
