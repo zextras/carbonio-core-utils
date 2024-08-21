@@ -97,9 +97,15 @@ su - zextras -c "
 #
 # Start mysql server
 #
+
 echo "* Starting mysql server"
-su - zextras -c "/opt/zextras/bin/mysql.server start \
+is_systemd
+if [ $? -eq 1 ]; then
+  systemctl start carbonio-appserver-db.service
+else
+  su - zextras -c "/opt/zextras/bin/mysql.server start \
   >>${zimbra_log_directory}/zmmyinit.log 2>&1"
+fi
 
 # make sure we can connect before continuing
 until echo "show processlist" | /opt/zextras/bin/mysql -u root -p= >/dev/null 2>&1; do
