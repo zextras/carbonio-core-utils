@@ -6,6 +6,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 source /opt/zextras/bin/zmshutil || exit 1
+is_systemd
 zmsetvars
 
 if [ ! -d "${mailboxd_directory}" ]; then

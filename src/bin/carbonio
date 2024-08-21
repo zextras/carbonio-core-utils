@@ -13,6 +13,7 @@ if [ "$(whoami)" != "zextras" ]; then
 fi
 
 source /opt/zextras/bin/zmshutil || exit 1
+is_systemd
 
 carbonio_cli_path="/usr/share/carbonio-advanced-cli"
 carbonio_cli="carbonio-advanced-cli.jar"

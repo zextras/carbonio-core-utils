@@ -7,6 +7,15 @@
 #
 # Find and set local config variables.
 #
+
+# Array of systemd targets to check and start
+systemd_targets=(
+  "carbonio-directory-server"
+  "carbonio-appserver"
+  "carbonio-proxy"
+  "carbonio-mta"
+)
+
 zmsetvars() {
   if [ "$1" = "-f" ]; then
     shift
@@ -53,4 +62,45 @@ zmsysmemkb() {
     memkb=524288
   fi
   echo "$memkb"
+}
+
+is_systemd() {
+  # Check if any of the systemd targets are enabled
+  for target in "${systemd_targets[@]}"; do
+    if is_systemd_enabled_target "$target"; then
+      systemd_print # At least one target is enabled
+    fi
+  done
+}
+
+is_systemd_enabled_target() {
+  local unit_name="$1"
+
+  # Execute the command and check if the unit is enabled
+  if systemctl is-enabled "${unit_name}.target" &>/dev/null; then
+    return 0 # The unit is enabled
+  elif [ $? -eq 1 ]; then
+    return 1 # The unit is not enabled
+  else
+    echo "Error: Unable to check the status of ${unit_name}.target" >&2
+    return 2 # An error occurred
+  fi
+}
+
+systemd_print() {
+  echo "Services are now handled by systemd."
+  echo
+  echo "Enabled systemd targets:"
+  echo
+
+  for target in "${systemd_targets[@]}"; do
+    if is_systemd_enabled_target "$target"; then
+      echo "  - ${target}.target" # At least one target is enabled
+    fi
+  done
+
+  echo
+  echo "Please check the documentation for further details."
+  echo "Exiting."
+  exit 1
 }
