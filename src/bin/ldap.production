@@ -98,7 +98,7 @@ stop() {
   echo -n "Killing slapd with pid $pid"
   kill "$pid" 2>/dev/null
   for ((i = 0; i < 1500; i++)); do
-    if ! kill -0 "$pid" 2>/dev/null; then
+    if ! kill "$pid" 2>/dev/null; then
       echo " done."
       exit 0
     fi
