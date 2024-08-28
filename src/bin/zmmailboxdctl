@@ -46,6 +46,14 @@ checkrunning() {
   fi
 }
 
+checkadvanced() {
+  if ls /opt/zextras/lib/ext/carbonio/carbonio-advanced-*.jar >/dev/null 2>&1; then
+    echo "Carbonio Advanced installed... checking advanced modules status"
+    sleep $1
+    /opt/zextras/bin/carbonio --json core getAllServicesStatus | jq -r '.response | .[] | [.commercialName,.running] | join(" is ") | sub("true";"running") | sub("false";"NOT running")'
+  fi
+}
+
 case "$1" in
   'start')
     if [ "$2" = "" ]; then
@@ -106,6 +114,7 @@ case "$1" in
     done
     if [ $rc = 0 ]; then
       echo "done."
+      checkadvanced 5
     else
       echo "failed."
     fi
@@ -151,6 +160,7 @@ case "$1" in
       exit 1
     else
       echo "running."
+      checkadvanced 0
       exit 0
     fi
     ;;
