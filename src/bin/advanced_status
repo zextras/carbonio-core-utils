@@ -26,3 +26,5 @@ check_running_advanced() {
       advanced_is_running=0
   fi
 }
+
+checkadvanced $1
