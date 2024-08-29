@@ -13,10 +13,10 @@ checkadvanced() {
         if [ $advanced_is_running = 0 ]; then
           break
         fi
-        sleep $1
+        sleep "$1"
       done
       echo ""
-      if [ $advanced_is_running = 0 ]; then
+      if [ "$advanced_is_running" = 0 ]; then
         /opt/zextras/bin/carbonio --json core getAllServicesStatus | jq -r '.response | .[] | [.commercialName,.running] | join(" is ") | sub("true";"running") | sub("false";"NOT running")'
         if [ $? != 0 ]; then
           echo "Failed to check advanced modules status. Carbonio CLI not working!"
@@ -50,4 +50,4 @@ exists_command() {
   fi
 }
 
-checkadvanced $1
+checkadvanced "$1"
