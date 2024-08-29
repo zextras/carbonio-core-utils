@@ -1,0 +1,28 @@
+#!/bin/bash
+
+checkadvanced() {
+  if ls /opt/zextras/lib/ext/carbonio/carbonio-advanced-*.jar >/dev/null 2>&1; then
+    echo "Carbonio Advanced installed... checking advanced modules status"
+    for ((i = 0; i < 10; i++)); do
+      check_running_advanced
+      if [ $advanced_is_running = 0 ]; then
+        break
+      fi
+      sleep $1
+    done
+    if [ $advanced_is_running = 0 ]; then
+      /opt/zextras/bin/carbonio --json core getAllServicesStatus | jq -r '.response | .[] | [.commercialName,.running] | join(" is ") | sub("true";"running") | sub("false";"NOT running")'
+    else
+      echo "Failed to check advanced modules status"
+    fi
+  fi
+}
+
+check_running_advanced() {
+  local output=$(carbonio core)
+  if [[ "$output" == *"Unable to communicate with server"* ]]; then
+      advanced_is_running=1
+  else
+      advanced_is_running=0
+  fi
+}
