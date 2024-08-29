@@ -19,7 +19,7 @@ checkadvanced() {
 }
 
 check_running_advanced() {
-  local output=$(carbonio core)
+  local output=$(carbonio core getVersion)
   if [[ "$output" == *"Unable to communicate with server"* ]]; then
       advanced_is_running=1
   else
