@@ -106,7 +106,7 @@ case "$1" in
     done
     if [ $rc = 0 ]; then
       echo "done."
-      /opt/zextras/bin/advanced_status 5
+      /opt/zextras/bin/advanced_status 2
     else
       echo "failed."
     fi
