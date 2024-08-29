@@ -240,6 +240,12 @@ sub doStatus {
         else {
             my $service_name = renameServices($_);
             $stat = sprintf "\t%-20s %10s\n", $service_name, ($rc) ? "Stopped" : "Running";
+            if (   $_ eq "mailbox" ) {
+                my $res =`/opt/zextras/bin/advanced_status 0`;
+                foreach my $line (split /\n/, $res) {
+                    $stat = $stat."\t --".$line."\n";
+                }
+            }
         }
         print "$stat";
         if ($rc) {
@@ -250,58 +256,10 @@ sub doStatus {
             close ST;
         }
     }
-    my $advanced_cli_command = "carbonio";
-    my $advanced_exists = exists_command($advanced_cli_command);
-                                                                                                                       
-    if ($advanced_exists eq "true") {
-        advanced_status();               
-    } else {
-        print "\nAdvanced modules are not installed\n";
-    }
     unlink($statusfile);
     unlink($errfile);
     alarm(0);
     return $status;
-}
-
-sub advanced_status {
-    my @services = ("admin", "auth", "backup", "chats","core", "powerstore");
-
-    foreach my $service (@services) {
-        my $output = `carbonio $service getServices`;
-
-        my $is_module_section = 0;
-
-        # Search if advanced module is in running state
-        # parsing 'carbonio $service getServices' output:
-        #         module
-        #             could_start          false
-        #             could_stop           true
-        #    --->     running              true
-
-        foreach my $line (split /\n/, $output) {
-            if ($line =~ /module/) {
-                $is_module_section = 1;
-            } elsif ($is_module_section && $line =~ /running\s+(\S+)/) {
-                my $running_status = $1; 
-                my $status = sprintf "\t%-20s %10s\n", $service, ($running_status eq "true") ? "Running" : "Stopped (to start module run 'carbonio $service doRestartService module')";
-                print $status;
-                last;
-            }
-        }
-    }   
-}
-
-sub exists_command {
-    my ($command) = @_;
-
-    my $result = `command -v $command >/dev/null 2>&1`;
-    
-    if ($? == 0) {
-        return "true";
-    } else {
-        return "false";
-    }
 }
 
 sub startLdap {
@@ -409,6 +367,12 @@ sub doStartup {
         }
         else {
             print "Done.\n";
+            if (   $_ eq "mailbox" ) {
+                my $res =`/opt/zextras/bin/advanced_status 2`;
+                foreach my $line (split /\n/, $res) {
+                    print "\t --".$line."\n";
+                }
+            }
         }
         unlink($zmcontrolLogfile);
     }
