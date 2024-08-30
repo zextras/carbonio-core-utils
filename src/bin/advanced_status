@@ -1,6 +1,6 @@
 #!/bin/bash
 
-checkadvanced() {
+check_advanced() {
   local timeout
   timeout="${1:-2}" # Default to 2
 
@@ -56,4 +56,4 @@ exists_command() {
   fi
 }
 
-checkadvanced "$1"
+check_advanced "$1"
