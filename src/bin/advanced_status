@@ -11,7 +11,7 @@ check_advanced() {
   echo "Carbonio Advanced installed."
   echo -n "Checking advanced modules status"
 
-  if [ "$(exists_command carbonio)" = "false" ]; then
+  if ! command -v carbonio >/dev/null 2>&1; then
     echo "Failed to check advanced modules status. Carbonio CLI not found!"
     return 1
   fi
@@ -43,16 +43,6 @@ check_running_advanced() {
     [[ "$output" != *"Unable to communicate with server"* ]]
   else
     return 1
-  fi
-}
-
-exists_command() {
-  command -v "$1" >/dev/null 2>&1
-
-  if [[ $? -eq 0 ]]; then
-    echo "true"
-  else
-    echo "false"
   fi
 }
 
