@@ -1,7 +1,8 @@
 #!/bin/bash
 
 checkadvanced() {
-  local timeout="${1:-2}" # Default to 2
+  local timeout
+  timeout="${1:-2}" # Default to 2
 
   if ! ls /opt/zextras/lib/ext/carbonio/carbonio-advanced-*.jar >/dev/null 2>&1; then
     return 1
