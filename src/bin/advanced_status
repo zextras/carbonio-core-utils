@@ -4,7 +4,7 @@ checkadvanced() {
   if ls /opt/zextras/lib/ext/carbonio/carbonio-advanced-*.jar >/dev/null 2>&1; then
     echo "Carbonio Advanced installed."
     echo -n "Checking advanced modules status"
-    if [ $(exists_command carbonio) = "false" ]; then
+    if [ "$(exists_command carbonio)" = "false" ]; then
       echo "Failed to check advanced modules status. Carbonio CLI not found!"
     else
       for ((i = 0; i < 10; i++)); do
