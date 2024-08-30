@@ -1,6 +1,8 @@
 #!/bin/bash
 
 checkadvanced() {
+  local timeout="${1:-2}" # Default to 2
+
   if ls /opt/zextras/lib/ext/carbonio/carbonio-advanced-*.jar >/dev/null 2>&1; then
     echo "Carbonio Advanced installed."
     echo -n "Checking advanced modules status"
@@ -13,7 +15,7 @@ checkadvanced() {
         if [ $advanced_is_running = 0 ]; then
           break
         fi
-        sleep "$1"
+        sleep "$timeout"
       done
       echo ""
       if [ "$advanced_is_running" = 0 ]; then
