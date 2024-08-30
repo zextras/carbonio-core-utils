@@ -17,23 +17,22 @@ checkadvanced() {
 
   for ((i = 0; i < 10; i++)); do
     echo -n "."
-    check_running_advanced
-    if [ $advanced_is_running = 0 ]; then
-      break
+    if check_running_advanced; then
+      echo
+      if ! /opt/zextras/bin/carbonio --json core getAllServicesStatus | 
+          jq -r '.response[] | "\(.commercialName) is \(if .running then "running" else "NOT running" end)"'; then
+        
+        echo "Failed to check advanced modules status. Carbonio CLI not working!"
+        return 1
+      fi
+      return 0
     fi
     sleep "$timeout"
   done
-  echo ""
-  if [ "$advanced_is_running" = 0 ]; then
-    /opt/zextras/bin/carbonio --json core getAllServicesStatus |
-      jq -r '.response[] | "\(.commercialName) is \(if .running then "running" else "NOT running" end)"'
-    local rc=$?
-    if [ $rc != 0 ]; then
-      echo "Failed to check advanced modules status. Carbonio CLI not working!"
-    fi
-  else
-    echo "Failed to check advanced modules status. Carbonio Advanced is not running. Check logs for more information."
-  fi
+
+  echo
+  echo "Failed to check advanced modules status. Carbonio Advanced is not running. Check logs for more information."
+  return 1
 }
 
 check_running_advanced() {
