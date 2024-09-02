@@ -19,16 +19,16 @@ zmsetvars
 
 dbfile=${cbpolicyd_db_file:=/opt/zextras/data/cbpolicyd/db/cbpolicyd.sqlitedb}
 
-rewriteconfig() {
+rewrite_config() {
   /opt/zextras/libexec/configrewrite cbpolicyd >/dev/null 2>&1
 }
 
-getpid() {
+get_pid() {
   pid=$(pgrep -f /opt/zextras/common/bin/cbpolicyd)
 }
 
-checkrunning() {
-  getpid
+check_running() {
+  get_pid
   if [ "$pid" = "" ]; then
     running=0
   else
@@ -45,7 +45,7 @@ case "$1" in
       echo "cbpolicyd not installed, skipping."
       exit 0
     fi
-    checkrunning
+    check_running
 
     echo -n "Starting policyd..."
     if [ $running = 1 ]; then
@@ -64,12 +64,12 @@ case "$1" in
         fi
       fi
       if [ "$2" = "" ]; then
-        rewriteconfig
+        rewrite_config
       fi
       /opt/zextras/common/bin/cbpolicyd --config /opt/zextras/conf/cbpolicyd.conf 2>/dev/null
       for ((i = 0; i < 10; i++)); do
         sleep 1
-        checkrunning
+        check_running
         if [ $running = 1 ]; then
           break
         fi
@@ -84,7 +84,7 @@ case "$1" in
     ;;
 
   'kill' | 'stop')
-    checkrunning
+    check_running
     echo -n "Stopping policyd..."
     if [ $running = 0 ]; then
       echo "policyd is not running."
@@ -93,7 +93,7 @@ case "$1" in
       echo "$pid" | xargs kill 2>/dev/null
       rc=$?
       for ((i = 0; i < 10; i++)); do
-        checkrunning
+        check_running
         if [ $running = 0 ]; then
           break
         fi
@@ -115,7 +115,7 @@ case "$1" in
     ;;
 
   'status')
-    checkrunning
+    check_running
     echo -n "policyd is "
     if [ $running = 0 ]; then
       echo "not running."

@@ -33,12 +33,12 @@ javaXmx=${mailboxd_java_heap_size:=512}
 javaXms=${javaXmx}
 mailboxd_java_heap_new_size_percent=${mailboxd_java_heap_new_size_percent:=25}
 
-getpid() {
+get_pid() {
   pid=$(pgrep -f '/opt/zextras/.*/java.*mailboxd')
 }
 
-checkrunning() {
-  getpid
+check_running() {
+  get_pid
   if [ "$pid" = "" ]; then
     running=0
   else
@@ -52,7 +52,7 @@ case "$1" in
       /opt/zextras/bin/zmtlsctl >/dev/null 2>&1
     fi
 
-    checkrunning
+    check_running
     if [ $running = 1 ]; then
       echo "mailboxd is already running."
       exit 0
@@ -114,7 +114,7 @@ case "$1" in
     ;;
 
   'kill' | 'stop')
-    checkrunning
+    check_running
     echo -n "Stopping mailboxd..."
     if [ $running = 0 ]; then
       echo "${servicename} is not running."
@@ -123,7 +123,7 @@ case "$1" in
       kill "$pid" 2>/dev/null
       rc=$?
       for ((i = 0; i < 10; i++)); do
-        checkrunning
+        check_running
         if [ $running = 0 ]; then
           break
         fi
@@ -146,7 +146,7 @@ case "$1" in
 
   'status')
     echo -n "mailboxd is "
-    checkrunning
+    check_running
     if [ $running = 0 ]; then
       echo "not running."
       exit 1

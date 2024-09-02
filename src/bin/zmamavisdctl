@@ -25,12 +25,12 @@ if [ ! -d "/opt/zextras/data/amavisd/.spamassassin" ]; then
   mkdir -p /opt/zextras/data/amavisd/.spamassassin
 fi
 
-rewriteconfig() {
+rewrite_config() {
   /opt/zextras/libexec/configrewrite amavis antispam >/dev/null 2>&1
   /opt/zextras/libexec/zmaltermimeconfig >/dev/null 2>&1
 }
 
-checkrunning() {
+check_running() {
   # Get pid from scanning the proc table.
   if [ "$pid" = "" ]; then
     # pid file is NULL.  Get info from proc table.
@@ -60,7 +60,7 @@ checkrunning() {
   fi
 }
 
-checkrunning-mc() {
+check_running_mc() {
   #  Get pid from scanning the proc table.
   if [ "$mcpid" = "" ]; then
     # pid file is NULL.  Get info from proc table.
@@ -68,11 +68,11 @@ checkrunning-mc() {
   fi
   # If pid is still not set, then we cannot find any amavisd (master) process.  Assume amavisd is not running.
   if [ "$mcpid" = "" ]; then
-    mcrunning=0
+    running_mc=0
     return
   fi
 
-  mcrunning=1
+  running_mc=1
   return
 }
 
@@ -81,16 +81,16 @@ checkrunning-mc() {
 #
 case "$1" in
   'start')
-    checkrunning-mc
+    check_running_mc
     echo -n "Starting amavisd-mc..."
-    if [ $mcrunning = 1 ]; then
+    if [ $running_mc = 1 ]; then
       echo "amavisd-mc is already running."
     else
-      if [ $mcrunning = 0 ]; then
+      if [ $running_mc = 0 ]; then
         sudo /opt/zextras/common/sbin/amavis-mc
         for ((i = 0; i < 10; i++)); do
-          checkrunning-mc
-          if [ $mcrunning = 1 ]; then
+          check_running_mc
+          if [ $running_mc = 1 ]; then
             break
           fi
           sleep 1
@@ -103,7 +103,7 @@ case "$1" in
         echo "done."
       fi
     fi
-    checkrunning
+    check_running
     echo -n "Starting amavisd..."
     if [ $running = 1 ]; then
       echo "amavisd is already running."
@@ -121,12 +121,12 @@ case "$1" in
         mkdir /opt/zextras/data/amavisd/var
       fi
       if [ "$2" == "" ]; then
-        rewriteconfig
+        rewrite_config
       fi
       /opt/zextras/common/sbin/amavisd -X no_conf_file_writable_check -c \
         /opt/zextras/conf/amavisd.conf &
       for ((i = 0; i < 10; i++)); do
-        checkrunning
+        check_running
         if [ $running = 1 ]; then
           break
         fi
@@ -141,7 +141,7 @@ case "$1" in
     ;;
 
   'kill' | 'stop')
-    checkrunning
+    check_running
     echo -n "Stopping amavisd..."
     if [ $running = 0 ]; then
       echo "amavisd is not running."
@@ -149,7 +149,7 @@ case "$1" in
       kill "$pid" 2>/dev/null
       rc=$?
       for ((i = 0; i < 10; i++)); do
-        checkrunning
+        check_running
         if [ $running = 0 ]; then
           break
         fi
@@ -163,16 +163,16 @@ case "$1" in
       fi
     fi
 
-    checkrunning-mc
+    check_running_mc
     echo -n "Stopping amavisd-mc..."
-    if [ $mcrunning = 0 ]; then
+    if [ $running_mc = 0 ]; then
       echo "amavisd-mc is not running."
     else
       kill "$mcpid" 2>/dev/null
       rc=$?
       for ((i = 0; i < 10; i++)); do
-        checkrunning-mc
-        if [ $mcrunning = 0 ]; then
+        check_running_mc
+        if [ $running_mc = 0 ]; then
           break
         fi
         sleep 1
@@ -193,7 +193,7 @@ case "$1" in
     ;;
 
   'status')
-    checkrunning
+    check_running
     echo -n "amavisd is "
     if [ $running = 0 ]; then
       echo "not running."
@@ -201,9 +201,9 @@ case "$1" in
     else
       echo "running."
     fi
-    checkrunning-mc
+    check_running_mc
     echo -n "amavisd-mc is "
-    if [ $mcrunning = 0 ]; then
+    if [ $running_mc = 0 ]; then
       echo "not running."
       exit 1
     else

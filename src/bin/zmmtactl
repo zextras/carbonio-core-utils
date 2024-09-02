@@ -30,7 +30,7 @@ else
   STOP_SCRIPTS="postfix zmsaslauthdctl"
 fi
 
-rewriteconfig() {
+rewrite_config() {
   echo -n "Rewriting configuration files..."
   if [ ! -f /opt/zextras/common/conf/main.cf ]; then
     touch /opt/zextras/common/conf/main.cf
@@ -48,7 +48,7 @@ rewriteconfig() {
 case "$1" in
   start)
     if [ "$2" == "" ]; then
-      rewriteconfig
+      rewrite_config
     fi
     STATUS=0
     for i in $START_SCRIPTS; do
@@ -68,7 +68,7 @@ case "$1" in
     ;;
   reload | restart)
     if [ "$2" == "" ]; then
-      rewriteconfig
+      rewrite_config
     fi
     for i in $START_SCRIPTS; do
       if [ "$2" == "" ]; then

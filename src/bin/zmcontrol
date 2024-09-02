@@ -26,8 +26,7 @@ if ( !-d $zimbra_tmp_directory ) {
     File::Path::mkpath("$zimbra_tmp_directory");
 }
 
-my ( undef, $zmcontrolLogfile ) =
-  tempfile( "zmcontrol.out.XXXXX", DIR => "$zimbra_tmp_directory", OPEN => 0 );
+my ( undef, $zmcontrolLogfile ) = tempfile( "zmcontrol.out.XXXXX", DIR => "$zimbra_tmp_directory", OPEN => 0 );
 
 my $timeout = 180;
 $SIG{ALRM} = sub { print "Timeout after $timeout seconds\n"; exit(1) };
@@ -38,11 +37,10 @@ my $ldapHere      = isLdapLocal();
 my $services;
 my %devicesChecked;
 my %serviceStatusList;
+
 # This will break a lot of legacy codebase. Sorry not sorry
-my %serviceNames = (
-    "zmconfigd" => "config service"
-);
-my %startorder = (
+my %serviceNames = ( "zmconfigd" => "config service" );
+my %startorder   = (
     "directory-server" => 0,
     "zmconfigd"        => 10,
     "mailbox"          => 50,
@@ -91,12 +89,7 @@ my %allservices = (
 );
 
 # Array of systemd targets to check and start
-my @systemd_targets = (
-    "carbonio-directory-server",
-    "carbonio-appserver",
-    "carbonio-proxy",
-    "carbonio-mta",
-);
+my @systemd_targets = ( "carbonio-directory-server", "carbonio-appserver", "carbonio-proxy", "carbonio-mta", );
 
 my %rewrites = (
     "antivirus" => "antivirus amavis",
@@ -142,7 +135,7 @@ my %REMOTECOMMANDS = (
     "status" => "status",
 );
 
-my $zal_path =     "/opt/zextras/lib/ext/carbonio/zal.jar";
+my $zal_path     = "/opt/zextras/lib/ext/carbonio/zal.jar";
 my $zextras_path = "/opt/zextras/lib/ext/carbonio/carbonio.jar";
 
 isSystemdEnabled();
@@ -219,8 +212,7 @@ sub doStatus {
     print "Host $localHostName\n";
     foreach ( sort keys %{$services} ) {
         if ( $_ eq "zimlet" || $_ eq "zimbraAdmin" || $_ eq "zimbra" ) { next; }
-        my $rc =
-          0xffff & system("$allservices{$_} status > $statusfile 2> $errfile");
+        my $rc = 0xffff & system("$allservices{$_} status > $statusfile 2> $errfile");
         $rc = $rc >> 8;
         if ($rc) {
 
@@ -228,22 +220,21 @@ sub doStatus {
             $status = 1 if ( $serviceStatusList{$_} );
         }
         my $stat;
-        if (   $_ eq "service" )
-        {
+        if ( $_ eq "service" ) {
             my $bit = "$_ webapp";
-            $stat = sprintf "\t%-20s %10s\n", $bit,
-              ($rc) ? "Stopped" : "Running";
-        }elsif ( $_ eq "service-discover" ){
-            $rc = system("systemctl is-active service-discover.service >/dev/null 2>&1");
+            $stat = sprintf "\t%-20s %10s\n", $bit, ($rc) ? "Stopped" : "Running";
+        }
+        elsif ( $_ eq "service-discover" ) {
+            $rc   = system("systemctl is-active service-discover.service >/dev/null 2>&1");
             $stat = sprintf "\t%-20s %10s\n", $_, ($rc) ? "Stopped" : "Running";
         }
         else {
             my $service_name = renameServices($_);
             $stat = sprintf "\t%-20s %10s\n", $service_name, ($rc) ? "Stopped" : "Running";
-            if (   $_ eq "mailbox" ) {
-                my $res =`/opt/zextras/bin/advanced_status 0`;
-                foreach my $line (split /\n/, $res) {
-                    $stat = $stat."\t --".$line."\n";
+            if ( $_ eq "mailbox" ) {
+                my $res = `/opt/zextras/bin/advanced_status 0`;
+                foreach my $line ( split /\n/, $res ) {
+                    $stat = $stat . "\t --" . $line . "\n";
                 }
             }
         }
@@ -264,8 +255,7 @@ sub doStatus {
 
 sub startLdap {
     print "\tStarting directory server...";
-    my $rc =
-      0xffff & system("/opt/zextras/bin/ldap start > $zmcontrolLogfile 2>&1");
+    my $rc = 0xffff & system("/opt/zextras/bin/ldap start > $zmcontrolLogfile 2>&1");
     $rc = $rc >> 8;
     print "Done.\n";
     return $rc;
@@ -277,10 +267,7 @@ sub doRewrite {
         $rew .= " $rewrites{$_}";
     }
     Zimbra::Mon::Logger::Log( "info", "Rewriting configs $rew" );
-    my $rc =
-      0xffff &
-      system(
-        "/opt/zextras/libexec/configrewrite $rew > $zmcontrolLogfile 2>&1");
+    my $rc = 0xffff & system("/opt/zextras/libexec/configrewrite $rew > $zmcontrolLogfile 2>&1");
     $rc = $rc >> 8;
     return $rc;
 }
@@ -291,14 +278,12 @@ sub doRestart {
 }
 
 sub doStartup {
-    Zimbra::Mon::Logger::Log( "info",
-        "Starting services initiated by zmcontrol" );
+    Zimbra::Mon::Logger::Log( "info", "Starting services initiated by zmcontrol" );
     print "Host $localHostName\n";
     my $rc  = 0;
     my $rrc = 0;
     if ($ldapHere) {
-        my $ldapStopped =
-          0xffff & system("/opt/zextras/bin/ldap status > /dev/null 2>&1");
+        my $ldapStopped = 0xffff & system("/opt/zextras/bin/ldap status > /dev/null 2>&1");
         if ($ldapStopped) {
             $rrc = startLdap();
         }
@@ -316,8 +301,7 @@ sub doStartup {
         return 1;
     }
     if ( defined( $$services{"directory-server"} ) ) {
-        my $ldapStopped =
-          0xffff & system("/opt/zextras/bin/ldap status > /dev/null 2>&1");
+        my $ldapStopped = 0xffff & system("/opt/zextras/bin/ldap status > /dev/null 2>&1");
         if ($ldapStopped) {
             $rrc = startLdap();
             sleep 3;
@@ -343,11 +327,10 @@ sub doStartup {
         }
         checkAvailableServiceSpace($_);
         Zimbra::Mon::Logger::Log( "info", "Starting $_ via zmcontrol" );
-        if (   $_ eq "service" )
-        {
+        if ( $_ eq "service" ) {
             print "\tStarting $_ webapp...";
         }
-        elsif ( $_ eq "service-discover" ){ next; }
+        elsif ( $_ eq "service-discover" ) { next; }
         else {
             my $service_name = renameServices($_);
             print "\tStarting $service_name...";
@@ -356,8 +339,7 @@ sub doStartup {
             print "skipped.\n\t\t$allservices{$_} missing or not executable.\n";
             next;
         }
-        $rrc = 0xffff &
-          system("$allservices{$_} start norewrite > $zmcontrolLogfile 2>&1");
+        $rrc = 0xffff & system("$allservices{$_} start norewrite > $zmcontrolLogfile 2>&1");
         $rrc = $rrc >> 8;
         if ($rrc) {
             $rc = 1;
@@ -367,10 +349,10 @@ sub doStartup {
         }
         else {
             print "Done.\n";
-            if (   $_ eq "mailbox" ) {
-                my $res =`/opt/zextras/bin/advanced_status 2`;
-                foreach my $line (split /\n/, $res) {
-                    print "\t --".$line."\n";
+            if ( $_ eq "mailbox" ) {
+                my $res = `/opt/zextras/bin/advanced_status 2`;
+                foreach my $line ( split /\n/, $res ) {
+                    print "\t --" . $line . "\n";
                 }
             }
         }
@@ -380,8 +362,7 @@ sub doStartup {
 }
 
 sub doShutdown {
-    Zimbra::Mon::Logger::Log( "info",
-        "Stopping services initiated by zmcontrol" );
+    Zimbra::Mon::Logger::Log( "info", "Stopping services initiated by zmcontrol" );
     print "Host $localHostName\n";
     my $rc  = 0;
     my $rrc = 0;
@@ -397,8 +378,7 @@ sub doShutdown {
             next;
         }
         if ( $_ eq "mailbox" && !( -d "/opt/zextras/db/data" ) ) { next; }
-        if (   $_ eq "service" )
-        {
+        if ( $_ eq "service" ) {
             print "\tStopping $_ webapp...";
         }
         else {
@@ -409,8 +389,7 @@ sub doShutdown {
             print "skipped.\n\t\t$allservices{$_} missing or not executable.\n";
             next;
         }
-        $rrc =
-          0xffff & system("$allservices{$_} stop > $zmcontrolLogfile 2>&1");
+        $rrc = 0xffff & system("$allservices{$_} stop > $zmcontrolLogfile 2>&1");
         $rrc = $rrc >> 8;
         if ($rrc) {
             $rc = 1;
@@ -438,7 +417,7 @@ sub getServiceStatusList {
     if ( scalar @services > 1 ) {
         foreach my $service (@services) {
             $serviceStatusList{$service} = 1
-                if ( defined( $allservices{$service} ) );
+              if ( defined( $allservices{$service} ) );
         }
     }
 }
@@ -479,8 +458,7 @@ sub getCachedServices {
         }
     }
     else {
-        print
-"Unable to determine enabled services. Cache is out of date or doesn't exist.\n";
+        print "Unable to determine enabled services. Cache is out of date or doesn't exist.\n";
         exit 1;
     }
     warn "Enabled services read from cache. Service list may be inaccurate.\n"
@@ -489,10 +467,10 @@ sub getCachedServices {
 }
 
 sub getEnabledServices {
-    my $ldap_master_url = getLocalConfig("ldap_master_url");
-    my $ldap_dn         = getLocalConfig("zimbra_ldap_userdn");
-    my $ldap_pass       = getLocalConfig("zimbra_ldap_password");
-    my $require_tls = getLocalConfig("zimbra_require_interprocess_security");
+    my $ldap_master_url         = getLocalConfig("ldap_master_url");
+    my $ldap_dn                 = getLocalConfig("zimbra_ldap_userdn");
+    my $ldap_pass               = getLocalConfig("zimbra_ldap_password");
+    my $require_tls             = getLocalConfig("zimbra_require_interprocess_security");
     my $ldap_starttls_supported = getLocalConfig("ldap_starttls_supported");
 
     my %s = ();
@@ -515,15 +493,12 @@ sub getEnabledServices {
             capath => "/opt/zextras/conf/ca",
         );
         if ( $result->code ) {
-            warn "Unable to start TLS: "
-              . $result->error
-              . " when connecting to master directory server.\n";
+            warn "Unable to start TLS: " . $result->error . " when connecting to master directory server.\n";
             return ();
         }
     }
     unless ( $result = $ldap->bind( $ldap_dn, password => $ldap_pass ) ) {
-        warn
-          "Bind: Unable to determine enabled services from directory server.\n";
+        warn "Bind: Unable to determine enabled services from directory server.\n";
         return getCachedServices();
     }
     $result = $ldap->search(
@@ -532,20 +507,19 @@ sub getEnabledServices {
         attrs  => ['zimbraServiceEnabled']
     );
     if ( $result->code ) {
-        warn
-"Search error: Unable to determine enabled services from directory server.\n";
+        warn "Search error: Unable to determine enabled services from directory server.\n";
         return getCachedServices();
     }
     my $size = $result->count;
     if ( $size != 1 ) {
-        warn
-"Size error: Unable to determine enabled services from directory server.\n";
+        warn "Size error: Unable to determine enabled services from directory server.\n";
         return getCachedServices();
     }
     my $entry = $result->entry(0);
     foreach my $value ( $entry->get_value('zimbraServiceEnabled') ) {
+
         # Need to exclude legacy services. See CO-496
-        if ($value ne "zimlet" && $value ne "zimbraAdmin" && $value ne "zimbra") {
+        if ( $value ne "zimlet" && $value ne "zimbraAdmin" && $value ne "zimbra" ) {
             $s{$value} = $value;
         }
     }
@@ -562,10 +536,11 @@ sub getEnabledServices {
 }
 
 sub isSystemdEnabled {
+
     # Check if any of the systemd targets are enabled
     foreach my $target (@systemd_targets) {
-        if (isSystemdEnabledTarget($target)) {
-            systemdPrint();  # At least one target is enabled
+        if ( isSystemdEnabledTarget($target) ) {
+            systemdPrint();    # At least one target is enabled
         }
     }
 }
@@ -578,15 +553,17 @@ sub isSystemdEnabledTarget {
 
     # Execute the command and capture the output
     my $output = `$command`;
-    my $rc = $? >> 8;  # Get the exit status of the command
+    my $rc     = $? >> 8;      # Get the exit status of the command
 
     # Check the exit status
-    if ($rc == 0) {
-        return 1;  # The unit is enabled
-    } elsif ($rc == 1) {
-        return 0;  # The unit is not enabled
-    } else {
-        return undef;  # An error occurred
+    if ( $rc == 0 ) {
+        return 1;              # The unit is enabled
+    }
+    elsif ( $rc == 1 ) {
+        return 0;              # The unit is not enabled
+    }
+    else {
+        return undef;          # An error occurred
     }
 }
 
@@ -594,21 +571,16 @@ sub systemdPrint {
     print "Services are now handled by systemd.\n\n";
     print "Enabled systemd targets:\n\n";
     foreach my $target (@systemd_targets) {
-        if (isSystemdEnabledTarget($target)) {
-            print "  - $target.target\n"  # At least one target is enabled
+        if ( isSystemdEnabledTarget($target) ) {
+            print "  - $target.target\n"    # At least one target is enabled
         }
     }
     print "\nPlease check the documentation for further details.\nExiting.\n";
-    exit 1
+    exit 1;
 }
 
 sub isLdapLocal {
-    return (
-        (
-            index( getLocalConfig("ldap_url"),
-                "/" . getLocalConfig("zimbra_server_hostname") ) != -1
-        ) ? 1 : 0
-    );
+    return ( ( index( getLocalConfig("ldap_url"), "/" . getLocalConfig("zimbra_server_hostname") ) != -1 ) ? 1 : 0 );
 }
 
 sub getHostName {
@@ -617,7 +589,7 @@ sub getHostName {
 
 sub displayVersion {
     my $additional_zal_version = "";
-    if (-e $zal_path and -e $zextras_path) {
+    if ( -e $zal_path and -e $zextras_path ) {
         $additional_zal_version = `carbonio core getVersion`;
         chomp $additional_zal_version;
     }
@@ -626,8 +598,8 @@ sub displayVersion {
     chomp $release;
 
     my $output = "Carbonio Release $release";
-    if (! ($additional_zal_version eq "")) {
-        $output .= "\nAdvanced module version:\n" . $additional_zal_version
+    if ( !( $additional_zal_version eq "" ) ) {
+        $output .= "\nAdvanced module version:\n" . $additional_zal_version;
     }
     print "$output\n";
 }
@@ -639,23 +611,25 @@ sub displayPackagesVersion {
     chomp $distro;
 
     my $packages = "";
-    if ($distro eq "ubuntu") {
+    if ( $distro eq "ubuntu" ) {
         $packages = qx'dpkg-query -W -f\'${Package} ${Version}\n\' carbonio\*';
-    } else {
-        $packages = qx'dnf list installed 2>/dev/null | grep carbonio* | awk -F\' \' \'{{ print $1 " " $2 }}\''
+    }
+    else {
+        $packages = qx'dnf list installed 2>/dev/null | grep carbonio* | awk -F\' \' \'{{ print $1 " " $2 }}\'';
     }
 
     my $output = "Carbonio Release $release\n";
-    if (-e $zal_path and -e $zextras_path) {
-        $output .= "Advanced version installed"
+    if ( -e $zal_path and -e $zextras_path ) {
+        $output .= "Advanced version installed";
     }
-    if (! ($packages eq "")) {
+    if ( !( $packages eq "" ) ) {
         $output .= "\nInstalled packages:\n" . "$packages";
-    } else {
+    }
+    else {
         $output .= "\n";
     }
 
-    print "$output"
+    print "$output";
 }
 
 sub checkAvailableSpace {
@@ -674,11 +648,8 @@ sub checkAvailableServiceSpace {
     my ($service) = @_;
 
     my %serviceDirs = (
-        mailbox => [
-            "/opt/zextras/store", "/opt/zextras/db",
-            "/opt/zextras/index", "/opt/zextras/redolog"
-        ],
-        mta    => ["/opt/zextras/data/postfix/spool"]
+        mailbox => [ "/opt/zextras/store", "/opt/zextras/db", "/opt/zextras/index", "/opt/zextras/redolog" ],
+        mta     => ["/opt/zextras/data/postfix/spool"]
     );
     my @dirs = ();
     @dirs = ( @dirs, @{ $serviceDirs{$service} } )
@@ -706,9 +677,7 @@ sub hasAvailableSpace() {
     return 1 if ( defined( $devicesChecked{$device} ) );
     $devicesChecked{$device} = $avail;
     if ( $avail < $freeMbytes ) {
-        Zimbra::Mon::Logger::Log( "info",
-"Availble disk space on $dir is below threshold of $freeMbytes.  $avail Mbytes available."
-        );
+        Zimbra::Mon::Logger::Log( "info", "Availble disk space on $dir is below threshold of $freeMbytes.  $avail Mbytes available." );
     }
 
     return ( $avail > $freeMbytes ) ? 1 : undef;
@@ -718,7 +687,7 @@ sub renameServices {
     my ($service_id) = @_;
 
     my $service_name = $serviceNames{$service_id};
-    if ($service_name eq "") {
+    if ( $service_name eq "" ) {
         $service_name = $service_id;
     }
 

@@ -133,7 +133,7 @@ if [ ! -d "${zimbra_tmp_directory}" ]; then
   mkdir -p "${zimbra_tmp_directory}"
 fi
 
-rewriteConfigs() {
+rewrite_configs() {
   echo -n "Rewriting config files for cyrus-sasl, webxml, mailboxd, service, zimbraUI, and zimbraAdmin..."
   /opt/zextras/libexec/configrewrite sasl webxml mailbox service zextras zextrasAdmin zimlet >/dev/null 2>&1
   rc=$?
@@ -214,4 +214,4 @@ if [ "$UPDATE_MAIL_MODE" = "1" ]; then
   updateLdap
 fi
 
-rewriteConfigs
+rewrite_configs

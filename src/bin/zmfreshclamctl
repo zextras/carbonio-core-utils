@@ -21,16 +21,16 @@ if [ $? -eq 1 ]; then
 fi
 zmsetvars
 
-rewriteconfig() {
+rewrite_config() {
   /opt/zextras/libexec/configrewrite antivirus >/dev/null 2>&1
 }
 
-getpid() {
+get_pid() {
   pid=$(pidof /opt/zextras/common/bin/freshclam)
 }
 
-checkrunning() {
-  getpid
+check_running() {
+  get_pid
   # freshclam
   if [ "$pid" = "" ]; then
     running=0
@@ -52,10 +52,10 @@ case "$1" in
   'start')
 
     if [ "$2" == "" ]; then
-      rewriteconfig
+      rewrite_config
     fi
 
-    checkrunning
+    check_running
     echo -n "Starting freshclam..."
     if [ $running = 1 ]; then
       echo "freshclam is already running."
@@ -78,7 +78,7 @@ case "$1" in
     ;;
 
   'stop')
-    checkrunning
+    check_running
     echo -n "Stopping freshclam..."
     if [ $running = 0 ]; then
       echo "freshclam is not running."
@@ -101,7 +101,7 @@ case "$1" in
     ;;
 
   'status')
-    checkrunning
+    check_running
     echo -n "freshclam is "
     if [ $running = 1 ]; then
       echo "running."

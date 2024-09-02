@@ -26,11 +26,11 @@ zmsetvars
 odk=/opt/zextras/common/sbin/opendkim
 config=/opt/zextras/conf/opendkim.conf
 
-rewriteconfig() {
+rewrite_config() {
   /opt/zextras/libexec/configrewrite opendkim >/dev/null 2>&1
 }
 
-checkrunning() {
+check_running() {
   if pidof "${odk}" >/dev/null 2>&1; then
     running=1
   else
@@ -39,10 +39,10 @@ checkrunning() {
 }
 
 start() {
-  checkrunning
+  check_running
   if [ $running = 0 ]; then
     if [ "$1" == "" ]; then
-      rewriteconfig
+      rewrite_config
     fi
 
     if ! $odk -x $config -u zextras; then
@@ -57,7 +57,7 @@ start() {
 }
 
 stop() {
-  checkrunning
+  check_running
   if [ $running = 0 ]; then
     echo "zmopendkimctl not running"
     exit 0
@@ -74,7 +74,7 @@ stop() {
 }
 
 status() {
-  checkrunning
+  check_running
   echo -n "zmopendkimctl is "
   if [ $running = 0 ]; then
     echo "not running."

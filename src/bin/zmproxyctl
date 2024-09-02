@@ -19,12 +19,12 @@ zmsetvars
 
 configfile=/opt/zextras/conf/nginx.conf
 
-getpid() {
+get_pid() {
   pid=$(pgrep -f '/opt/zextras/.*/nginx.*conf')
 }
 
-checkrunning() {
-  getpid
+check_running() {
+  get_pid
   if [ "$pid" = "" ]; then
     running=0
   else
@@ -39,7 +39,7 @@ case "$1" in
       exit 1
     fi
 
-    checkrunning
+    check_running
     echo -n "Starting proxy..."
     if [ $running = 1 ]; then
       echo "proxy is already running."
@@ -72,7 +72,7 @@ case "$1" in
 
     /opt/zextras/common/sbin/nginx -c ${configfile}
     for ((i = 0; i < 10; i++)); do
-      checkrunning
+      check_running
       if [ $running = 1 ]; then
         break
       fi
@@ -90,7 +90,7 @@ case "$1" in
     fi
     ;;
   stop)
-    checkrunning
+    check_running
     echo -n "Stopping proxy..."
     if [ $running = 0 ]; then
       echo "proxy is not running."
@@ -99,7 +99,7 @@ case "$1" in
       /opt/zextras/common/sbin/nginx -c /opt/zextras/conf/nginx.conf -s stop
       rc=$?
       for ((i = 0; i < 10; i++)); do
-        checkrunning
+        check_running
         if [ $running = 0 ]; then
           break
         fi
@@ -119,7 +119,7 @@ case "$1" in
     $0 start "$2"
     ;;
   reload)
-    checkrunning
+    check_running
     if [ $running = 1 ] && [ "$pid" != "" ]; then
       echo -n "Reloading proxy..."
       /opt/zextras/common/sbin/nginx -c /opt/zextras/conf/nginx.conf -s reload
@@ -129,7 +129,7 @@ case "$1" in
     ;;
   status)
     echo -n "proxy is "
-    checkrunning
+    check_running
     if [ $running = 0 ]; then
       echo "not running."
       exit 1

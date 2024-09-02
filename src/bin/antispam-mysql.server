@@ -41,12 +41,12 @@ fi
 assert -d "${zimbra_tmp_directory}"
 assert -x /opt/zextras/common/bin/mysqld_safe
 
-getpid() {
+get_pid() {
   pid=$(pgrep -f '/opt/zextras/.*conf/antispam-my.cnf')
 }
 
-checkrunning() {
-  getpid
+check_running() {
+  get_pid
   if [ "$pid" = "" ]; then
     running=0
   else
@@ -56,7 +56,7 @@ checkrunning() {
 
 case "$1" in
   'start')
-    checkrunning
+    check_running
     if [ ! -d "${antispam_mysql_data_directory}" ]; then
       # The antispam mysql data directory does not appear to exist, assuming that db has not been initialized
       /opt/zextras/libexec/zmantispamdbinit
@@ -93,7 +93,7 @@ case "$1" in
     ;;
 
   'stop')
-    checkrunning
+    check_running
     echo -n "Stopping mysqld for anti-spam..."
     if [ $running = 0 ]; then
       # If mysql for antispam is enabled, then print the warning message.  Otherwise, we
@@ -106,7 +106,7 @@ case "$1" in
       echo "$pid" | xargs kill >>"${antispam_mysql_errlogfile}" 2>&1
       rc=$?
       for ((i = 0; i < 10; i++)); do
-        checkrunning
+        check_running
         if [ $running = 0 ]; then
           break
         fi
@@ -129,7 +129,7 @@ case "$1" in
 
   'status')
     echo -n "mysql is "
-    checkrunning
+    check_running
     if [ $running = 0 ]; then
       echo "not running."
       exit 1

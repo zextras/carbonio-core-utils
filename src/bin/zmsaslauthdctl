@@ -17,16 +17,16 @@ if [ $? -eq 1 ]; then
 fi
 zmsetvars
 
-rewriteconfig() {
+rewrite_config() {
   /opt/zextras/libexec/configrewrite sasl >/dev/null 2>&1
 }
 
-getpid() {
+get_pid() {
   pid=$(pidof /opt/zextras/common/sbin/saslauthd)
 }
 
-checkrunning() {
-  getpid
+check_running() {
+  get_pid
   if [ "$pid" = "" ]; then
     running=0
   else
@@ -39,18 +39,18 @@ checkrunning() {
 #
 case "$1" in
   'start')
-    checkrunning
+    check_running
     echo -n "Starting saslauthd..."
     if [ $running = 1 ]; then
       echo "already running."
       exit 0
     fi
     if [ "$2" = "" ]; then
-      rewriteconfig
+      rewrite_config
     fi
     /opt/zextras/common/sbin/saslauthd -r -a zimbra
     for ((i = 0; i < 10; i++)); do
-      checkrunning
+      check_running
       if [ $running = 1 ]; then
         break
       fi
@@ -66,7 +66,7 @@ case "$1" in
     ;;
 
   'kill' | 'stop')
-    checkrunning
+    check_running
     echo -n "Stopping saslauthd..."
     if [ $running = 0 ]; then
       echo "saslauthd is not running."
@@ -75,7 +75,7 @@ case "$1" in
       echo "$pid" | xargs kill 2>/dev/null
       rc=$?
       for ((i = 0; i < 10; i++)); do
-        checkrunning
+        check_running
         if [ $running = 0 ]; then
           break
         fi
@@ -97,7 +97,7 @@ case "$1" in
     ;;
 
   'status')
-    checkrunning
+    check_running
     if [ $running = 1 ]; then
       echo "saslauthd is running."
       exit 0

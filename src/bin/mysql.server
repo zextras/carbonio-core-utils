@@ -32,12 +32,12 @@ fi
 assert -d "${zimbra_tmp_directory}"
 assert -r "${mysql_mycnf}"
 
-getpid() {
+get_pid() {
   pid=$(pgrep -f '/opt/zextras/.*conf/my.cnf')
 }
 
-checkrunning() {
-  getpid
+check_running() {
+  get_pid
   if [ "$pid" = "" ]; then
     running=0
   else
@@ -47,7 +47,7 @@ checkrunning() {
 
 case "$1" in
   'start')
-    checkrunning
+    check_running
     if [ $running = 1 ]; then
       echo "mysqld_safe already running"
       exit 0
@@ -79,7 +79,7 @@ case "$1" in
     ;;
 
   'stop')
-    checkrunning
+    check_running
     echo -n "Stopping mysqld..."
     if [ $running = 0 ]; then
       echo "mysqld not running: no pid"
@@ -88,7 +88,7 @@ case "$1" in
       echo "$pid" | xargs kill >>"${mysql_errlogfile}" 2>&1
       rc=$?
       for ((i = 0; i < zimbra_mysql_shutdown_timeout; i++)); do
-        checkrunning
+        check_running
         if [ $running = 0 ]; then
           break
         fi
@@ -111,7 +111,7 @@ case "$1" in
 
   'status')
     echo -n "mysql is "
-    checkrunning
+    check_running
     if [ $running = 0 ]; then
       echo "not running."
       exit 1

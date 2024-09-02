@@ -24,12 +24,12 @@ if [ "$ldap_is_master" = "false" ]; then
   fi
 fi
 
-getpid() {
+get_pid() {
   pid=$(pidof /opt/zextras/common/libexec/slapd)
 }
 
 check_running() {
-  getpid
+  get_pid
   if [ "$pid" = "" ]; then
     running=0
   else

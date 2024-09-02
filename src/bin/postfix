@@ -18,11 +18,11 @@ if [ $? -eq 1 ]; then
 fi
 zmsetvars
 
-rewritemtaconfig() {
+rewrite_mta_config() {
   /opt/zextras/libexec/zmmtainit
 }
 
-rewriteconfig() {
+rewrite_config() {
   /opt/zextras/libexec/configrewrite mta >/dev/null 2>&1
 }
 
@@ -47,9 +47,9 @@ if [ "$1" = "status" ] || [ "$1" = "start" ]; then
 fi
 
 if [ "$1" = "start" ] || [ "$1" = "reload" ] || [ "$1" = "restart" ]; then
-  rewritemtaconfig
+  rewrite_mta_config
   if [ "$2" != "norewrite" ]; then
-    rewriteconfig
+    rewrite_config
   fi
 fi
 
