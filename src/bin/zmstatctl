@@ -12,12 +12,14 @@ use Zimbra::Mon::Zmstat;
 use POSIX qw(setsid);
 
 # Array of systemd targets to check and start
-my @systemd_targets = (
-    "carbonio-directory-server",
-    "carbonio-appserver",
-    "carbonio-proxy",
-    "carbonio-mta",
-);
+my @systemd_targets = ( "carbonio-directory-server", "carbonio-appserver", "carbonio-proxy", "carbonio-mta", );
+my @TOOL_ALL        = ( 'zmstat-proc', 'zmstat-cpu', 'zmstat-vm', 'zmstat-io -x', 'zmstat-df', 'zmstat-io', 'zmstat-fd', 'zmstat-allprocs', );
+
+my $TOOL_MYSQL    = 'zmstat-mysql';
+my $TOOL_CONVERTD = 'zmstat-convertd';
+my $TOOL_NGINX    = 'zmstat-nginx';
+my $TOOL_MTAQUEUE = 'zmstat-mtaqueue';
+my $TOOL_LDAP     = 'zmstat-ldap';
 
 setsid;
 
@@ -48,15 +50,11 @@ sub getProcList() {
     }
     else {
         if ($server) {
-            eval {
-                @services =
-qx(zmprov -l gs $server zimbraServiceEnabled | grep -i zimbraServiceEnabled | sed -e 's/^zimbraServiceEnabled: //');
-            };
+            eval { @services = qx(zmprov -l gs $server zimbraServiceEnabled | grep -i zimbraServiceEnabled | sed -e 's/^zimbraServiceEnabled: //'); };
         }
     }
     if ( scalar(@services) < 1 ) {
-        print STDERR
-          "Unable to determine service list on this host. Assuming all.\n";
+        print STDERR "Unable to determine service list on this host. Assuming all.\n";
         $all = 1;
     }
 
@@ -92,8 +90,7 @@ sub getPidFiles() {
         my @pidfiles = readdir(DIR);
         foreach my $file (@pidfiles) {
             next
-              if ( $file =~ /fd-real/ )
-              ;    # can't kill/test: running as root
+              if ( $file =~ /fd-real/ );    # can't kill/test: running as root
             if ( $file =~ /\.pid$/ ) {
                 push( @pids, "$piddir/$file" );
             }
@@ -101,6 +98,119 @@ sub getPidFiles() {
         closedir(DIR);
     }
     return @pids;
+}
+
+sub startRestart() {
+    my $procs   = getProcList();
+    my $doNginx = $procs =~ /\bnginx\b/;
+    my $doMysql =
+      ( -x "/opt/zextras/common/sbin/mysqld" && -l "/opt/zextras/mailboxd" )
+      ? 1
+      : 0;
+    my $doMtaQueue =
+      ( -x "/opt/zextras/common/sbin/postqueue" && $procs =~ /\bmta\b/ )
+      ? 1
+      : 0;
+    my $doLdap    = -x "/opt/zextras/common/libexec/slapd" ? 1 : 0;
+    my $outfile   = getZmstatRoot() . "/zmstat.out";
+    my $scriptDir = dirname($0);
+    my $parentDir = dirname($scriptDir);
+    my $toolpath  = "$parentDir/libexec";
+    my @pids      = getPidFiles();
+
+    if ( scalar(@pids) == 0 ) {
+        foreach my $tool (@TOOL_ALL) {
+            my $cmd = "$toolpath/$tool";
+            print "Invoking: $cmd\n";
+            system("$cmd >> $outfile 2>&1 &");
+        }
+        if ($doMysql) {
+            my $cmd = "$toolpath/$TOOL_MYSQL";
+            print "Invoking: $cmd\n";
+            system("$cmd >> $outfile 2>&1 &");
+        }
+        if ($doMtaQueue) {
+            my $cmd = "$toolpath/$TOOL_MTAQUEUE";
+            print "Invoking: $cmd\n";
+            system("$cmd >> $outfile 2>&1 &");
+        }
+        if ($doNginx) {
+            my $cmd = "$toolpath/$TOOL_NGINX";
+            print "Invoking: $cmd\n";
+            system("$cmd >> $outfile 2>&1 &");
+        }
+        if ($doLdap) {
+            my $cmd = "$toolpath/$TOOL_LDAP";
+            print "Invoking: $cmd\n";
+            system("$cmd >> $outfile 2>&1 &");
+        }
+    }
+    else {
+        my %procs;
+        foreach my $pidFile (@pids) {
+            my $pid  = readPidFile($pidFile);
+            my $proc = $pidFile;
+            $proc =~ s/\.pid//;
+            $proc =~ s/.*pid\///;
+            if ( kill( 0, $pid ) ) {
+                print "$proc already running, skipping.\n";
+                if (   $proc eq "zmstat-mysql"
+                    || $proc eq "zmstat-mtaqueue"
+                    || $proc eq "zmstat-nginx"
+                    || $proc eq "zmstat-ldap" )
+                {
+                    $procs{$proc} = 1;
+                }
+                else {
+                    if ( $proc eq "zmstat-io-x" ) {
+                        $proc = "zmstat-io -x";
+                    }
+                    @TOOL_ALL = grep !/^($proc)$/, @TOOL_ALL;
+                }
+            }
+        }
+        foreach my $tool (@TOOL_ALL) {
+            my $cmd = "$toolpath/$tool";
+            print "Invoking: $cmd\n";
+            system("$cmd >> $outfile 2>&1 &");
+        }
+        if ( $doMysql && !$procs{"zmstat-mysql"} ) {
+            my $cmd = "$toolpath/$TOOL_MYSQL";
+            print "Invoking: $cmd\n";
+            system("$cmd >> $outfile 2>&1 &");
+        }
+        if ( $doMtaQueue && !$procs{"zmstat-mtaqueue"} ) {
+            my $cmd = "$toolpath/$TOOL_MTAQUEUE";
+            print "Invoking: $cmd\n";
+            system("$cmd >> $outfile 2>&1 &");
+        }
+        if ( $doNginx && !$procs{"zmstat-nginx"} ) {
+            my $cmd = "$toolpath/$TOOL_NGINX";
+            print "Invoking: $cmd\n";
+            system("$cmd >> $outfile 2>&1 &");
+        }
+        if ( $doLdap && !$procs{"zmstat-ldap"} ) {
+            my $cmd = "$toolpath/$TOOL_LDAP";
+            print "Invoking: $cmd\n";
+            system("$cmd >> $outfile 2>&1 &");
+        }
+    }
+}
+
+sub stopRestart() {
+    my @pids = getPidFiles();
+    foreach my $pidFile (@pids) {
+        my $pid = readPidFile($pidFile);
+        if ($pid) {
+            print "Terminating process $pid\n";
+            if ( !kill( 0, $pid ) ) {
+                unlink($pidFile);
+            }
+            elsif ( kill( 15, $pid ) == 1 ) {    # SIGTERM
+                unlink($pidFile);
+            }
+        }
+    }
 }
 
 sub usage() {
@@ -112,10 +222,11 @@ _USAGE_
 }
 
 sub isSystemd {
+
     # Check if any of the systemd targets are enabled
     foreach my $target (@systemd_targets) {
-        if (isSystemdEnabledTarget($target)) {
-            systemdPrint();  # At least one target is enabled
+        if ( isSystemdEnabledTarget($target) ) {
+            systemdPrint();    # At least one target is enabled
         }
     }
 }
@@ -128,15 +239,17 @@ sub isSystemdEnabledTarget {
 
     # Execute the command and capture the output
     my $output = `$command`;
-    my $rc = $? >> 8;  # Get the exit status of the command
+    my $rc     = $? >> 8;      # Get the exit status of the command
 
     # Check the exit status
-    if ($rc == 0) {
-        return 1;  # The unit is enabled
-    } elsif ($rc == 1) {
-        return 0;  # The unit is not enabled
-    } else {
-        return undef;  # An error occurred
+    if ( $rc == 0 ) {
+        return 1;              # The unit is enabled
+    }
+    elsif ( $rc == 1 ) {
+        return 0;              # The unit is not enabled
+    }
+    else {
+        return undef;          # An error occurred
     }
 }
 
@@ -144,166 +257,41 @@ sub systemdPrint {
     print "Services are now handled by systemd.\n\n";
     print "Enabled systemd targets:\n\n";
     foreach my $target (@systemd_targets) {
-        if (isSystemdEnabledTarget($target)) {
-            print "  - $target.target\n"  # At least one target is enabled
+        if ( isSystemdEnabledTarget($target) ) {
+            print "  - $target.target\n"    # At least one target is enabled
         }
     }
     print "\nPlease check the documentation for further details.\nExiting.\n";
-    exit 1
+    exit 1;
 }
 
 #
 # main
 #
 
-isSystemd();
-
-my @TOOL_ALL = (
-    'zmstat-proc', 'zmstat-cpu', 'zmstat-vm', 'zmstat-io -x',
-    'zmstat-df',   'zmstat-io',  'zmstat-fd', 'zmstat-allprocs',
-);
-
-my $TOOL_MYSQL    = 'zmstat-mysql';
-my $TOOL_CONVERTD = 'zmstat-convertd';
-my $TOOL_NGINX    = 'zmstat-nginx';
-my $TOOL_MTAQUEUE = 'zmstat-mtaqueue';
-my $TOOL_LDAP     = 'zmstat-ldap';
-
 my $cmd = $ARGV[0];
 if ( defined($cmd) ) {
 
     if ( $cmd eq 'stop' || $cmd eq 'restart' ) {
-        my @pids = getPidFiles();
-        foreach my $pidFile (@pids) {
-            my $pid = readPidFile($pidFile);
-            if ($pid) {
-                print "Terminating process $pid\n";
-                if ( !kill( 0, $pid ) ) {
-                    unlink($pidFile);
-                }
-                elsif ( kill( 15, $pid ) == 1 ) {    # SIGTERM
-                    unlink($pidFile);
-                }
-            }
-        }
+        isSystemd();
+        stopRestart();
         if ( $cmd eq 'stop' ) {
+            isSystemd();
+            exit(0);    # always return success to calling script
+        }
+    }
+    if ( $cmd eq 'stop-systemd' || $cmd eq 'restart-systemd' ) {
+        stopRestart();
+        if ( $cmd eq 'stop-systemd' ) {
             exit(0);    # always return success to calling script
         }
     }
     if ( $cmd eq 'start' || $cmd eq 'restart' ) {
-        my $procs   = getProcList();
-        my $doNginx = $procs =~ /\bnginx\b/;
-        my $doMysql =
-          ( -x "/opt/zextras/common/sbin/mysqld" && -l "/opt/zextras/mailboxd" )
-          ? 1
-          : 0;
-        my $doMtaQueue =
-          ( -x "/opt/zextras/common/sbin/postqueue" && $procs =~ /\bmta\b/ )
-          ? 1
-          : 0;
-        my $doLdap    = -x "/opt/zextras/common/libexec/slapd" ? 1 : 0;
-        my $outfile   = getZmstatRoot() . "/zmstat.out";
-        my $scriptDir = dirname($0);
-        my $parentDir = dirname($scriptDir);
-        my $toolpath  = "$parentDir/libexec";
-        my @pids      = getPidFiles();
-
-        if ( scalar(@pids) == 0 ) {
-            foreach my $tool (@TOOL_ALL) {
-                my $cmd = "$toolpath/$tool";
-                print "Invoking: $cmd\n";
-                system("$cmd >> $outfile 2>&1 &");
-            }
-            if ($doMysql) {
-                my $cmd = "$toolpath/$TOOL_MYSQL";
-                print "Invoking: $cmd\n";
-                system("$cmd >> $outfile 2>&1 &");
-            }
-
-# if "convertd" is not in proc list (not an enabled service), don't try starting zmstat-convertd
-            if ( $procs =~ /convertd/ ) {
-
-                # doMysql implies that convertd is also on the system
-                $cmd = "$toolpath/$TOOL_CONVERTD";
-                print "Invoking: $cmd\n";
-                system("$cmd >> $outfile 2>&1 &");
-            }
-            if ($doMtaQueue) {
-                my $cmd = "$toolpath/$TOOL_MTAQUEUE";
-                print "Invoking: $cmd\n";
-                system("$cmd >> $outfile 2>&1 &");
-            }
-            if ($doNginx) {
-                my $cmd = "$toolpath/$TOOL_NGINX";
-                print "Invoking: $cmd\n";
-                system("$cmd >> $outfile 2>&1 &");
-            }
-            if ($doLdap) {
-                my $cmd = "$toolpath/$TOOL_LDAP";
-                print "Invoking: $cmd\n";
-                system("$cmd >> $outfile 2>&1 &");
-            }
-        }
-        else {
-            my %procs;
-            foreach my $pidFile (@pids) {
-                my $pid  = readPidFile($pidFile);
-                my $proc = $pidFile;
-                $proc =~ s/\.pid//;
-                $proc =~ s/.*pid\///;
-                if ( kill( 0, $pid ) ) {
-                    print "$proc already running, skipping.\n";
-                    if (   $proc eq "zmstat-mysql"
-                        || $proc eq "zmstat-convertd"
-                        || $proc eq "zmstat-mtaqueue"
-                        || $proc eq "zmstat-nginx"
-                        || $proc eq "zmstat-ldap" )
-                    {
-                        $procs{$proc} = 1;
-                    }
-                    else {
-                        if ( $proc eq "zmstat-io-x" ) {
-                            $proc = "zmstat-io -x";
-                        }
-                        @TOOL_ALL = grep !/^($proc)$/, @TOOL_ALL;
-                    }
-                }
-            }
-            foreach my $tool (@TOOL_ALL) {
-                my $cmd = "$toolpath/$tool";
-                print "Invoking: $cmd\n";
-                system("$cmd >> $outfile 2>&1 &");
-            }
-            if ( $doMysql && !$procs{"zmstat-mysql"} ) {
-                my $cmd = "$toolpath/$TOOL_MYSQL";
-                print "Invoking: $cmd\n";
-                system("$cmd >> $outfile 2>&1 &");
-            }
-
-# if "convertd" is not in proc list (not an enabled service), don't try starting zmstat-convertd
-            if ( $procs =~ /convertd/ && !$procs{"zmstat-convertd"} ) {
-
-                # doMysql implies that convertd is also on the system
-                $cmd = "$toolpath/$TOOL_CONVERTD";
-                print "Invoking: $cmd\n";
-                system("$cmd >> $outfile 2>&1 &");
-            }
-            if ( $doMtaQueue && !$procs{"zmstat-mtaqueue"} ) {
-                my $cmd = "$toolpath/$TOOL_MTAQUEUE";
-                print "Invoking: $cmd\n";
-                system("$cmd >> $outfile 2>&1 &");
-            }
-            if ( $doNginx && !$procs{"zmstat-nginx"} ) {
-                my $cmd = "$toolpath/$TOOL_NGINX";
-                print "Invoking: $cmd\n";
-                system("$cmd >> $outfile 2>&1 &");
-            }
-            if ( $doLdap && !$procs{"zmstat-ldap"} ) {
-                my $cmd = "$toolpath/$TOOL_LDAP";
-                print "Invoking: $cmd\n";
-                system("$cmd >> $outfile 2>&1 &");
-            }
-        }
+        isSystemd();
+        startRestart();
+    }
+    if ( $cmd eq 'start-systemd' || $cmd eq 'restart-systemd' ) {
+        startRestart();
     }
     elsif ( $cmd eq 'status' ) {
         my @pids = getPidFiles();
@@ -341,10 +329,8 @@ if ( defined($cmd) ) {
             }
         }
     }
-    else {
-        usage();
-    }
 }
 else {
     usage();
 }
+
