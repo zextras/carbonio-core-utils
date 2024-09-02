@@ -34,7 +34,6 @@ sub getEnabledProcs() {
         if ( $svc =~ /mailbox/ ) {
             push( @procs, 'mailbox' );
             push( @procs, 'mysql' );
-            push( @procs, 'convertd' );
             last;
         }
     }
@@ -193,12 +192,6 @@ sub getMysqlProcessList() {
     return @ret;
 }
 
-sub getConvertdProcess() {
-    my @regex = ('httpd -k(.*)/convertd/(.*)httpd\.conf$');
-    my @ret   = filterProcs( $ZIMBRA_USER, \@regex );
-    return @ret;
-}
-
 sub getLDAPProcess() {
     my @regex = ('slapd');
     my @ret   = filterProcs( $ZIMBRA_USER, \@regex );
@@ -229,13 +222,12 @@ sub getStatsProcessList() {
 }
 
 my @DEFAULT_PROCS = (
-    'mailbox', 'mysql',  'convertd', 'ldap',
+    'mailbox', 'mysql',  'ldap',
     'postfix', 'amavis', 'clam',     'zmstat'
 );
 my %ps_subs = (
     'mailbox' => \&getMailboxProcess,
     'mysql'   => \&getMysqlProcessList,
-    'convertd', \&getConvertdProcess,
     'ldap',     \&getLDAPProcess,
     'postfix',  \&getPostfixProcessList,
     'amavis',   \&getAmavisProcessList,

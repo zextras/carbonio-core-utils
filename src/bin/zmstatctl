@@ -16,7 +16,6 @@ my @systemd_targets = ( "carbonio-directory-server", "carbonio-appserver", "carb
 my @TOOL_ALL        = ( 'zmstat-proc', 'zmstat-cpu', 'zmstat-vm', 'zmstat-io -x', 'zmstat-df', 'zmstat-io', 'zmstat-fd', 'zmstat-allprocs', );
 
 my $TOOL_MYSQL    = 'zmstat-mysql';
-my $TOOL_CONVERTD = 'zmstat-convertd';
 my $TOOL_NGINX    = 'zmstat-nginx';
 my $TOOL_MTAQUEUE = 'zmstat-mtaqueue';
 my $TOOL_LDAP     = 'zmstat-ldap';
@@ -60,9 +59,6 @@ sub getProcList() {
 
     if ( $all || arrayContains( \@services, 'mailbox' ) ) {
         push( @procs, 'mailbox', 'mysql' );
-    }
-    if ( $all || arrayContains( \@services, 'convertd' ) ) {
-        push( @procs, 'convertd' );
     }
     if ( $all || arrayContains( \@services, 'proxy' ) ) {
         push( @procs, 'nginx' );

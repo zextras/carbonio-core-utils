@@ -243,22 +243,6 @@ sub modifyServerName($) {
         );
       print ($result->code() ? "failed.\n" : "done.\n");
     }
-    print("Updating zimbraConvertdURL attribute\n") if ($verbose > 1);
-    $result = $ldap->search(base => $zimbra_base,
-      scope =>'sub',
-      attrs => ['zimbraConvertdURL'],
-      filter => "(&(|(objectClass=zimbraServer)(objectClass=zimbraGlobalConfig))(zimbraConvertdURL=*://$c{zimbra_server_hostname}:*))");
-    return $result if ($result->code());
-    foreach my $entry ($result->all_entries) {
-      print "Updating zimbraConvertdURL for ", $entry->dn(), "...";
-      my $value=$entry->get_value("zimbraConvertdURL");
-      $value =~ s/$c{zimbra_server_hostname}/$server/g;
-      $result = $ldap->modify(
-        $entry->dn,
-        replace => {zimbraConvertdURL => "$value"},
-        );
-      print ($result->code() ? "failed.\n" : "done.\n");
-    }
     print("Updating zimbraSpellCheckURL attribute\n") if ($verbose > 1);
     $result = $ldap->search(base => $zimbra_base,
       scope =>'sub',
