@@ -240,6 +240,12 @@ sub doStatus {
         else {
             my $service_name = renameServices($_);
             $stat = sprintf "\t%-20s %10s\n", $service_name, ($rc) ? "Stopped" : "Running";
+            if (   $_ eq "mailbox" ) {
+                my $res =`/opt/zextras/bin/advanced_status 0`;
+                foreach my $line (split /\n/, $res) {
+                    $stat = $stat."\t --".$line."\n";
+                }
+            }
         }
         print "$stat";
         if ($rc) {
@@ -361,6 +367,12 @@ sub doStartup {
         }
         else {
             print "Done.\n";
+            if (   $_ eq "mailbox" ) {
+                my $res =`/opt/zextras/bin/advanced_status 2`;
+                foreach my $line (split /\n/, $res) {
+                    print "\t --".$line."\n";
+                }
+            }
         }
         unlink($zmcontrolLogfile);
     }
