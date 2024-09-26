@@ -7,7 +7,7 @@
 #
 
 use strict;
-use Zimbra::Mon::Zmstat;
+use Zextras::Mon::Stat;
 
 zmstatInit();
 

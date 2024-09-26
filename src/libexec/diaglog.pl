@@ -8,14 +8,14 @@
 use strict;
 
 use lib "/opt/zextras/common/lib/perl5";
-use Zimbra::Util::Common;
+use Zextras::Util::Common;
 
 use Getopt::Long;
 use POSIX qw(strftime);
 use File::Spec;
 use File::Path;
 use File::Copy qw/cp/;
-use Zimbra::Mon::Zmstat;
+use Zextras::Mon::Stat;
 use Digest::MD5;
 
 use vars qw(
@@ -627,7 +627,7 @@ sub run() {
     if ( -d "/opt/zextras/zmstat/$yesterday_stats_dir" ) {
         logmsg "Copying yesterday's statistics\n";
         mkdir("$destination/stats/$yesterday_stats_dir");
-        my $zuser = $Zimbra::Mon::Zmstat::LC{zimbra_user};
+        my $zuser = $Zextras::Mon::Stat::LC{zimbra_user};
         my ( $zuid, $zgid ) = ( getpwnam($zuser) )[ 2, 3 ];
         chown $zuid, $zgid, "$destination/stats/$yesterday_stats_dir";
         cp $_, "$destination/stats/$yesterday_stats_dir"

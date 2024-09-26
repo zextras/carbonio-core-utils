@@ -9,12 +9,12 @@ use lib "/opt/zextras/common/lib/perl5";
 use strict;
 use warnings;
 use DBI;
-use Zimbra::Mon::Zmstat;
-use Zimbra::Mon::Logger;
+use Zextras::Mon::Stat;
+use Zextras::Mon::Logger;
 use Date::Parse;
 use Fcntl qw(SEEK_SET);
 
-my $logger_directory = $Zimbra::Mon::Zmstat::LC{'logger_data_directory'};
+my $logger_directory = $Zextras::Mon::Stat::LC{'logger_data_directory'};
 my %hostmap;
 
 use vars qw($logger_directory $log_file);
@@ -281,7 +281,7 @@ sub run() {
             push( @data, $hdata->{$c} );
         }
         my $data = join( ',', @data );
-        Zimbra::Mon::Logger::LogStats( "info", "MTA: $host: ${columns}:: $data" );
+        Zextras::Mon::Logger::LogStats( "info", "MTA: $host: ${columns}:: $data" );
     }
 
     unlink($pid_file);

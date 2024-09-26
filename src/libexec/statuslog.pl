@@ -10,8 +10,8 @@ use strict;
 use JSON::PP;
 use Data::Dumper;
 
-use  Zimbra::Util::Common;
-use Zimbra::Mon::Logger;
+use  Zextras::Util::Common;
+use Zextras::Mon::Logger;
 
 # Exit if software-only node.
 exit(0) unless (-f "/opt/zextras/conf/localconfig.xml");
@@ -67,7 +67,7 @@ sub logStatus {
 			$isaloggerserver = 'found';
 		}
 
-		Zimbra::Mon::Logger::LogStats( "info", "$dt, STATUS: ${hostname}: $service: $stat" );
+		Zextras::Mon::Logger::LogStats( "info", "$dt, STATUS: ${hostname}: $service: $stat" );
 	}
 
 	if (($ismailboxrunning) && ($isaloggerserver)) {
@@ -80,7 +80,7 @@ sub logStatus {
 				if ( $server->{'status'} eq "online" ) {
 					$status = 'Running';
 				}
-				Zimbra::Mon::Logger::LogStats( "info", "$dt, STATUS: $server->{'name'}: docs: $status" );
+				Zextras::Mon::Logger::LogStats( "info", "$dt, STATUS: $server->{'name'}: docs: $status" );
 			}
 		}
 	}
@@ -108,6 +108,6 @@ sub clearPid {
 }
 
 sub catchAlarm {
-		Zimbra::Mon::Logger::LogStats( "info", "zmstatuslog timeout after $TIMEOUT seconds"); 
+		Zextras::Mon::Logger::LogStats( "info", "zmstatuslog timeout after $TIMEOUT seconds"); 
     exit 1;
 }

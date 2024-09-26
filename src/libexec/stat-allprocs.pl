@@ -10,8 +10,8 @@ use vars qw($PROCFS @STATLIST $LOGFILE $CONSOLE $interval $LOGFH
             $ROTATE_NOW $ROTATE_DEFER $date $HAS_IO_ACCT);
 use Getopt::Long;
 use lib "/opt/zextras/common/lib/perl5";
-use Zimbra::Mon::Zmstat;
-use Zimbra::Mon::Logger;
+use Zextras::Mon::Stat;
+use Zextras::Mon::Logger;
 use Data::Dumper;
 use Scalar::Util qw(looks_like_number);
 
@@ -229,7 +229,7 @@ sub main() {
                 my $values = join(', ', @printstats);
                 $LOGFH->print("$values\n");
                 # allprocs causes way too much traffic to send to logger at the moment
-                # Zimbra::Mon::Logger::LogStats( "info", "zmstat allprocs.csv: ${HEADING}:: $values"); 
+                # Zextras::Mon::Logger::LogStats( "info", "zmstat allprocs.csv: ${HEADING}:: $values"); 
                 $LOGFH->flush();
                 $ROTATE_DEFER = 0;
                 if ($ROTATE_NOW) {

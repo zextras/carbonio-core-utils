@@ -10,8 +10,8 @@ use vars qw($PROCFS @STATLIST $LOGFILE $CONSOLE $interval $LOGFH
             $ROTATE_NOW $ROTATE_DEFER $date $HAS_IO_ACCT);
 use Getopt::Long;
 use lib "/opt/zextras/common/lib/perl5";
-use Zimbra::Mon::Zmstat;
-use Zimbra::Mon::Logger;
+use Zextras::Mon::Stat;
+use Zextras::Mon::Logger;
 use Data::Dumper;
 
 # Initial version will support forked process monitoring.  I/O accounting
@@ -186,7 +186,7 @@ sub main() {
             }
             my $values = join(', ', @printstats);
             $LOGFH->print("$values\n");
-            Zimbra::Mon::Logger::LogStats( "info", "zmstat nginx.csv: ${HEADING}:: $values"); 
+            Zextras::Mon::Logger::LogStats( "info", "zmstat nginx.csv: ${HEADING}:: $values"); 
             $LOGFH->flush();
             $ROTATE_DEFER = 0;
             if ($ROTATE_NOW) {

@@ -7,7 +7,7 @@
 
 use strict;
 use lib qw(/opt/zextras/common/lib/perl5 /opt/zextras/zimbramon/lib);
-use Zimbra::Mon::Logger;
+use Zextras::Mon::Logger;
 
 use FileHandle;
 use IPC::Open3;
@@ -227,7 +227,7 @@ sub logError {
     if ( $options{m} && !$options{d} ) {
         my $dt = qx(date "+%Y-%m-%d %H:%M:%S");
         chomp($dt);
-        Zimbra::Mon::Logger::Log( "err", "$dt, zmdailyreport: $msg" );
+        Zextras::Mon::Logger::Log( "err", "$dt, zmdailyreport: $msg" );
     }
     else {
         print STDERR $msg;

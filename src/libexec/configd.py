@@ -17,7 +17,6 @@ import threading
 import traceback
 
 import conf
-# import commands
 from org.apache.logging.log4j.core.config import Configurator
 import state
 import listener
@@ -35,7 +34,7 @@ if (os.geteuid() == 0):
 # Signal handling workaround.  Directly affects the time required for a rewrite request to process
 sleepinterval = 1.0
 
-def catchSignal(signum, fr):
+def catch_signal(signum, fr):
 	Log.logMsg(4, "Received signal %d" % (signum,));
 	if signum in (signal.SIGCHLD, signal.SIGHUP, signal.SIGUSR2, signal.SIGALRM):
 		myState.sleepTimer = 0
@@ -43,15 +42,15 @@ def catchSignal(signum, fr):
 	Log.logMsg(3, "Shutting down. Received signal %d" % (signum,));
 	sys.exit(0)
 
-signal.signal(signal.SIGUSR2, catchSignal)
-signal.signal(signal.SIGHUP, catchSignal)
-signal.signal(signal.SIGINT, catchSignal)
-signal.signal(signal.SIGCHLD, catchSignal)
-signal.signal(signal.SIGTERM, catchSignal)
+signal.signal(signal.SIGUSR2, catch_signal)
+signal.signal(signal.SIGHUP, catch_signal)
+signal.signal(signal.SIGINT, catch_signal)
+signal.signal(signal.SIGCHLD, catch_signal)
+signal.signal(signal.SIGTERM, catch_signal)
 
 # Can't trap SIGQUIT, SIGKILL in jython?
-# signal.signal(signal.SIGQUIT, catchSignal)
-# signal.signal(signal.SIGKILL, catchSignal)
+# signal.signal(signal.SIGQUIT, catch_signal)
+# signal.signal(signal.SIGKILL, catch_signal)
 
 def watchdog():
 	if (not myConfig.watchdog) or myState.firstRun:
@@ -92,14 +91,14 @@ def watchdog():
 			else:
 				Log.logMsg(3, "Watchdog: service %s status is OK." % (service,));
 
-def requestListener():
+def request_listener():
 	if state.State.mState.serverconfig["zimbraIPMode"] == "ipv4":
 		listener_params = ("127.0.0.1",int(state.State.mState.localconfig["zmconfigd_listen_port"]))
 		try:
 			server = listener.ThreadedStreamServer(listener_params, listener.ThreadedRequestHandler)
 		except socket.error, e:
 			Log.logMsg (1, "Error creating listener socket on port %s: %s" % (state.State.mState.localconfig["zmconfigd_listen_port"],str(e)))
-			if contactService("STATUS"):
+			if contact_service("STATUS"):
 				Log.logMsg (0, "Can't create listener socket: %s" % str(e))
 			else:
 				Log.logMsg (0, "zmconfigd service already running, exiting")
@@ -109,7 +108,7 @@ def requestListener():
 			server = listener.ThreadedStreamServerIPv6(listener_params, listener.ThreadedRequestHandler)
 		except socket.error, e:
 			Log.logMsg (1, "Error creating listener socket on port %s: %s" % (state.State.mState.localconfig["zmconfigd_listen_port"],str(e)))
-			if contactService("STATUS"):
+			if contact_service("STATUS"):
 				Log.logMsg (0, "Can't create listener socket: %s" % str(e))
 			else:
 				Log.logMsg (0, "zmconfigd service already running, exiting")
@@ -119,7 +118,7 @@ def requestListener():
 	server_thread.start()
 	Log.logMsg(4, "Socket listener running as %s" % server_thread.getName())
 
-def contactService(command, args=None):
+def contact_service(command, args=None):
 	listener_params = ("localhost",int(state.State.mState.localconfig["zmconfigd_listen_port"]))
 	if state.State.mState.serverconfig["zimbraIPMode"] == "ipv4":
 		sock = socket.socket(socket.AF_INET4, socket.SOCK_STREAM)
@@ -159,7 +158,7 @@ Log.logMsg(1, "%s started on %s with loglevel=%d pid=%d" % (myConfig.progname, m
 
 # if forced, check for a running daemon.  If there's not one, just run once to maintain legacy behavior
 if len(sys.argv) > 1:
-	if contactService("REWRITE", sys.argv[1:]):
+	if contact_service("REWRITE", sys.argv[1:]):
 		Log.logMsg(3, "Processing forced rewrites as standalone process")
 		for arg in sys.argv[1:]:
 			myState.forced += 1
@@ -238,7 +237,7 @@ while True:
 	# start the listener after we have the lock, or an early request can cause problems
 	# start the listener after the rewrites, so the start script doesn't return before they're complete
 	if myState.firstRun and not myState.forced:
-		requestListener()
+		request_listener()
 
 	Log.logMsg (5, "LOCK myState.lAction released")
 	myState.firstRun = False

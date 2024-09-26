@@ -14,13 +14,13 @@ use strict;
 use Getopt::Long;
 use Cwd qw/realpath/;
 use lib "/opt/zextras/common/lib/perl5";
-use Zimbra::Mon::Zmstat;
-use Zimbra::Mon::Logger;
+use Zextras::Mon::Stat;
+use Zextras::Mon::Logger;
 use vars qw($LOGFH $CONSOLE $LOGFILE $ROTATE_NOW $ROTATE_DEFER);
 
-Zimbra::Mon::Zmstat::getLocalConfig('zimbra_user', 'zimbra_server_hostname',
+Zextras::Mon::Stat::getLocalConfig('zimbra_user', 'zimbra_server_hostname',
                'zmstat_interval', 'zmstat_disk_interval');
-my $zuser = $Zimbra::Mon::Zmstat::LC{zimbra_user};
+my $zuser = $Zextras::Mon::Stat::LC{zimbra_user};
 my ($zuid,$zgid) = (getpwnam($zuser))[2,3];
 
 if (@ARGV > 0 && $ARGV[0] eq 'stop') {
@@ -44,7 +44,7 @@ if (@ARGV > 0 && $ARGV[0] eq 'rotate') {
 }
 
 if ($< != 0) {
-    Zimbra::Mon::Zmstat::userCheck();
+    Zextras::Mon::Stat::userCheck();
     createPidFile('fd.pid');
     $SIG{TERM} = sub {
     	system("sudo /opt/zextras/libexec/zmstat-fd stop");
@@ -192,7 +192,7 @@ while (1) {
     }
     $ROTATE_DEFER = 1;
     $LOGFH->print("$tstamp, $stat, $mbox_stat\n");
-    Zimbra::Mon::Logger::LogStats( "info", "zmstat fd.csv: ${HEADING}:: $tstamp, $stat, $mbox_stat"); 
+    Zextras::Mon::Logger::LogStats( "info", "zmstat fd.csv: ${HEADING}:: $tstamp, $stat, $mbox_stat"); 
     $LOGFH->flush();
     $ROTATE_DEFER = 0;
     if ($ROTATE_NOW) {

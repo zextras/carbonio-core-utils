@@ -17,7 +17,7 @@ package ldapinit;
 
 use strict;
 use lib "/opt/zextras/common/lib/perl5";
-use Zimbra::Util::Common;
+use Zextras::Util::Common;
 use Getopt::Std;
 use Net::LDAP;
 use Net::LDAP::LDIF;

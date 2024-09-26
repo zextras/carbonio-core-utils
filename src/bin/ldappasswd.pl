@@ -7,7 +7,7 @@
 
 use strict;
 use lib "/opt/zextras/common/lib/perl5";
-use Zimbra::Util::Common;
+use Zextras::Util::Common;
 use File::Path;
 use Getopt::Std;
 use Net::LDAP;
