@@ -10,10 +10,10 @@
 
 # Array of systemd targets to check and start
 systemd_targets=(
-  "carbonio-directory-server"
-  "carbonio-appserver"
-  "carbonio-proxy"
-  "carbonio-mta"
+  "carbonio-directory-server.target"
+  "carbonio-appserver.target"
+  "carbonio-proxy.target"
+  "carbonio-mta.target"
 )
 
 zmsetvars() {
@@ -69,7 +69,7 @@ is_systemd() {
 
   # Check if any of the systemd targets are enabled
   for target in "${systemd_targets[@]}"; do
-    if is_systemd_enabled_target "$target"; then
+    if is_systemd_enabled_unit "$target"; then
       systemd_status=1 # At least one target is enabled
       break
     fi
@@ -78,16 +78,30 @@ is_systemd() {
   return $systemd_status
 }
 
-is_systemd_enabled_target() {
+is_systemd_active_unit() {
   local unit_name="$1"
 
   # Execute the command and check if the unit is enabled
-  if systemctl is-enabled "${unit_name}.target" &>/dev/null; then
+  if systemctl is-active "${unit_name}" &>/dev/null; then
+    return 0 # The unit is running
+  elif [ $? -eq 1 ]; then
+    return 1 # The unit is not running
+  else
+    echo "Error: Unable to check the status of ${unit_name}" >&2
+    return 2 # An error occurred
+  fi
+}
+
+is_systemd_enabled_unit() {
+  local unit_name="$1"
+
+  # Execute the command and check if the unit is enabled
+  if systemctl is-enabled "${unit_name}" &>/dev/null; then
     return 0 # The unit is enabled
   elif [ $? -eq 1 ]; then
     return 1 # The unit is not enabled
   else
-    echo "Error: Unable to check the status of ${unit_name}.target" >&2
+    echo "Error: Unable to check the status of ${unit_name}" >&2
     return 2 # An error occurred
   fi
 }
@@ -99,8 +113,8 @@ systemd_print() {
   echo
 
   for target in "${systemd_targets[@]}"; do
-    if is_systemd_enabled_target "$target"; then
-      echo "  - ${target}.target" # At least one target is enabled
+    if is_systemd_enabled_unit "$target"; then
+      echo "  - ${target}" # At least one target is enabled
     fi
   done
 

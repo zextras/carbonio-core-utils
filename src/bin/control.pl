@@ -89,7 +89,12 @@ my %allservices = (
 );
 
 # Array of systemd targets to check and start
-my @systemd_targets = ( "carbonio-directory-server", "carbonio-appserver", "carbonio-proxy", "carbonio-mta", );
+my @systemd_targets = (
+    "carbonio-directory-server.target",
+    "carbonio-appserver.target",
+    "carbonio-proxy.target",
+    "carbonio-mta.target",
+);
 
 my %rewrites = (
     "antivirus" => "antivirus amavis",
@@ -138,7 +143,7 @@ my %REMOTECOMMANDS = (
 my $zal_path     = "/opt/zextras/lib/ext/carbonio/zal.jar";
 my $zextras_path = "/opt/zextras/lib/ext/carbonio/carbonio.jar";
 
-isSystemdEnabled();
+isSystemd();
 
 $| = 1;
 
@@ -535,21 +540,21 @@ sub getEnabledServices {
     return \%s;
 }
 
-sub isSystemdEnabled {
+sub isSystemd {
 
     # Check if any of the systemd targets are enabled
     foreach my $target (@systemd_targets) {
-        if ( isSystemdEnabledTarget($target) ) {
+        if ( isSystemdEnabledUnit($target) ) {
             systemdPrint();    # At least one target is enabled
         }
     }
 }
 
-sub isSystemdEnabledTarget {
+sub isSystemdEnabledUnit {
     my ($unitName) = @_;
 
     # Construct the command to check if the unit is enabled
-    my $command = "systemctl is-enabled $unitName.target 2>&1";
+    my $command = "systemctl is-enabled $unitName 2>&1";
 
     # Execute the command and capture the output
     my $output = `$command`;
@@ -571,8 +576,8 @@ sub systemdPrint {
     print "Services are now handled by systemd.\n\n";
     print "Enabled systemd targets:\n\n";
     foreach my $target (@systemd_targets) {
-        if ( isSystemdEnabledTarget($target) ) {
-            print "  - $target.target\n"    # At least one target is enabled
+        if ( isSystemdEnabledUnit($target) ) {
+            print "  - $target\n"    # At least one target is enabled
         }
     }
     print "\nPlease check the documentation for further details.\nExiting.\n";

@@ -13,7 +13,7 @@ if [ "$(whoami)" != zextras ]; then
   exit 1
 fi
 
-isrunning() {
+is_running() {
   zmmailboxdctl status 2>/dev/null
   return
 }
@@ -29,7 +29,11 @@ done
 pid=$(pgrep -f '/opt/zextras/.*/java.*redolog.util.PlaybackUtil')
 
 if [ $opth -eq 0 ]; then
-  if isrunning; then
+  if is_systemd_active_unit carbonio-appserver.service; then
+    echo "Error: carbonio-appserver.service still running. Stop it to execute zmplayredo."
+    exit 1
+  fi
+  if is_running; then
     echo "Error: mailboxd still running.  Stop mailboxd before running zmplayredo."
     exit 1
   fi
@@ -42,9 +46,6 @@ fi
 
 if [ -d "${zimbra_java_home}/jre" ]; then
   JRE_EXT_DIR=${zimbra_java_home}/jre/lib/ext
-else
-  JRE_EXT_DIR=/System/Library/Frameworks/JavaVM.framework/Versions/CurrentJDK/Home/lib/ext
-  #JRE_EXT_DIR=${zimbra_java_home}/lib/ext
 fi
 
 jardirs="${JRE_EXT_DIR}:/opt/zextras/mailbox/jars/*:"
