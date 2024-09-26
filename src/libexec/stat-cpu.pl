@@ -27,8 +27,8 @@
 use strict;
 use Getopt::Long;
 use lib "/opt/zextras/common/lib/perl5";
-use Zimbra::Mon::Zmstat;
-use Zimbra::Mon::Logger;
+use Zextras::Mon::Stat;
+use Zextras::Mon::Logger;
 
 zmstatInit();
 
@@ -193,7 +193,7 @@ while (1) {
     # Don't allow rotation in signal handler while we're writing.
     $ROTATE_DEFER = 1;
     $LOGFH->print("$tstamp, $cpuinfo\n");
-    Zimbra::Mon::Logger::LogStats( "info",
+    Zextras::Mon::Logger::LogStats( "info",
         "zmstat cpu.csv: ${HEADING}:: $tstamp, $cpuinfo" );
     $LOGFH->flush();
     $ROTATE_DEFER = 0;

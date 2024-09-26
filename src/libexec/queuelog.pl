@@ -8,8 +8,8 @@
 use strict;
 
 use lib "/opt/zextras/common/lib/perl5";
-use Zimbra::Util::Common;
-use Zimbra::Mon::Logger;
+use Zextras::Util::Common;
+use Zextras::Mon::Logger;
 
 my $DFCMD;
 $DFCMD = "df -ml ";
@@ -56,5 +56,5 @@ sub logQueue {
 		$kb = $foo[1];
 		$msgs = $foo[4];
 	}
-	Zimbra::Mon::Logger::Log( "info", "$dt, QUEUE: $kb $msgs" );
+	Zextras::Mon::Logger::Log( "info", "$dt, QUEUE: $kb $msgs" );
 }

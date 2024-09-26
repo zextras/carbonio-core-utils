@@ -8,8 +8,8 @@
 use strict;
 use Getopt::Long;
 use lib "/opt/zextras/common/lib/perl5";
-use Zimbra::Mon::Zmstat;
-use Zimbra::Mon::Logger;
+use Zextras::Mon::Stat;
+use Zextras::Mon::Logger;
 
 zmstatInit();
 
@@ -119,7 +119,7 @@ while (1) {
     # Don't allow rotation in signal handler while we're writing.
     $ROTATE_DEFER = 1;
     $LOGFH->print("$tstamp, $kb, $msgs\n");
-    Zimbra::Mon::Logger::LogStats( "info", "zmstat mtaqueue.csv: ${HEADING}:: $tstamp, $kb, $msgs"); 
+    Zextras::Mon::Logger::LogStats( "info", "zmstat mtaqueue.csv: ${HEADING}:: $tstamp, $kb, $msgs"); 
     $LOGFH->flush();
     $ROTATE_DEFER = 0;
     if ($ROTATE_NOW) {

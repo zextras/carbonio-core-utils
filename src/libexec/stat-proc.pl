@@ -9,8 +9,8 @@ use strict;
 use Carp ();
 use Getopt::Long;
 use lib "/opt/zextras/common/lib/perl5";
-use Zimbra::Mon::Zmstat;
-use Zimbra::Mon::Logger;
+use Zextras::Mon::Stat;
+use Zextras::Mon::Logger;
 
 zmstatInit();
 
@@ -551,7 +551,7 @@ while (1) {
     $ROTATE_DEFER = 1;
     my $values = join( ", ", @vals );
     $LOGFH->print("$values\n");
-    Zimbra::Mon::Logger::LogStats( "info",
+    Zextras::Mon::Logger::LogStats( "info",
         "zmstat proc.csv: ${HEADING}:: $values" );
     $LOGFH->flush();
     $ROTATE_DEFER = 0;

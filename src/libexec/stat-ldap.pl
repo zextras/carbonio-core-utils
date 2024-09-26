@@ -11,7 +11,7 @@ use strict;
 use lib "/opt/zextras/common/lib/perl5";
 use Getopt::Long;
 use Net::LDAP;
-use Zimbra::Mon::Zmstat;
+use Zextras::Mon::Stat;
 use Data::Dumper;
 
 zmstatInit();

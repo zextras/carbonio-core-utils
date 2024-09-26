@@ -8,7 +8,7 @@
 use strict;
 use lib "/opt/zextras/common/lib/perl5";
 use File::Basename;
-use Zimbra::Mon::Zmstat;
+use Zextras::Mon::Stat;
 use POSIX qw(setsid);
 
 # Array of systemd targets to check and start

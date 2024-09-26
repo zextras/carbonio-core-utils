@@ -9,9 +9,9 @@ use strict;
 use Carp ();
 use Getopt::Long;
 use lib "/opt/zextras/common/lib/perl5";
-use Zimbra::Mon::Zmstat;
-use Zimbra::Mon::Logger;
-use Zimbra::DB::DB;
+use Zextras::Mon::Stat;
+use Zextras::Mon::Logger;
+use Zextras::DB::DB;
 
 zmstatInit();
 
@@ -20,7 +20,7 @@ my @statNames;
 
 sub getHeading() {
     @statNames = ();
-    my @status = Zimbra::DB::DB::runSql("SHOW GLOBAL STATUS", 0);
+    my @status = Zextras::DB::DB::runSql("SHOW GLOBAL STATUS", 0);
     my $heading = 'timestamp';
     foreach my $row (@status) {
         my ($name, $value) = split("\t", $row);
@@ -33,7 +33,7 @@ sub getHeading() {
 sub getValues($) {
     my $tstamp = shift;
     my %stat;
-    my @status = Zimbra::DB::DB::runSql("SHOW GLOBAL STATUS", 0);
+    my @status = Zextras::DB::DB::runSql("SHOW GLOBAL STATUS", 0);
     foreach my $row (@status) {
         my ($name, $value) = split("\t", $row);
         $stat{$name} = $value;
@@ -124,7 +124,7 @@ while (1) {
     eval {
     	my $values = getValues($tstamp);
         $LOGFH->print("$values\n");
-        Zimbra::Mon::Logger::LogStats( "info", "zmstat mysql.csv: ${HEADING}:: $values"); 
+        Zextras::Mon::Logger::LogStats( "info", "zmstat mysql.csv: ${HEADING}:: $values"); 
         $LOGFH->flush();
     };
     if ($@) {

@@ -12,8 +12,8 @@ chomp $id;
 if ( $id ne "zextras" ) { die "Run as the zextras user!\n"; }
 
 use lib "/opt/zextras/common/lib/perl5";
-use Zimbra::Util::Common;
-use Zimbra::Mon::Logger;
+use Zextras::Util::Common;
+use Zextras::Mon::Logger;
 use Net::LDAP;
 
 use Getopt::Std;
@@ -266,7 +266,7 @@ sub doRewrite {
     foreach (@_) {
         $rew .= " $rewrites{$_}";
     }
-    Zimbra::Mon::Logger::Log( "info", "Rewriting configs $rew" );
+    Zextras::Mon::Logger::Log( "info", "Rewriting configs $rew" );
     my $rc = 0xffff & system("/opt/zextras/libexec/configrewrite $rew > $zmcontrolLogfile 2>&1");
     $rc = $rc >> 8;
     return $rc;
@@ -278,7 +278,7 @@ sub doRestart {
 }
 
 sub doStartup {
-    Zimbra::Mon::Logger::Log( "info", "Starting services initiated by zmcontrol" );
+    Zextras::Mon::Logger::Log( "info", "Starting services initiated by zmcontrol" );
     print "Host $localHostName\n";
     my $rc  = 0;
     my $rrc = 0;
@@ -326,7 +326,7 @@ sub doStartup {
             }
         }
         checkAvailableServiceSpace($_);
-        Zimbra::Mon::Logger::Log( "info", "Starting $_ via zmcontrol" );
+        Zextras::Mon::Logger::Log( "info", "Starting $_ via zmcontrol" );
         if ( $_ eq "service" ) {
             print "\tStarting $_ webapp...";
         }
@@ -362,12 +362,12 @@ sub doStartup {
 }
 
 sub doShutdown {
-    Zimbra::Mon::Logger::Log( "info", "Stopping services initiated by zmcontrol" );
+    Zextras::Mon::Logger::Log( "info", "Stopping services initiated by zmcontrol" );
     print "Host $localHostName\n";
     my $rc  = 0;
     my $rrc = 0;
     foreach ( sort { $stoporder{$b} <=> $stoporder{$a} } keys %allservices ) {
-        Zimbra::Mon::Logger::Log( "info", "Stopping $_ via zmcontrol" );
+        Zextras::Mon::Logger::Log( "info", "Stopping $_ via zmcontrol" );
         if ( $_ eq "zimlet" || $_ eq "zimbraAdmin" || $_ eq "zimbra" ) { next; }
         if ( $_ eq "directory-server"
             && !( -x "/opt/zextras/common/libexec/slapd" ) )
@@ -677,7 +677,7 @@ sub hasAvailableSpace() {
     return 1 if ( defined( $devicesChecked{$device} ) );
     $devicesChecked{$device} = $avail;
     if ( $avail < $freeMbytes ) {
-        Zimbra::Mon::Logger::Log( "info", "Availble disk space on $dir is below threshold of $freeMbytes.  $avail Mbytes available." );
+        Zextras::Mon::Logger::Log( "info", "Availble disk space on $dir is below threshold of $freeMbytes.  $avail Mbytes available." );
     }
 
     return ( $avail > $freeMbytes ) ? 1 : undef;

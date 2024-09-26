@@ -10,8 +10,8 @@
 use strict;
 use Getopt::Long;
 use lib "/opt/zextras/common/lib/perl5";
-use Zimbra::Mon::Zmstat;
-use Zimbra::Mon::Logger;
+use Zextras::Mon::Stat;
+use Zextras::Mon::Logger;
 use vars qw($LOGFH $CONSOLE $LOGFILE $ROTATE_NOW $ROTATE_DEFER);
 
 zmstatInit();
@@ -89,7 +89,7 @@ _USAGE_
 $| = 1;
 
 $LOGFILE = getLogFilePath('df.csv');
-my $interval = $Zimbra::Mon::Zmstat::LC{'zmstat_disk_interval'};
+my $interval = $Zextras::Mon::Stat::LC{'zmstat_disk_interval'};
 my $opts_good = GetOptions(
     'interval=i' => \$interval,
     'log=s' => \$LOGFILE,
@@ -122,11 +122,11 @@ while (1) {
             $skip_vol = 1 if (($vol eq $mnt) || ($vol eq $dev));
         }
         if (($skip_vol == 1) && (($pct >= $DISK_CRIT_THRESHOLD) || ($pct >= $DISK_WARN_THRESHOLD))) {
-            Zimbra::Mon::Logger::Log( "info", "Disk warning: ${hostname}: $mnt on device $dev at $pct%");
+            Zextras::Mon::Logger::Log( "info", "Disk warning: ${hostname}: $mnt on device $dev at $pct%");
         } elsif ($pct >= $DISK_CRIT_THRESHOLD) {
-            Zimbra::Mon::Logger::Log( "crit", "Disk warning: ${hostname}: $mnt on device $dev at $pct%"); 
+            Zextras::Mon::Logger::Log( "crit", "Disk warning: ${hostname}: $mnt on device $dev at $pct%"); 
     	} elsif ($pct >= $DISK_WARN_THRESHOLD) {
-            Zimbra::Mon::Logger::Log( "err", "Disk warning: ${hostname}: $mnt on device $dev at $pct%");
+            Zextras::Mon::Logger::Log( "err", "Disk warning: ${hostname}: $mnt on device $dev at $pct%");
     	}
     }
     my $tstamp = getTstamp();
@@ -141,7 +141,7 @@ while (1) {
                            $stat->{path}, $stat->{disk}, $stat->{disk_use},
                            $stat->{disk_space}, $stat->{disk_pct_used});
         $LOGFH->print("$line\n");
-        Zimbra::Mon::Logger::LogStats( "info", "zmstat df.csv: ${HEADING}:: $line"); 
+        Zextras::Mon::Logger::LogStats( "info", "zmstat df.csv: ${HEADING}:: $line"); 
     }
     $LOGFH->flush();
     $ROTATE_DEFER = 0;
