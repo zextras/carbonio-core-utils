@@ -63,7 +63,6 @@ SECTION antispam DEPENDS amavis
 	RESTART antispam mta
 
 SECTION mta DEPENDS amavis
-	LOCAL postjournal_enabled
 	MAPLOCAL zimbraSSLDHParam
 	REWRITE common/conf/master.cf.in common/conf/master.cf
 	REWRITE common/conf/tag_as_foreign.re.in common/conf/tag_as_foreign.re
