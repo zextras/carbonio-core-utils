@@ -123,7 +123,6 @@ my $zimbra_zmjava_options = getLocalConfigRaw("zimbra_zmjava_options");
 
 my $antispam_mysql_host = getLocalConfig("antispam_mysql_host");
 my $mysql_bind_address = getLocalConfig("mysql_bind_address");
-my $postjournal_enabled = getLocalConfig("postjournal_enabled");
 
 if ($zimbraIPMode eq "ipv4") {
   my $ans = getDnsRecords($host, 'A');
@@ -175,15 +174,6 @@ if ($zimbraIPMode eq "ipv4") {
            system("/opt/zextras/libexec/zminiutil --backup=.pre --section=mysqld --key=bind-address --unset ${mysql_mycnf}");
           system("/opt/zextras/libexec/zminiutil --backup=.pre-bind --section=mysqld --key=bind-address --set --value=127.0.0.1 ${mysql_mycnf}");
         }
-      }
-    }
-    if ($postjournal_enabled eq "true") {
-      if ($dryrun) {
-        print "Would set postjournal_reinject_host to 127.0.0.1\n";
-        print "Would set postjournal_archive_host to 127.0.0.1\n";
-      } else {
-        setLocalConfig("postjournal_reinject_host", "127.0.0.1");
-        setLocalConfig("postjournal_archive_host", "127.0.0.1");
       }
     }
   }
@@ -243,15 +233,6 @@ if ($zimbraIPMode eq "ipv4") {
         }
       }
     }
-    if ($postjournal_enabled eq "true") {
-      if ($dryrun) {
-        print "Would set postjournal_reinject_host to ::1\n";
-        print "Would set postjournal_archive_host to ::1\n";
-      } else {
-        setLocalConfig("postjournal_reinject_host", "::1");
-        setLocalConfig("postjournal_archive_host", "::1");
-      }
-    }
   }
 } elsif ($zimbraIPMode eq "ipv6") {
   my $ans = getDnsRecords($host, 'AAAA');
@@ -303,15 +284,6 @@ if ($zimbraIPMode eq "ipv4") {
           system("/opt/zextras/libexec/zminiutil --backup=.pre --section=mysqld --key=bind-address --unset ${mysql_mycnf}");
           system("/opt/zextras/libexec/zminiutil --backup=.pre-bind --section=mysqld --key=bind-address --set --value=::1 ${mysql_mycnf}");
         }
-      }
-    }
-    if ($postjournal_enabled eq "true") {
-      if ($dryrun) {
-        print "Would set postjournal_reinject_host to ::1\n";
-        print "Would set postjournal_archive_host to ::1\n";
-      } else {
-        setLocalConfig("postjournal_reinject_host", "::1");
-        setLocalConfig("postjournal_archive_host", "::1");
       }
     }
   }

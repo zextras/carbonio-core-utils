@@ -524,12 +524,6 @@ if [ -x /opt/zextras/common/sbin/postfix ]; then
       chown -f ${zextras_user}:${zextras_group} /opt/zextras/common/conf/tag_as_originating.re
     fi
   fi
-
-  # Postjournal specific permissions
-  if [ -f /opt/zextras/bin/zmbackup ]; then
-    mkdir -p /opt/zextras/data/postfix-journal
-    chown -R ${zextras_user}:${zextras_group} /opt/zextras/data/postfix-journal
-  fi
 fi
 
 if [ -d /opt/zextras/data/postfix ]; then
