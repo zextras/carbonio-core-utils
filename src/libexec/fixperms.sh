@@ -587,27 +587,4 @@ for i in slapd.conf slapd.conf.default slapd.ldif slapd.ldif.default; do
   fi
 done
 
-##### Fix permissions for ldap and proxy #####
-
-if [ -x /opt/zextras/common/sbin/nginx ]; then
-  chown ${root_user}:${zextras_group} /opt/zextras/common/sbin/nginx
-  chmod 750 /opt/zextras/common/sbin/nginx
-
-  if [ -f /opt/zextras/log/nginx.access.log ]; then
-    chown ${zextras_user}:${zextras_group} /opt/zextras/log/nginx.access.log
-    chmod 644 /opt/zextras/log/nginx.access.log
-  fi
-
-  # changing permission will reset capabilities so set it again
-  setcap CAP_NET_BIND_SERVICE=+ep /opt/zextras/common/sbin/nginx
-fi
-
-if [ -x /opt/zextras/common/libexec/slapd ]; then
-  chown ${root_user}:${zextras_group} /opt/zextras/common/libexec/slapd
-  chmod 750 /opt/zextras/common/libexec/slapd
-
-  # changing permission will reset capabilities so set it again
-  setcap CAP_NET_BIND_SERVICE=+ep /opt/zextras/common/libexec/slapd
-fi
-
 exit 0
