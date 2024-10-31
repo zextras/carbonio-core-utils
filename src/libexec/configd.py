@@ -121,7 +121,7 @@ def request_listener():
 def contact_service(command, args=None):
 	listener_params = ("localhost",int(state.State.mState.localconfig["zmconfigd_listen_port"]))
 	if state.State.mState.serverconfig["zimbraIPMode"] == "ipv4":
-		sock = socket.socket(socket.AF_INET4, socket.SOCK_STREAM)
+		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	else:
 		sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 	message = "%s " % command
