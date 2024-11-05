@@ -27,8 +27,6 @@ if [ "$JYTHONPATH" = "" ]; then
   export JYTHONPATH
 fi
 
-pid=""
-
 NC=$(command -v nc 2>/dev/null)
 NC=${NC:-$(command -v netcat 2>/dev/null)}
 
@@ -39,7 +37,7 @@ get_pid() {
 check_running() {
   get_pid
 
-  if [[ "${pid}" = "" ]]; then
+  if [[ -z "${pid}" ]]; then
     running=0
   else
     status=$(echo STATUS | $NC -w 15 localhost "${zmconfigd_listen_port}" 2>/dev/null)
@@ -47,21 +45,35 @@ check_running() {
     if [ $rc -eq 0 ] && [ "$status" = "SUCCESS ACTIVE" ]; then
       running=1
     else
-      running=0
+      running=2
     fi
   fi
 }
 
-startzmconfigd() {
+startconfigd() {
   err=0
 
-  echo -n "Starting zmconfigd..."
-  check_running
-
-  if [[ ${running} -eq 1 ]]; then
-    echo "zmconfigd is already running."
+  executable="/opt/zextras/libexec/zmconfigd"
+  if [[ ! -x "${executable}" ]]; then
+    echo "Error: configd executable does not exist or is not executable."
+    err=1
     return
   fi
+
+  echo -n "Starting configd..."
+  check_running
+
+  # Wait for the process to start
+  case ${running} in
+    1)
+      echo "configd is already running."
+      return
+      ;;
+    2)
+      echo "configd is running, but it's not ready yet."
+      return
+      ;;
+  esac
 
   if [[ -z "${JYTHONPATH}" ]]; then
     echo "Error: JYTHONPATH is unset!"
@@ -69,16 +81,9 @@ startzmconfigd() {
     return
   fi
 
-  executable="/opt/zextras/libexec/zmconfigd"
-  if [[ ! -x "${executable}" ]]; then
-    echo "Error: zmconfigd executable does not exist or is not executable."
-    err=1
-    return
-  fi
-
   # Kill existing process if PID is found
   if [[ -n "${pid}" ]]; then
-    kill "${pid}" || { echo "Warning: Failed to kill existing zmconfigd process."; }
+    kill "${pid}" || { echo "Warning: Failed to kill existing configd process."; }
   fi
 
   # Start new process
@@ -94,21 +99,21 @@ startzmconfigd() {
     sleep 3
   done
 
-  echo "Failed to start zmconfigd."
+  echo "Failed to start configd."
   err=1
 }
 
 case "$1" in
   'start')
-    startzmconfigd
+    startconfigd
     exit "${err}"
     ;;
 
   'kill' | 'stop')
     check_running
-    echo -n "Stopping zmconfigd..."
+    echo -n "Stopping configd..."
     if [[ ${running} -lt 1 ]]; then
-      echo "zmconfigd is not running."
+      echo "configd is not running."
       exit 0
     else
       kill "$pid" 2>/dev/null
@@ -120,7 +125,7 @@ case "$1" in
         fi
         sleep 1
       done
-      if [ "$rc" -ne 0 ]; then
+      if [ "$running" -ne 0 ]; then
         echo "failed."
         exit 1
       else
@@ -136,17 +141,25 @@ case "$1" in
     ;;
 
   'status')
-    echo -n "zmconfigd is "
+    echo -n "configd is "
     check_running
-    if [[ ${running} -lt 1 ]]; then
-      echo "not running."
-      exit 1
-    else
-      echo "running."
-      exit 0
-    fi
-    ;;
 
+    # Wait for the process to start
+    case ${running} in
+      0)
+        echo "not running."
+        exit 1
+        ;;
+      1)
+        echo "already running."
+        exit 0
+        ;;
+      2)
+        echo "running, but it's not ready yet."
+        exit 1
+        ;;
+    esac
+    ;;
   *)
     echo "Usage: $0 start|stop|kill|restart|reload|status"
     exit 1
