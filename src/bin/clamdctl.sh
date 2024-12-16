@@ -30,7 +30,9 @@ rewrite_config() {
 }
 
 get_pid() {
-  pid=$(pidof /opt/zextras/common/sbin/clamd)
+  # shellcheck disable=SC2009
+  # we only need the parent pid: pgrep and pidof don't support this use case
+  pid=$(ps --ppid 1 -o pid,cmd | grep /opt/zextras/common/sbin/clamd | awk '{ print $1 }')
 }
 
 check_running() {
@@ -41,12 +43,6 @@ check_running() {
   else
     running=1
   fi
-}
-
-pskillall() {
-  killsig="$1"
-  pid=$(pidof "$2")
-  kill "${killsig}" "${pid}"
 }
 
 #
@@ -82,9 +78,8 @@ case "$1" in
     ;;
 
   'kill')
-    pid=$(pidof /opt/zextras/common/sbin/clamd)
+    check_running
     kill "$pid" 2>/dev/null
-    pskillall /opt/zextras/common/sbin/clamd
     exit 0
     ;;
 
@@ -99,7 +94,7 @@ case "$1" in
       rc=$?
       for ((i = 0; i < 10; i++)); do
         check_running
-        if [ $running = 1 ]; then
+        if [ $running = 0 ]; then
           break
         fi
         sleep 1
