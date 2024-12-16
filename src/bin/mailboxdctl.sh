@@ -34,7 +34,7 @@ javaXms=${javaXmx}
 mailboxd_java_heap_new_size_percent=${mailboxd_java_heap_new_size_percent:=25}
 
 get_pid() {
-  pid=$(pgrep -f '/opt/zextras/.*/java.*mailboxd')
+  pid=$(pgrep -f 'com.zextras.mailbox.Mailbox')
 }
 
 check_running() {
