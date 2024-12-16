@@ -20,7 +20,9 @@ zmsetvars
 configfile=/opt/zextras/conf/nginx.conf
 
 get_pid() {
-  pid=$(pgrep -f '/opt/zextras/.*/nginx.*conf')
+  # shellcheck disable=SC2009
+  # we only need the parent pid: pgrep and pidof don't support this use case
+  pid=$(ps --ppid 1 -o pid,cmd | grep /opt/zextras/common/sbin/nginx | awk '{ print $1 }')
 }
 
 check_running() {
@@ -98,7 +100,7 @@ case "$1" in
     else
       /opt/zextras/common/sbin/nginx -c /opt/zextras/conf/nginx.conf -s stop
       rc=$?
-      for ((i = 0; i < 10; i++)); do
+      for ((i = 0; i < 60; i++)); do
         check_running
         if [ $running = 0 ]; then
           break
