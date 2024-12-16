@@ -595,7 +595,7 @@ sub getHostName {
 sub displayVersion {
     my $additional_zal_version = "";
     if ( -e $zal_path and -e $zextras_path ) {
-        $additional_zal_version = `carbonio core getVersion`;
+        $additional_zal_version = `/opt/zextras/bin/carbonio core getVersion`;
         chomp $additional_zal_version;
     }
 
