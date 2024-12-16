@@ -11,7 +11,7 @@ check_advanced() {
   echo "Carbonio Advanced installed."
   echo -n "Checking advanced modules status"
 
-  if ! command -v carbonio >/dev/null 2>&1; then
+  if ! /opt/zextras/bin/carbonio >/dev/null 2>&1; then
     echo "Failed to check advanced modules status. Carbonio CLI not found!"
     return 1
   fi
@@ -39,7 +39,7 @@ check_advanced() {
 
 check_running_advanced() {
   local output
-  if output=$(carbonio core getVersion 2>&1); then
+  if output=$(/opt/zextras/bin/carbonio core getVersion 2>&1); then
     [[ "$output" != *"Unable to communicate with server"* ]]
   else
     return 1
