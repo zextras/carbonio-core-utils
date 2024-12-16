@@ -135,7 +135,7 @@ if [ "$1" = "--cleanup" ]; then
   if [ "${zmtrainsa_cleanup_host}" = "true" ]; then
     timestampit "Starting spam/ham cleanup"
     mydir=$(mktmpdir cleanup)
-    /opt/zextras/libexec/zmspamextract "${spam_account}" -o "${mydir}"-d
+    /opt/zextras/libexec/zmspamextract "${spam_account}" -o "${mydir}" -d
     /opt/zextras/libexec/zmspamextract "${ham_account}" -o "${mydir}" -d
     rm -rf "${mydir}"
     timestampit "Finished spam/ham cleanup"
