@@ -70,11 +70,6 @@ printMsg() {
   fi
 }
 
-# NOT /opt/zextras/{store,backup,index}
-if [ ${extended} = "yes" ]; then
-  chown -R ${zextras_user}:${zextras_group} /opt/zextras/a* /opt/zextras/[c-hj-ot-z]* /opt/zextras/s[a-su-z]* 2>/dev/null
-fi
-
 chown ${root_user}:${root_group} /opt
 chmod 755 /opt
 chown ${root_user}:${root_group} /opt/zextras
@@ -83,6 +78,10 @@ chown -R ${root_user}:${root_group} /opt/zextras/common
 chmod 755 /opt/zextras/common
 chown -R ${root_user}:${zextras_group} /opt/zextras/common/conf
 chmod 775 /opt/zextras/common/conf
+
+chown -R ${zextras_user}:${zextras_group} /opt/zextras/admin 2>/dev/null
+chown -R ${zextras_user}:${zextras_group} /opt/zextras/data 2>/dev/null
+chown -R ${zextras_user}:${zextras_group} /opt/zextras/zmstat 2>/dev/null
 
 for i in master.cf master.cf.in bysender bysender.lmdb tag_as_foreign.re tag_as_foreign.re.in tag_as_originating.re tag_as_originating.re.in; do
   if [ -f /opt/zextras/common/conf/${i} ]; then
@@ -187,10 +186,6 @@ if [ -d /opt/zextras ]; then
     chown -R ${root_user}:${root_group} /opt/zextras/lib
   fi
 
-  if [ -d /opt/zextras/wiki ]; then
-    chown -R ${zextras_user}:${zextras_group} /opt/zextras/wiki
-  fi
-
   if [ -d /opt/zextras/conf ]; then
     printMsg "Fixing ownership and permissions on /opt/zextras/conf"
     chown -R ${zextras_user}:${zextras_group} /opt/zextras/conf
@@ -265,11 +260,6 @@ if [ -d /opt/zextras ]; then
       find /opt/zextras/conf/templates_custom/ -type d -exec chmod 755 {} \;
       find /opt/zextras/conf/templates_custom/ -type f -exec chmod 644 {} \;
     fi
-  fi
-
-  if [ -d /opt/zextras/docs ]; then
-    printMsg "Fixing permissions and ownership on /opt/zextras/docs"
-    chown carbonio-docs-editor: /opt/zextras/docs
   fi
 
   if [ -d /opt/zextras/documentation ]; then
