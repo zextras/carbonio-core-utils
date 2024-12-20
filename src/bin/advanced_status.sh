@@ -11,7 +11,7 @@ check_advanced() {
   echo "Carbonio Advanced installed."
   echo -n "Checking advanced modules status"
 
-  if ! /opt/zextras/bin/carbonio >/dev/null 2>&1; then
+  if ! command -v /opt/zextras/bin/carbonio >/dev/null 2>&1; then
     echo "Failed to check advanced modules status. Carbonio CLI not found!"
     return 1
   fi
