@@ -25,7 +25,6 @@ syslog_group=adm
 zextras_user=zextras
 zextras_group=zextras
 
-extended=no
 verbose=no
 
 components="\
@@ -35,11 +34,9 @@ components="\
 "
 
 usage() {
-  echo "$0 [-help] [-extended] [-verbose]"
+  echo "$0 [-help] [-verbose]"
   echo "-help     Usage"
   echo "-verbose  Verbose output"
-  echo "-extended Extended fix, includes store,index,backup directories"
-  echo "          * Using extended option can take a signifcant amount of time."
   echo
   exit
 }
@@ -52,10 +49,6 @@ for opt in "$@"; do
       ;;
     -help | --help | -h | --h)
       usage
-      ;;
-    -extended | --extended | -e)
-      extended=yes
-      shift
       ;;
     *)
       echo "Unknown option $opt"
@@ -70,10 +63,24 @@ printMsg() {
   fi
 }
 
-# NOT /opt/zextras/{store,backup,index}
-if [ ${extended} = "yes" ]; then
-  chown -R ${zextras_user}:${zextras_group} /opt/zextras/a* /opt/zextras/[c-hj-ot-z]* /opt/zextras/s[a-su-z]* 2>/dev/null
-fi
+dirs=(
+  "/opt/zextras/admin"
+  "/opt/zextras/jetty"
+  "/opt/zextras/jetty_base"
+  "/opt/zextras/jython"
+  "/opt/zextras/mailbox"
+  "/opt/zextras/mailboxd"
+  "/opt/zextras/web"
+  "/opt/zextras/zal"
+)
+
+for dir in "${dirs[@]}"; do
+  if [ -d "$dir" ]; then
+    chown -R ${zextras_user}:${zextras_group} "$dir" 2>/dev/null
+  fi
+done
+
+chown ${zextras_user}:${zextras_group} /opt/zextras/config.* 2>/dev/null
 
 chown ${root_user}:${root_group} /opt
 chmod 755 /opt
@@ -173,11 +180,6 @@ if [ -d /opt/zextras ]; then
     fi
   fi
 
-  if [ -d /opt/zextras/logger ]; then
-    chown -R ${zextras_user}:${zextras_group} /opt/zextras/logger 2>/dev/null
-    chmod 755 /opt/zextras/logger/* 2>/dev/null
-  fi
-
   if [ -d /opt/zextras/bin ]; then
     chown -R ${root_user}:${root_group} /opt/zextras/bin
     chmod 755 /opt/zextras/bin/* 2>/dev/null
@@ -185,10 +187,6 @@ if [ -d /opt/zextras ]; then
 
   if [ -d /opt/zextras/lib ]; then
     chown -R ${root_user}:${root_group} /opt/zextras/lib
-  fi
-
-  if [ -d /opt/zextras/wiki ]; then
-    chown -R ${zextras_user}:${zextras_group} /opt/zextras/wiki
   fi
 
   if [ -d /opt/zextras/conf ]; then
@@ -482,24 +480,13 @@ if [ -x /opt/zextras/common/libexec/slapd ]; then
   fi
 fi
 
-if [ -d /opt/zextras/logger/db ]; then
-  printMsg "Fixing ownership and permissions on /opt/zextras/logger/db"
-  chown ${zextras_user}:${zextras_group} /opt/zextras/logger/db
-  if [ ! -d /opt/zextras/logger/db/data ]; then
-    mkdir -p /opt/zextras/logger/db/data
-  fi
-  chown ${zextras_user}:${zextras_group} /opt/zextras/logger/db/data
-fi
-
 if [ -d /opt/zextras/data/clamav ]; then
   chown -R ${zextras_user}:${zextras_group} /opt/zextras/data/clamav
 fi
 
 if [ -d /opt/zextras/zmstat ]; then
   printMsg "Fixing ownership and permissions on /opt/zextras/zmstat"
-  for i in /opt/zextras/zmstat/????-??-??; do
-    chown -R ${zextras_user}:${zextras_group} "${i}"
-  done
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/zmstat
 fi
 
 if [ -x /opt/zextras/common/sbin/postfix ]; then
@@ -559,22 +546,22 @@ if [ -d /opt/zextras/data/postfix ]; then
   chgrp -f ${root_group} /opt/zextras/data/postfix/spool
 fi
 
-if [ -d /opt/zextras/index ] && [ ${extended} = "yes" ]; then
+if [ -d /opt/zextras/index ]; then
   printMsg "Fixing ownership of /opt/zextras/index"
   chown -R ${zextras_user}:${zextras_group} /opt/zextras/index
 fi
 
-if [ -d /opt/zextras/backup ] && [ ${extended} = "yes" ]; then
+if [ -d /opt/zextras/backup ]; then
   printMsg "Fixing ownership of /opt/zextras/backup"
   chown -R ${zextras_user}:${zextras_group} /opt/zextras/backup
 fi
 
-if [ -d /opt/zextras/redolog ] && [ ${extended} = "yes" ]; then
+if [ -d /opt/zextras/redolog ]; then
   printMsg "Fixing ownership of /opt/zextras/redolog"
   chown -R ${zextras_user}:${zextras_group} /opt/zextras/redolog
 fi
 
-if [ -d /opt/zextras/store ] && [ ${extended} = "yes" ]; then
+if [ -d /opt/zextras/store ]; then
   printMsg "Fixing ownership of /opt/zextras/store"
   chown -R ${zextras_user}:${zextras_group} /opt/zextras/store
 fi
