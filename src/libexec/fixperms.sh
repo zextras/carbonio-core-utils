@@ -70,10 +70,15 @@ printMsg() {
   fi
 }
 
-# NOT /opt/zextras/{store,backup,index}
-if [ ${extended} = "yes" ]; then
-  chown -R ${zextras_user}:${zextras_group} /opt/zextras/a* /opt/zextras/[c-hj-ot-z]* /opt/zextras/s[a-su-z]* 2>/dev/null
-fi
+chown -R ${zextras_user}:${zextras_group} /opt/zextras/admin
+chown -R ${zextras_user}:${zextras_group} /opt/zextras/config.*
+chown -R ${zextras_user}:${zextras_group} /opt/zextras/jetty
+chown -R ${zextras_user}:${zextras_group} /opt/zextras/jetty_base
+chown -R ${zextras_user}:${zextras_group} /opt/zextras/jython
+chown -R ${zextras_user}:${zextras_group} /opt/zextras/mailbox
+chown -R ${zextras_user}:${zextras_group} /opt/zextras/mailboxd
+chown -R ${zextras_user}:${zextras_group} /opt/zextras/web
+chown -R ${zextras_user}:${zextras_group} /opt/zextras/zal
 
 chown ${root_user}:${root_group} /opt
 chmod 755 /opt
@@ -185,10 +190,6 @@ if [ -d /opt/zextras ]; then
 
   if [ -d /opt/zextras/lib ]; then
     chown -R ${root_user}:${root_group} /opt/zextras/lib
-  fi
-
-  if [ -d /opt/zextras/wiki ]; then
-    chown -R ${zextras_user}:${zextras_group} /opt/zextras/wiki
   fi
 
   if [ -d /opt/zextras/conf ]; then
@@ -497,9 +498,7 @@ fi
 
 if [ -d /opt/zextras/zmstat ]; then
   printMsg "Fixing ownership and permissions on /opt/zextras/zmstat"
-  for i in /opt/zextras/zmstat/????-??-??; do
-    chown -R ${zextras_user}:${zextras_group} "${i}"
-  done
+  chown -R ${zextras_user}:${zextras_group} /opt/zextras/zmstat
 fi
 
 if [ -x /opt/zextras/common/sbin/postfix ]; then
@@ -559,22 +558,22 @@ if [ -d /opt/zextras/data/postfix ]; then
   chgrp -f ${root_group} /opt/zextras/data/postfix/spool
 fi
 
-if [ -d /opt/zextras/index ] && [ ${extended} = "yes" ]; then
+if [ -d /opt/zextras/index ]; then
   printMsg "Fixing ownership of /opt/zextras/index"
   chown -R ${zextras_user}:${zextras_group} /opt/zextras/index
 fi
 
-if [ -d /opt/zextras/backup ] && [ ${extended} = "yes" ]; then
+if [ -d /opt/zextras/backup ]; then
   printMsg "Fixing ownership of /opt/zextras/backup"
   chown -R ${zextras_user}:${zextras_group} /opt/zextras/backup
 fi
 
-if [ -d /opt/zextras/redolog ] && [ ${extended} = "yes" ]; then
+if [ -d /opt/zextras/redolog ]; then
   printMsg "Fixing ownership of /opt/zextras/redolog"
   chown -R ${zextras_user}:${zextras_group} /opt/zextras/redolog
 fi
 
-if [ -d /opt/zextras/store ] && [ ${extended} = "yes" ]; then
+if [ -d /opt/zextras/store ]; then
   printMsg "Fixing ownership of /opt/zextras/store"
   chown -R ${zextras_user}:${zextras_group} /opt/zextras/store
 fi
