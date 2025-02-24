@@ -6,7 +6,7 @@ pipeline {
     }
     agent {
         node {
-            label 'base-agent-v2'
+            label 'base'
         }
     }
     stages {
