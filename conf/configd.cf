@@ -331,10 +331,6 @@ SECTION mailbox
 	REWRITE conf/spnego_java_options.in conf/spnego_java_options
 	RESTART mailboxd
 
-SECTION service
-	REWRITE conf/web.xml.in conf/web.xml
-	RESTART mailboxd
-
 SECTION proxy
 	LOCAL ldap_url
 	MAPLOCAL zimbraSSLDHParam
