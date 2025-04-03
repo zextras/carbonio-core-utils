@@ -59,12 +59,9 @@ our %loaded  = ();
 our %saved   = ();
 
 my @packageList = (
-    "carbonio-core",
-    "carbonio-clamav",
-    "carbonio-directory-server",
-    "carbonio-mta",
-    "carbonio-appserver",
-    "carbonio-memcached",
+    "carbonio-core",             "carbonio-clamav",
+    "carbonio-directory-server", "carbonio-mta",
+    "carbonio-appserver",        "carbonio-memcached",
     "carbonio-proxy",
 );
 
@@ -88,12 +85,10 @@ my $serviceWebApp = "service";
 
 # Array of systemd targets to check and start
 my @systemd_targets = (
-    "carbonio-directory-server.target",
-    "carbonio-appserver.target",
-    "carbonio-proxy.target",
-    "carbonio-mta.target",
+    "carbonio-directory-server.target", "carbonio-appserver.target",
+    "carbonio-proxy.target",            "carbonio-mta.target",
 );
-my $systemdStatus   = 0;
+my $systemdStatus = 0;
 
 my %installedPackages = ();
 our %installedWebapps = ();
@@ -123,20 +118,21 @@ my $sqlRunning               = 0;
 my @installedServiceList     = ();
 my @enabledServiceList       = ();
 
-my $ldapRootPassChanged                   = 0;
-my $ldapAdminPassChanged                  = 0;
-my $ldapRepChanged                        = 0;
-my $ldapPostChanged                       = 0;
-my $ldapAmavisChanged                     = 0;
-my $ldapNginxChanged                      = 0;
-my $ldapReplica                           = 0;
-my $starttls                              = 0;
-my $needNewCert                           = "";
-my $ssl_cert_type                         = "self";
+my $ldapRootPassChanged             = 0;
+my $ldapAdminPassChanged            = 0;
+my $ldapRepChanged                  = 0;
+my $ldapPostChanged                 = 0;
+my $ldapAmavisChanged               = 0;
+my $ldapNginxChanged                = 0;
+my $ldapReplica                     = 0;
+my $starttls                        = 0;
+my $needNewCert                     = "";
+my $ssl_cert_type                   = "self";
 my $publicServiceHostnameAlreadySet = 0;
 
-my @ssl_digests = ( "ripemd160", "sha", "sha1", "sha224", "sha256", "sha384", "sha512" );
-my @interfaces  = ();
+my @ssl_digests =
+  ( "ripemd160", "sha", "sha1", "sha224", "sha256", "sha384", "sha512" );
+my @interfaces = ();
 
 ($>) and usage();
 
@@ -165,7 +161,8 @@ if ( isInstalled("carbonio-directory-server") ) {
 if ( !$newinstall ) {
     if ( -f "/opt/zextras/conf/ca/ca.pem" ) {
         progress("Adding /opt/zextras/conf/ca/ca.pem to cacerts...");
-        my $ec = runAsZextras("/opt/zextras/bin/zmcertmgr addcacert /opt/zextras/conf/ca/ca.pem");
+        my $ec = runAsZextras(
+            "/opt/zextras/bin/zmcertmgr addcacert /opt/zextras/conf/ca/ca.pem");
         if ( $ec != 0 ) {
             progress("failed.\n");
         }
@@ -209,7 +206,9 @@ if ( $options{c} ) {
     loadConfig( $options{c} );
 }
 
-if ( $ldapConfigured || ( ( $config{LDAPHOST} ne $config{HOSTNAME} ) && ldapIsAvailable() ) ) {
+if ( $ldapConfigured
+    || ( ( $config{LDAPHOST} ne $config{HOSTNAME} ) && ldapIsAvailable() ) )
+{
     setLdapDefaults();
     getAvailableComponents();
 }
@@ -349,7 +348,8 @@ sub checkPortConflicts {
         10030 => 'carbonio-mta',
     );
 
-    open PORTS, "netstat -an | egrep '^tcp' | grep LISTEN | awk '{print \$4}' | sed -e 's/.*://' |";
+    open PORTS,
+"netstat -an | egrep '^tcp' | grep LISTEN | awk '{print \$4}' | sed -e 's/.*://' |";
     my @ports = <PORTS>;
     close PORTS;
     chomp @ports;
@@ -357,7 +357,9 @@ sub checkPortConflicts {
     my $any = 0;
     foreach (@ports) {
         if ( defined( $needed{$_} ) && isEnabled( $needed{$_} ) ) {
-            unless ( $needed{$_} eq "carbonio-directory-server" && $newinstall == 0 ) {
+            unless ( $needed{$_} eq "carbonio-directory-server"
+                && $newinstall == 0 )
+            {
                 $any = 1;
                 progress("Port conflict detected: $_ ($needed{$_})\n");
             }
@@ -365,7 +367,12 @@ sub checkPortConflicts {
     }
 
     if ( !$options{c} ) {
-        if ($any) { ask( "Port conflicts detected! - Press Enter/Return key to continue", "" ); }
+        if ($any) {
+            ask(
+                "Port conflicts detected! - Press Enter/Return key to continue",
+                ""
+            );
+        }
     }
 
 }
@@ -429,7 +436,8 @@ sub getInstalledPackages {
 
     # get list of previously installed packages on upgrade
     if ( $newinstall != 1 ) {
-        $config{zimbra_server_hostname} = getLocalConfig("zimbra_server_hostname")
+        $config{zimbra_server_hostname} =
+          getLocalConfig("zimbra_server_hostname")
           if ( $config{zimbra_server_hostname} eq "" );
         detail("DEBUG: zimbra_server_hostname=$config{zimbra_server_hostname}")
           if $options{d};
@@ -439,8 +447,13 @@ sub getInstalledPackages {
         detail("DEBUG: ldap_url=$config{ldap_url}")
           if $options{d};
 
-        if ( index( $config{ldap_url}, "/" . $config{zimbra_server_hostname} ) != -1 ) {
-            detail("zimbra_server_hostname contained in ldap_url checking ldap status");
+        if (
+            index( $config{ldap_url}, "/" . $config{zimbra_server_hostname} )
+            != -1 )
+        {
+            detail(
+"zimbra_server_hostname contained in ldap_url checking ldap status"
+            );
             if ( startLdap() ) { return 1; }
         }
         else {
@@ -455,14 +468,17 @@ sub getInstalledPackages {
                 if ( exists $packageServiceMap{$service} ) {
                     detail("Marking $service as previously installed.")
                       if ($debug);
-                    $prevInstalledPackages{ $packageServiceMap{$service} } = "Installed";
+                    $prevInstalledPackages{ $packageServiceMap{$service} } =
+                      "Installed";
                 }
                 else {
-                    progress("WARNING: Unknown package installed for $service.\n");
+                    progress(
+                        "WARNING: Unknown package installed for $service.\n");
                 }
             }
             else {
-                detail("DEBUG: skipping not zimbraServiceInstalled =>  $_") if $debug;
+                detail("DEBUG: skipping not zimbraServiceInstalled =>  $_")
+                  if $debug;
             }
         }
     }
@@ -481,7 +497,9 @@ sub getInstalledWebapps {
     }
     else {
         # to enable webapps on configured installation
-        if ( $newinstall != 1 && $installedWebapps{$serviceWebApp} ne "Enabled" ) {
+        if (   $newinstall != 1
+            && $installedWebapps{$serviceWebApp} ne "Enabled" )
+        {
             $installedWebapps{$serviceWebApp} = "Enabled";
         }
     }
@@ -539,7 +557,8 @@ sub isEnabled {
 
     # lookup service in ldap
     if ( $newinstall == 0 ) {
-        $config{zimbra_server_hostname} = getLocalConfig("zimbra_server_hostname")
+        $config{zimbra_server_hostname} =
+          getLocalConfig("zimbra_server_hostname")
           if ( $config{zimbra_server_hostname} eq "" );
         detail("DEBUG: zimbra_server_hostname=$config{zimbra_server_hostname}")
           if $options{d};
@@ -549,8 +568,13 @@ sub isEnabled {
         detail("DEBUG: ldap_url=$config{ldap_url}")
           if $options{d};
 
-        if ( index( $config{ldap_url}, "/" . $config{zimbra_server_hostname} ) != -1 ) {
-            detail("zimbra_server_hostname contained in ldap_url checking ldap status");
+        if (
+            index( $config{ldap_url}, "/" . $config{zimbra_server_hostname} )
+            != -1 )
+        {
+            detail(
+"zimbra_server_hostname contained in ldap_url checking ldap status"
+            );
             if ( startLdap() ) { return 1; }
         }
         else {
@@ -571,21 +595,26 @@ sub isEnabled {
                 if ( exists $packageServiceMap{$service} ) {
                     detail("Marking $service as an enabled service.")
                       if ($debug);
-                    $enabledPackages{ $packageServiceMap{$service} } = "Enabled";
-                    $enabledServices{$service}                       = "Enabled";
-                    $prevEnabledServices{$service}                   = "Enabled";
+                    $enabledPackages{ $packageServiceMap{$service} } =
+                      "Enabled";
+                    $enabledServices{$service}     = "Enabled";
+                    $prevEnabledServices{$service} = "Enabled";
                 }
                 else {
-                    progress("WARNING: Unknown package installed for $service.\n");
+                    progress(
+                        "WARNING: Unknown package installed for $service.\n");
                 }
             }
             else {
-                detail("DEBUG: skipping not zimbraServiceEnabled => $_") if $debug;
+                detail("DEBUG: skipping not zimbraServiceEnabled => $_")
+                  if $debug;
             }
         }
         foreach my $p (@packageList) {
             if ( isInstalled($p) and not defined $prevInstalledPackages{$p} ) {
-                detail("Marking $p as installed. Services for $p will be enabled.");
+                detail(
+                    "Marking $p as installed. Services for $p will be enabled."
+                );
                 $enabledPackages{$p} = "Enabled";
             }
             elsif ( isInstalled($p) and not defined $enabledPackages{$p} ) {
@@ -698,7 +727,8 @@ sub isInstalled {
 }
 
 sub genRandomPass {
-    open RP, "/opt/zextras/bin/zmjava com.zimbra.common.util.RandomPassword -l 8 10|"
+    open RP,
+      "/opt/zextras/bin/zmjava com.zimbra.common.util.RandomPassword -l 8 10|"
       or die "Can't generate random password: $!\n";
     my $rp = <RP>;
     close RP;
@@ -715,7 +745,8 @@ sub getSystemStatus {
                 $rc = isSystemdActiveUnit("carbonio-openldap.service");
             }
             else {
-                $rc = 0xffff & system("/opt/zextras/bin/ldap status > /dev/null 2>&1");
+                $rc = 0xffff &
+                  system("/opt/zextras/bin/ldap status > /dev/null 2>&1");
             }
             if ($rc) {
                 $ldapRunning = 0;
@@ -732,8 +763,9 @@ sub getSystemStatus {
     if ( isEnabled("carbonio-appserver") ) {
         if ( -d "/opt/zextras/db/data/zimbra" ) {
             $sqlConfigured = 1;
-            $sqlRunning    = 0xffff & system("/opt/zextras/bin/mysqladmin status > /dev/null 2>&1");
-            $sqlRunning    = ($sqlRunning) ? 0 : 1;
+            $sqlRunning    = 0xffff &
+              system("/opt/zextras/bin/mysqladmin status > /dev/null 2>&1");
+            $sqlRunning = ($sqlRunning) ? 0 : 1;
         }
         if ($newinstall) {
             $config{DOCREATEADMIN} = "yes";
@@ -763,7 +795,8 @@ sub getLdapAccountValue($$) {
     my $sec = "acct";
     if ( exists $main::loaded{$sec}{$sub}{$attrib} ) {
         $val = $main::loaded{$sec}{$sub}{$attrib};
-        detail("Returning cached config attribute for Account $sub: $attrib=$val");
+        detail(
+            "Returning cached config attribute for Account $sub: $attrib=$val");
         return $val;
     }
     my ( $rfh, $wfh, $efh, $cmd, $rc );
@@ -783,9 +816,12 @@ sub getLdapAccountValue($$) {
         while ( $d[0] !~ m/^\w+:\s.*/ && scalar(@d) > 0 ) {
             chomp( $v .= shift(@d) );
         }
-        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded} || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) ) {
+        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded}
+            || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) )
+        {
             if ( exists $main::loaded{$sec}{$sub}{$k} ) {
-                $main::loaded{$sec}{$sub}{$k} = "$main::loaded{$sec}{$sub}{$k}\n$v";
+                $main::loaded{$sec}{$sub}{$k} =
+                  "$main::loaded{$sec}{$sub}{$k}\n$v";
             }
             else {
                 $main::loaded{$sec}{$sub}{$k} = "$v";
@@ -811,7 +847,8 @@ sub getLdapAccountValue($$) {
     }
     $val = $main::loaded{$sec}{$sub}{$attrib};
     $main::loaded{$sec}{$sub}{zmsetuploaded} = 1;
-    detail("Returning retrieved account config attribute for $sub: $attrib=$val");
+    detail(
+        "Returning retrieved account config attribute for $sub: $attrib=$val");
     return $val;
 }
 
@@ -844,9 +881,12 @@ sub getLdapCOSValue {
         while ( $d[0] !~ m/^\w+:\s.*/ && scalar(@d) > 0 ) {
             chomp( $v .= shift(@d) );
         }
-        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded} || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) ) {
+        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded}
+            || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) )
+        {
             if ( exists $main::loaded{$sec}{$sub}{$k} ) {
-                $main::loaded{$sec}{$sub}{$k} = "$main::loaded{$sec}{$sub}{$k}\n$v";
+                $main::loaded{$sec}{$sub}{$k} =
+                  "$main::loaded{$sec}{$sub}{$k}\n$v";
             }
             else {
                 $main::loaded{$sec}{$sub}{$k} = "$v";
@@ -911,9 +951,12 @@ sub getLdapConfigValue {
         while ( $d[0] !~ m/^\w+:\s.*/ && scalar(@d) > 0 ) {
             chomp( $v .= shift(@d) );
         }
-        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded} || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) ) {
+        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded}
+            || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) )
+        {
             if ( exists $main::loaded{$sec}{$sub}{$k} ) {
-                $main::loaded{$sec}{$sub}{$k} = "$main::loaded{$sec}{$sub}{$k}\n$v";
+                $main::loaded{$sec}{$sub}{$k} =
+                  "$main::loaded{$sec}{$sub}{$k}\n$v";
             }
             else {
                 $main::loaded{$sec}{$sub}{$k} = "$v";
@@ -963,7 +1006,8 @@ sub getLdapDomainValue {
     my ( $val, $err );
     if ( exists $main::loaded{$sec}{$sub}{$attrib} ) {
         $val = $main::loaded{$sec}{$sub}{$attrib};
-        detail("Returning cached domain config attribute for $sub: $attrib=$val");
+        detail(
+            "Returning cached domain config attribute for $sub: $attrib=$val");
         return $val;
     }
 
@@ -984,9 +1028,12 @@ sub getLdapDomainValue {
         while ( $d[0] !~ m/^\w+:\s.*/ && scalar(@d) > 0 ) {
             chomp( $v .= shift(@d) );
         }
-        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded} || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) ) {
+        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded}
+            || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) )
+        {
             if ( exists $main::loaded{$sec}{$sub}{$k} ) {
-                $main::loaded{$sec}{$sub}{$k} = "$main::loaded{$sec}{$sub}{$k}\n$v";
+                $main::loaded{$sec}{$sub}{$k} =
+                  "$main::loaded{$sec}{$sub}{$k}\n$v";
             }
             else {
                 $main::loaded{$sec}{$sub}{$k} = "$v";
@@ -1020,7 +1067,8 @@ sub getLdapDomainValue {
     close $efh;
     $main::loaded{$sec}{$sub}{zmsetuploaded} = 1;
     $val = $main::loaded{$sec}{$sub}{$attrib};
-    detail("Returning retrieved domain config attribute for $sub: $attrib=$val");
+    detail(
+        "Returning retrieved domain config attribute for $sub: $attrib=$val");
     return $val;
 }
 
@@ -1031,7 +1079,8 @@ sub getLdapServerValue {
     my ( $val, $err );
     if ( exists $main::loaded{$sec}{$sub}{$attrib} ) {
         $val = $main::loaded{$sec}{$sub}{$attrib};
-        detail("Returning cached server config attribute for $sub: $attrib=$val");
+        detail(
+            "Returning cached server config attribute for $sub: $attrib=$val");
         return $val;
     }
     my ( $rfh, $wfh, $efh, $cmd, $rc );
@@ -1051,9 +1100,12 @@ sub getLdapServerValue {
         while ( $d[0] !~ m/^\w+:\s.*/ && scalar(@d) > 0 ) {
             chomp( $v .= shift(@d) );
         }
-        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded} || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) ) {
+        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded}
+            || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) )
+        {
             if ( exists $main::loaded{$sec}{$sub}{$k} ) {
-                $main::loaded{$sec}{$sub}{$k} = "$main::loaded{$sec}{$sub}{$k}\n$v";
+                $main::loaded{$sec}{$sub}{$k} =
+                  "$main::loaded{$sec}{$sub}{$k}\n$v";
             }
             else {
                 $main::loaded{$sec}{$sub}{$k} = "$v";
@@ -1087,7 +1139,8 @@ sub getLdapServerValue {
     close $efh;
     $main::loaded{$sec}{$sub}{zmsetuploaded} = 1;
     $val = $main::loaded{$sec}{$sub}{$attrib};
-    detail("Returning retrieved server config attribute for $sub: $attrib=$val");
+    detail(
+        "Returning retrieved server config attribute for $sub: $attrib=$val");
     return $val;
 }
 
@@ -1098,7 +1151,8 @@ sub getRealLdapServerValue {
     my ( $val, $err );
     if ( exists $main::loaded{$sec}{$sub}{$attrib} ) {
         $val = $main::loaded{$sec}{$sub}{$attrib};
-        detail("Returning cached server config attribute for $sub: $attrib=$val");
+        detail(
+            "Returning cached server config attribute for $sub: $attrib=$val");
         return $val;
     }
     my ( $rfh, $wfh, $efh, $cmd, $rc );
@@ -1118,9 +1172,12 @@ sub getRealLdapServerValue {
         while ( $d[0] !~ m/^\w+:\s.*/ && scalar(@d) > 0 ) {
             chomp( $v .= shift(@d) );
         }
-        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded} || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) ) {
+        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded}
+            || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) )
+        {
             if ( exists $main::loaded{$sec}{$sub}{$k} ) {
-                $main::loaded{$sec}{$sub}{$k} = "$main::loaded{$sec}{$sub}{$k}\n$v";
+                $main::loaded{$sec}{$sub}{$k} =
+                  "$main::loaded{$sec}{$sub}{$k}\n$v";
             }
             else {
                 $main::loaded{$sec}{$sub}{$k} = "$v";
@@ -1154,7 +1211,8 @@ sub getRealLdapServerValue {
     close $efh;
     $main::loaded{$sec}{$sub}{zmsetuploaded} = 1;
     $val = $main::loaded{$sec}{$sub}{$attrib};
-    detail("Returning retrieved server config attribute for $sub: $attrib=$val");
+    detail(
+        "Returning retrieved server config attribute for $sub: $attrib=$val");
     return $val;
 }
 
@@ -1169,19 +1227,24 @@ sub setLdapDefaults {
     my $serverid = getLdapServerValue("zimbraId");
     if ( $serverid ne "" ) {
 
-        $config{zimbraIPMode}          = getLdapServerValue("zimbraIPMode");
-        $config{IMAPPORT}              = getLdapServerValue("zimbraImapBindPort");
-        $config{IMAPSSLPORT}           = getLdapServerValue("zimbraImapSSLBindPort");
-        $config{REMOTEIMAPBINDPORT}    = getLdapServerValue("zimbraRemoteImapBindPort");
-        $config{REMOTEIMAPSSLBINDPORT} = getLdapServerValue("zimbraRemoteImapSSLBindPort");
-        $config{POPPORT}               = getLdapServerValue("zimbraPop3BindPort");
-        $config{POPSSLPORT}            = getLdapServerValue("zimbraPop3SSLBindPort");
+        $config{zimbraIPMode} = getLdapServerValue("zimbraIPMode");
+        $config{IMAPPORT}     = getLdapServerValue("zimbraImapBindPort");
+        $config{IMAPSSLPORT}  = getLdapServerValue("zimbraImapSSLBindPort");
+        $config{REMOTEIMAPBINDPORT} =
+          getLdapServerValue("zimbraRemoteImapBindPort");
+        $config{REMOTEIMAPSSLBINDPORT} =
+          getLdapServerValue("zimbraRemoteImapSSLBindPort");
+        $config{POPPORT}    = getLdapServerValue("zimbraPop3BindPort");
+        $config{POPSSLPORT} = getLdapServerValue("zimbraPop3SSLBindPort");
 
-        $config{IMAPPROXYPORT}    = getLdapServerValue("zimbraImapProxyBindPort");
-        $config{IMAPSSLPROXYPORT} = getLdapServerValue("zimbraImapSSLProxyBindPort");
-        $config{POPPROXYPORT}     = getLdapServerValue("zimbraPop3ProxyBindPort");
-        $config{POPSSLPROXYPORT}  = getLdapServerValue("zimbraPop3SSLProxyBindPort");
-        $config{MAILPROXY}        = getLdapServerValue("zimbraReverseProxyMailEnabled");
+        $config{IMAPPROXYPORT} = getLdapServerValue("zimbraImapProxyBindPort");
+        $config{IMAPSSLPROXYPORT} =
+          getLdapServerValue("zimbraImapSSLProxyBindPort");
+        $config{POPPROXYPORT} = getLdapServerValue("zimbraPop3ProxyBindPort");
+        $config{POPSSLPROXYPORT} =
+          getLdapServerValue("zimbraPop3SSLProxyBindPort");
+        $config{MAILPROXY} =
+          getLdapServerValue("zimbraReverseProxyMailEnabled");
 
         $config{MODE}      = getLdapServerValue("zimbraMailMode");
         $config{PROXYMODE} = getLdapServerValue("zimbraReverseProxyMailMode");
@@ -1190,10 +1253,12 @@ sub setLdapDefaults {
 
         $config{HTTPPROXYPORT}  = getLdapServerValue("zimbraMailProxyPort");
         $config{HTTPSPROXYPORT} = getLdapServerValue("zimbraMailSSLProxyPort");
-        $config{HTTPPROXY}      = getLdapServerValue("zimbraReverseProxyHttpEnabled");
-        $config{SMTPHOST}       = getLdapServerValue("zimbraSmtpHostname");
+        $config{HTTPPROXY} =
+          getLdapServerValue("zimbraReverseProxyHttpEnabled");
+        $config{SMTPHOST} = getLdapServerValue("zimbraSmtpHostname");
 
-        $config{zimbraReverseProxyLookupTarget} = getLdapServerValue("zimbraReverseProxyLookupTarget")
+        $config{zimbraReverseProxyLookupTarget} =
+          getLdapServerValue("zimbraReverseProxyLookupTarget")
           if ( $config{zimbraReverseProxyLookupTarget} eq "" );
 
         if ( isEnabled("carbonio-mta") ) {
@@ -1208,7 +1273,8 @@ sub setLdapDefaults {
     #
     # default domain name
     # get zimbraPublicServiceHostname from ldap
-    my $publicServiceHostnameLdap = getLdapConfigValue("zimbraPublicServiceHostname");
+    my $publicServiceHostnameLdap =
+      getLdapConfigValue("zimbraPublicServiceHostname");
 
     # if zimbraPublicServiceHostname is already set on ldap...
     if ( !( $publicServiceHostnameLdap eq "" ) ) {
@@ -1220,7 +1286,8 @@ sub setLdapDefaults {
         $publicServiceHostnameAlreadySet = 1;
     }
 
-    $config{zimbraDefaultDomainName} = getLdapConfigValue("zimbraDefaultDomainName");
+    $config{zimbraDefaultDomainName} =
+      getLdapConfigValue("zimbraDefaultDomainName");
     if ( $config{zimbraDefaultDomainName} eq "" ) {
         $config{zimbraDefaultDomainName} = $config{CREATEDOMAIN};
     }
@@ -1237,21 +1304,27 @@ sub setLdapDefaults {
 
     $config{TRAINSASPAM} = getLdapConfigValue("zimbraSpamIsSpamAccount");
     if ( $config{TRAINSASPAM} eq "" ) {
-        $config{TRAINSASPAM} = "spam." . lc( genRandomPass() ) . '@' . $config{CREATEDOMAIN};
+        $config{TRAINSASPAM} =
+          "spam." . lc( genRandomPass() ) . '@' . $config{CREATEDOMAIN};
     }
     $config{TRAINSAHAM} = getLdapConfigValue("zimbraSpamIsNotSpamAccount");
     if ( $config{TRAINSAHAM} eq "" ) {
-        $config{TRAINSAHAM} = "ham." . lc( genRandomPass() ) . '@' . $config{CREATEDOMAIN};
+        $config{TRAINSAHAM} =
+          "ham." . lc( genRandomPass() ) . '@' . $config{CREATEDOMAIN};
     }
-    $config{VIRUSQUARANTINE} = getLdapConfigValue("zimbraAmavisQuarantineAccount");
+    $config{VIRUSQUARANTINE} =
+      getLdapConfigValue("zimbraAmavisQuarantineAccount");
     if ( $config{VIRUSQUARANTINE} eq "" ) {
-        $config{VIRUSQUARANTINE} = "virus-quarantine." . lc( genRandomPass() ) . '@' . $config{CREATEDOMAIN};
+        $config{VIRUSQUARANTINE} =
+            "virus-quarantine."
+          . lc( genRandomPass() ) . '@'
+          . $config{CREATEDOMAIN};
     }
 
     #
     # Load default COS
     #
-    $config{USEKBSHORTCUTS}       = getLdapCOSValue("zimbraPrefUseKeyboardShortcuts");
+    $config{USEKBSHORTCUTS} = getLdapCOSValue("zimbraPrefUseKeyboardShortcuts");
     $config{zimbraPrefTimeZoneId} = getLdapCOSValue("zimbraPrefTimeZoneId");
 
     #
@@ -1263,100 +1336,153 @@ sub setLdapDefaults {
     #
     # Set some sane defaults if values were missing in LDAP
     #
-    $config{HTTPPORT}              = 80      if ( $config{HTTPPORT} eq 0 );
-    $config{HTTPSPORT}             = 443     if ( $config{HTTPSPORT} eq 0 );
-    $config{MODE}                  = "https" if ( $config{MODE} eq "" );
-    $config{PROXYMODE}             = "https" if ( $config{PROXYMODE} eq "" );
-    $config{REMOTEIMAPBINDPORT}    = 8143    if ( $config{REMOTEIMAPBINDPORT} eq 0 );
-    $config{REMOTEIMAPSSLBINDPORT} = 8993    if ( $config{REMOTEIMAPSSLBINDPORT} eq 0 );
+    $config{HTTPPORT}           = 80      if ( $config{HTTPPORT} eq 0 );
+    $config{HTTPSPORT}          = 443     if ( $config{HTTPSPORT} eq 0 );
+    $config{MODE}               = "https" if ( $config{MODE} eq "" );
+    $config{PROXYMODE}          = "https" if ( $config{PROXYMODE} eq "" );
+    $config{REMOTEIMAPBINDPORT} = 8143 if ( $config{REMOTEIMAPBINDPORT} eq 0 );
+    $config{REMOTEIMAPSSLBINDPORT} = 8993
+      if ( $config{REMOTEIMAPSSLBINDPORT} eq 0 );
 
     if ( isInstalled("carbonio-proxy") && isEnabled("carbonio-proxy") ) {
         if ( $config{MAILPROXY} eq "TRUE" ) {
-            if ( $config{IMAPPORT} == $config{IMAPPROXYPORT} && $config{IMAPPORT} == 143 ) {
+            if (   $config{IMAPPORT} == $config{IMAPPROXYPORT}
+                && $config{IMAPPORT} == 143 )
+            {
                 $config{IMAPPORT} = 7143;
             }
-            if ( $config{IMAPSSLPORT} == $config{IMAPSSLPROXYPORT} && $config{IMAPSSLPORT} == 993 ) {
+            if (   $config{IMAPSSLPORT} == $config{IMAPSSLPROXYPORT}
+                && $config{IMAPSSLPORT} == 993 )
+            {
                 $config{IMAPSSLPORT} = 7993;
             }
-            if ( $config{POPPORT} == $config{POPPROXYPORT} && $config{POPPORT} == 110 ) {
+            if (   $config{POPPORT} == $config{POPPROXYPORT}
+                && $config{POPPORT} == 110 )
+            {
                 $config{POPPORT} = 7110;
             }
-            if ( $config{POPSSLPORT} == $config{POPSSLPROXYPORT} && $config{POPSSLPORT} == 995 ) {
+            if (   $config{POPSSLPORT} == $config{POPSSLPROXYPORT}
+                && $config{POPSSLPORT} == 995 )
+            {
                 $config{POPSSLPORT} = 7995;
             }
-            if ( $config{IMAPPORT} == $config{IMAPPROXYPORT} && $config{IMAPPORT} == 7143 ) {
+            if (   $config{IMAPPORT} == $config{IMAPPROXYPORT}
+                && $config{IMAPPORT} == 7143 )
+            {
                 $config{IMAPPROXYPORT} = 143;
             }
-            if ( $config{IMAPSSLPORT} == $config{IMAPSSLPROXYPORT} && $config{IMAPSSLPORT} == 7993 ) {
+            if (   $config{IMAPSSLPORT} == $config{IMAPSSLPROXYPORT}
+                && $config{IMAPSSLPORT} == 7993 )
+            {
                 $config{IMAPSSLPROXYPORT} = 993;
             }
-            if ( $config{POPPORT} == $config{POPPROXYPORT} && $config{POPPORT} == 7110 ) {
+            if (   $config{POPPORT} == $config{POPPROXYPORT}
+                && $config{POPPORT} == 7110 )
+            {
                 $config{POPPROXYPORT} = 110;
             }
-            if ( $config{POPSSLPORT} == $config{POPSSLPROXYPORT} && $config{POPSSLPORT} == 7995 ) {
+            if (   $config{POPSSLPORT} == $config{POPSSLPROXYPORT}
+                && $config{POPSSLPORT} == 7995 )
+            {
                 $config{POPSSLPROXYPORT} = 995;
             }
         }
         if ( $config{HTTPPROXY} eq "TRUE" ) {
 
             # Add proxy component to a configured node
-            if ( ( $config{HTTPPORT} == 80 || $config{HTTPPORT} == 0 ) && $config{HTTPPROXYPORT} == 0 ) {
+            if ( ( $config{HTTPPORT} == 80 || $config{HTTPPORT} == 0 )
+                && $config{HTTPPROXYPORT} == 0 )
+            {
                 $config{HTTPPROXYPORT} = 80;
             }
 
-            if ( ( $config{HTTPSPORT} == 443 || $config{HTTPSPORT} == 0 ) && $config{HTTPSPROXYPORT} == 0 ) {
+            if ( ( $config{HTTPSPORT} == 443 || $config{HTTPSPORT} == 0 )
+                && $config{HTTPSPROXYPORT} == 0 )
+            {
                 $config{HTTPSPROXYPORT} = 443;
             }
 
-            if ( $config{HTTPPORT} == $config{HTTPPROXYPORT} && $config{HTTPPORT} == 80 ) {
+            if (   $config{HTTPPORT} == $config{HTTPPROXYPORT}
+                && $config{HTTPPORT} == 80 )
+            {
                 $config{HTTPPORT} = 8080;
             }
-            if ( $config{HTTPSPORT} == $config{HTTPSPROXYPORT} && $config{HTTPSPORT} == 443 ) {
+            if (   $config{HTTPSPORT} == $config{HTTPSPROXYPORT}
+                && $config{HTTPSPORT} == 443 )
+            {
                 $config{HTTPSPORT} = 8443;
             }
-            if ( $config{HTTPPORT} == $config{HTTPPROXYPORT} && $config{HTTPPORT} == 8080 ) {
+            if (   $config{HTTPPORT} == $config{HTTPPROXYPORT}
+                && $config{HTTPPORT} == 8080 )
+            {
                 $config{HTTPPROXYPORT} = 80;
             }
-            if ( $config{HTTPSPORT} == $config{HTTPSPROXYPORT} && $config{HTTPSPORT} == 8443 ) {
+            if (   $config{HTTPSPORT} == $config{HTTPSPROXYPORT}
+                && $config{HTTPSPORT} == 8443 )
+            {
                 $config{HTTPSPROXYPORT} = 443;
             }
         }
     }
     else {
-        if ( $config{IMAPPORT} == $config{IMAPPROXYPORT} && $config{IMAPPORT} == 143 ) {
+        if (   $config{IMAPPORT} == $config{IMAPPROXYPORT}
+            && $config{IMAPPORT} == 143 )
+        {
             $config{IMAPPROXYPORT} = 7143;
         }
-        if ( $config{IMAPSSLPORT} == $config{IMAPSSLPROXYPORT} && $config{IMAPSSLPORT} == 993 ) {
+        if (   $config{IMAPSSLPORT} == $config{IMAPSSLPROXYPORT}
+            && $config{IMAPSSLPORT} == 993 )
+        {
             $config{IMAPSSLPROXYPORT} = 7993;
         }
-        if ( $config{POPPORT} == $config{POPPROXYPORT} && $config{POPPORT} == 110 ) {
+        if (   $config{POPPORT} == $config{POPPROXYPORT}
+            && $config{POPPORT} == 110 )
+        {
             $config{POPPROXYPORT} = 7110;
         }
-        if ( $config{POPSSLPORT} == $config{POPSSLPROXYPORT} && $config{POPSSLPORT} == 995 ) {
+        if (   $config{POPSSLPORT} == $config{POPSSLPROXYPORT}
+            && $config{POPSSLPORT} == 995 )
+        {
             $config{POPSSLPROXYPORT} = 7995;
         }
-        if ( $config{IMAPPORT} == $config{IMAPPROXYPORT} && $config{IMAPPORT} == 7143 ) {
+        if (   $config{IMAPPORT} == $config{IMAPPROXYPORT}
+            && $config{IMAPPORT} == 7143 )
+        {
             $config{IMAPPORT} = 143;
         }
-        if ( $config{IMAPSSLPORT} == $config{IMAPSSLPROXYPORT} && $config{IMAPSSLPORT} == 7993 ) {
+        if (   $config{IMAPSSLPORT} == $config{IMAPSSLPROXYPORT}
+            && $config{IMAPSSLPORT} == 7993 )
+        {
             $config{IMAPSSLPORT} = 993;
         }
-        if ( $config{POPPORT} == $config{POPPROXYPORT} && $config{POPPORT} == 7110 ) {
+        if (   $config{POPPORT} == $config{POPPROXYPORT}
+            && $config{POPPORT} == 7110 )
+        {
             $config{POPPORT} = 110;
         }
-        if ( $config{POPSSLPORT} == $config{POPSSLPROXYPORT} && $config{POPSSLPORT} == 7995 ) {
+        if (   $config{POPSSLPORT} == $config{POPSSLPROXYPORT}
+            && $config{POPSSLPORT} == 7995 )
+        {
             $config{POPSSLPORT} = 995;
         }
-        if ( $config{HTTPPORT} == $config{HTTPPROXYPORT} && $config{HTTPPORT} == 80 ) {
+        if (   $config{HTTPPORT} == $config{HTTPPROXYPORT}
+            && $config{HTTPPORT} == 80 )
+        {
             $config{HTTPPROXYPORT} = 8080;
         }
-        if ( $config{HTTPSPORT} == $config{HTTPSPROXYPORT} && $config{HTTPSPORT} == 443 ) {
+        if (   $config{HTTPSPORT} == $config{HTTPSPROXYPORT}
+            && $config{HTTPSPORT} == 443 )
+        {
             $config{HTTPSPROXYPORT} = 8443;
         }
-        if ( $config{HTTPPORT} == $config{HTTPPROXYPORT} && $config{HTTPPORT} == 8080 ) {
+        if (   $config{HTTPPORT} == $config{HTTPPROXYPORT}
+            && $config{HTTPPORT} == 8080 )
+        {
             $config{HTTPPORT} = 80;
         }
-        if ( $config{HTTPSPORT} == $config{HTTPSPROXYPORT} && $config{HTTPSPORT} == 8443 ) {
+        if (   $config{HTTPSPORT} == $config{HTTPSPROXYPORT}
+            && $config{HTTPSPORT} == 8443 )
+        {
             $config{HTTPSPORT} = 443;
         }
     }
@@ -1377,16 +1503,35 @@ sub installLdapConfig {
     if ( -d "/opt/zextras/data/ldap/config" ) {
         progress("Installing LDAP configuration database...");
         qx(mkdir -p $config_dest/cn\=config/olcDatabase\=\{2\}mdb);
-        system("cp -f $config_src/cn\=config.ldif $config_dest/cn\=config.ldif");
-        system("cp -f $config_src/cn\=config/cn\=module\{0\}.ldif $config_dest/cn\=config/cn\=module\{0\}.ldif");
-        system("cp -f $config_src/cn\=config/cn\=schema.ldif $config_dest/cn\=config/cn\=schema.ldif");
-        system("cp -f $config_src/cn\=config/olcDatabase\=\{-1\}frontend.ldif $config_dest/cn\=config/olcDatabase\=\{-1\}frontend.ldif");
-        system("cp -f $config_src/cn\=config/olcDatabase\=\{0\}config.ldif $config_dest/cn\=config/olcDatabase\=\{0\}config.ldif");
-        system("cp -f $config_src/cn\=config/olcDatabase\=\{1\}monitor.ldif $config_dest/cn\=config/olcDatabase\=\{1\}monitor.ldif");
-        system("cp -f $config_src/cn\=config/olcDatabase\=\{2\}mdb.ldif $config_dest/cn\=config/olcDatabase\=\{2\}mdb.ldif");
-        system("cp -f $config_src/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{0\}dynlist.ldif $config_dest/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{0\}dynlist.ldif");
-        system("cp -f $config_src/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{1\}unique.ldif $config_dest/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{1\}unique.ldif");
-        system("cp -f $config_src/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{2\}noopsrch.ldif $config_dest/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{2\}noopsrch.ldif");
+        system(
+            "cp -f $config_src/cn\=config.ldif $config_dest/cn\=config.ldif");
+        system(
+"cp -f $config_src/cn\=config/cn\=module\{0\}.ldif $config_dest/cn\=config/cn\=module\{0\}.ldif"
+        );
+        system(
+"cp -f $config_src/cn\=config/cn\=schema.ldif $config_dest/cn\=config/cn\=schema.ldif"
+        );
+        system(
+"cp -f $config_src/cn\=config/olcDatabase\=\{-1\}frontend.ldif $config_dest/cn\=config/olcDatabase\=\{-1\}frontend.ldif"
+        );
+        system(
+"cp -f $config_src/cn\=config/olcDatabase\=\{0\}config.ldif $config_dest/cn\=config/olcDatabase\=\{0\}config.ldif"
+        );
+        system(
+"cp -f $config_src/cn\=config/olcDatabase\=\{1\}monitor.ldif $config_dest/cn\=config/olcDatabase\=\{1\}monitor.ldif"
+        );
+        system(
+"cp -f $config_src/cn\=config/olcDatabase\=\{2\}mdb.ldif $config_dest/cn\=config/olcDatabase\=\{2\}mdb.ldif"
+        );
+        system(
+"cp -f $config_src/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{0\}dynlist.ldif $config_dest/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{0\}dynlist.ldif"
+        );
+        system(
+"cp -f $config_src/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{1\}unique.ldif $config_dest/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{1\}unique.ldif"
+        );
+        system(
+"cp -f $config_src/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{2\}noopsrch.ldif $config_dest/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{2\}noopsrch.ldif"
+        );
         qx(chmod 600 $config_dest/cn\=config.ldif);
         qx(chmod 600 $config_dest/cn\=config/*.ldif);
         qx(chown -R zextras:zextras $config_dest);
@@ -1498,7 +1643,8 @@ sub setDefaults {
     else {
         $config{mailboxd_keystore} = "/opt/zextras/conf/keystore";
     }
-    $config{mailboxd_truststore}          = "/opt/zextras/common/lib/jvm/java/lib/security/cacerts";
+    $config{mailboxd_truststore} =
+      "/opt/zextras/common/lib/jvm/java/lib/security/cacerts";
     $config{mailboxd_keystore_password}   = genRandomPass();
     $config{mailboxd_truststore_password} = "changeit";
 
@@ -1512,10 +1658,11 @@ sub setDefaults {
 
     if ( isEnabled("carbonio-appserver") ) {
         progress "setting defaults for carbonio-appserver.\n" if $options{d};
-        $config{DOCREATEADMIN}                  = "yes" if $newinstall;
-        $config{DOTRAINSA}                      = "yes";
-        $config{SERVICEWEBAPP}                  = "yes";    # since carbonio-appserver servers are valid upstreams and need to be
-                                                            # included in the upstream config of the reverse proxy
+        $config{DOCREATEADMIN} = "yes" if $newinstall;
+        $config{DOTRAINSA}     = "yes";
+        $config{SERVICEWEBAPP} = "yes"
+          ; # since carbonio-appserver servers are valid upstreams and need to be
+            # included in the upstream config of the reverse proxy
         $config{zimbraReverseProxyLookupTarget} = "TRUE";
         $config{zimbraMailProxy}                = "TRUE" if $newinstall;
         $config{zimbraWebProxy}                 = "TRUE" if $newinstall;
@@ -1530,7 +1677,8 @@ sub setDefaults {
             $config{TRAINSAHAM} .= '@' . $config{CREATEDOMAIN};
         }
         if ( $config{VIRUSQUARANTINE} eq "" ) {
-            $config{VIRUSQUARANTINE} = "virus-quarantine." . lc( genRandomPass() );
+            $config{VIRUSQUARANTINE} =
+              "virus-quarantine." . lc( genRandomPass() );
             $config{VIRUSQUARANTINE} .= '@' . $config{CREATEDOMAIN};
         }
     }
@@ -1539,7 +1687,8 @@ sub setDefaults {
     $config{ZIMBRA_REQ_SECURITY}                  = "no";
 
     if ( isEnabled("carbonio-directory-server") ) {
-        progress "setting defaults for carbonio-directory-server.\n" if $options{d};
+        progress "setting defaults for carbonio-directory-server.\n"
+          if $options{d};
         $config{DOCREATEDOMAIN}      = "yes" if $newinstall;
         $config{LDAPROOTPASS}        = genRandomPass();
         $config{LDAPADMINPASS}       = $config{LDAPROOTPASS};
@@ -1547,15 +1696,19 @@ sub setDefaults {
         $config{LDAPPOSTPASS}        = $config{LDAPADMINPASS};
         $config{LDAPAMAVISPASS}      = $config{LDAPADMINPASS};
         $config{ldap_nginx_password} = $config{LDAPADMINPASS};
-        $config{LDAPREPLICATIONTYPE} = "master";                 # Values can be master, mmr, replica
-        $config{LDAPSERVERID}        = 2;                        # Aleady enabled master should be 1, so default to next ID.
-        $ldapRepChanged              = 1;
-        $ldapPostChanged             = 1;
-        $ldapAmavisChanged           = 1;
-        $ldapNginxChanged            = 1;
+        $config{LDAPREPLICATIONTYPE} =
+          "master";    # Values can be master, mmr, replica
+        $config{LDAPSERVERID} =
+          2;    # Aleady enabled master should be 1, so default to next ID.
+        $ldapRepChanged    = 1;
+        $ldapPostChanged   = 1;
+        $ldapAmavisChanged = 1;
+        $ldapNginxChanged  = 1;
     }
 
-    if ( isInstalled("carbonio-proxy") && !isEnabled("carbonio-directory-server") ) {
+    if ( isInstalled("carbonio-proxy")
+        && !isEnabled("carbonio-directory-server") )
+    {
         $config{ldap_nginx_password} = genRandomPass();
         $ldapNginxChanged = 1;
     }
@@ -1575,7 +1728,8 @@ sub setDefaults {
 
     #progress("tzname=$tzname tzid=$config{zimbraPrefTimeZoneId}");
 
-    $config{zimbra_ldap_userdn} = "uid=zimbra,cn=admins,$config{ldap_dit_base_dn_config}";
+    $config{zimbra_ldap_userdn} =
+      "uid=zimbra,cn=admins,$config{ldap_dit_base_dn_config}";
 
     $config{SMTPSOURCE}   = $config{CREATEADMIN};
     $config{SMTPDEST}     = $config{CREATEADMIN};
@@ -1607,11 +1761,15 @@ sub setDefaults {
     $config{CREATEADMINPASS} = $config{LDAPROOTPASS};
 
     if ( !$options{c} && $newinstall ) {
-        progress "no config file and bootstrap mode is newinstall, checking DNS resolution\n" if $options{d};
+        progress
+"no config file and bootstrap mode is newinstall, checking DNS resolution\n"
+          if $options{d};
         if ( lookupHostName( $config{HOSTNAME}, 'A' ) ) {
             if ( lookupHostName( $config{HOSTNAME}, 'AAAA' ) ) {
                 progress("\n\nDNS ERROR - resolving $config{HOSTNAME}\n");
-                progress("It is suggested that the hostname be resolvable via DNS and the resolved IP address does not point to any loopback device.\n");
+                progress(
+"It is suggested that the hostname be resolvable via DNS and the resolved IP address does not point to any loopback device.\n"
+                );
                 if ( askYN( "Change hostname", "Yes" ) eq "yes" ) {
                     setHostName();
                 }
@@ -1624,8 +1782,12 @@ sub setDefaults {
 
             my $ans = getDnsRecords( $config{CREATEDOMAIN}, 'MX' );
             if ( !defined($ans) ) {
-                progress("\n\nDNS ERROR - resolving \"MX\" for $config{CREATEDOMAIN}\n");
-                progress("It is suggested that the domain name have an \"MX\" record configured in DNS.\n");
+                progress(
+"\n\nDNS ERROR - resolving \"MX\" for $config{CREATEDOMAIN}\n"
+                );
+                progress(
+"It is suggested that the domain name have an \"MX\" record configured in DNS.\n"
+                );
                 if ( askYN( "Change domain name?", "Yes" ) eq "yes" ) {
                     setCreateDomain();
                 }
@@ -1646,18 +1808,23 @@ sub setDefaults {
                             foreach $h (@ha) {
                                 if ($ipv6) {
                                     if ( $h->type eq 'AAAA' ) {
-                                        progress "\tMX: " . $a->exchange . " (" . $h->address . ")\n";
+                                        progress "\tMX: "
+                                          . $a->exchange . " ("
+                                          . $h->address . ")\n";
                                     }
                                 }
                                 else {
                                     if ( $h->type eq 'A' ) {
-                                        progress "\tMX: " . $a->exchange . " (" . $h->address . ")\n";
+                                        progress "\tMX: "
+                                          . $a->exchange . " ("
+                                          . $h->address . ")\n";
                                     }
                                 }
                             }
                         }
                         else {
-                            progress "\n\nDNS ERROR - No \"A\" or \"AAAA\" record for $config{CREATEDOMAIN}.\n";
+                            progress
+"\n\nDNS ERROR - No \"A\" or \"AAAA\" record for $config{CREATEDOMAIN}.\n";
                         }
                     }
                 }
@@ -1677,7 +1844,8 @@ sub setDefaults {
                                 foreach $h (@ha) {
                                     my $interIp   = NetAddr::IP->new("$i");
                                     my $interface = lc( $interIp->addr );
-                                    if ( $h->type eq 'A' || $h->type eq 'AAAA' ) {
+                                    if ( $h->type eq 'A' || $h->type eq 'AAAA' )
+                                    {
                                         print "\t\t" . $h->address . "\n";
                                         if ( $h->address eq $interface ) {
                                             $good = 1;
@@ -1692,7 +1860,9 @@ sub setDefaults {
                     if ($good) { last; }
                 }
                 if ( !$good ) {
-                    progress("\n\nDNS ERROR - none of the \"MX\" records for $config{CREATEDOMAIN}\n");
+                    progress(
+"\n\nDNS ERROR - none of the \"MX\" records for $config{CREATEDOMAIN}\n"
+                    );
                     progress("resolve to this host\n");
                     if ( askYN( "Change domain name?", "Yes" ) eq "yes" ) {
                         setCreateDomain();
@@ -1838,16 +2008,19 @@ sub setDefaultsFromLocalConfig {
     $config{mailboxd_keystore} = getLocalConfig("mailboxd_keystore")
       if ( getLocalConfig("mailboxd_keystore") ne "" );
 
-    $config{mailboxd_keystore_password} = getLocalConfig("mailboxd_keystore_password")
+    $config{mailboxd_keystore_password} =
+      getLocalConfig("mailboxd_keystore_password")
       if ( getLocalConfig("mailboxd_keystore_password") ne "" );
 
-    $config{mailboxd_truststore_password} = getLocalConfig("mailboxd_truststore_password")
+    $config{mailboxd_truststore_password} =
+      getLocalConfig("mailboxd_truststore_password")
       if ( getLocalConfig("mailboxd_truststore_password") ne "" );
 
     $config{zimbra_ldap_userdn} = getLocalConfig("zimbra_ldap_userdn")
       if ( getLocalConfig("zimbra_ldap_userdn") ne "" );
 
-    $config{zimbra_require_interprocess_security} = getLocalConfig("zimbra_require_interprocess_security");
+    $config{zimbra_require_interprocess_security} =
+      getLocalConfig("zimbra_require_interprocess_security");
     if ( $config{zimbra_require_interprocess_security} ) {
         $config{ZIMBRA_REQ_SECURITY} = "yes";
     }
@@ -1855,7 +2028,8 @@ sub setDefaultsFromLocalConfig {
         $config{ZIMBRA_REQ_SECURITY} = "no";
     }
 
-    $config{ldap_dit_base_dn_config} = getLocalConfig("ldap_dit_base_dn_config");
+    $config{ldap_dit_base_dn_config} =
+      getLocalConfig("ldap_dit_base_dn_config");
     $config{ldap_dit_base_dn_config} = "cn=zimbra"
       if ( $config{ldap_dit_base_dn_config} eq "" );
 
@@ -1906,7 +2080,8 @@ sub setDefaultsFromLocalConfig {
             $ldapAmavisChanged = 1;
         }
     }
-    if ( isEnabled("carbonio-directory-server") || isEnabled("carbonio-proxy") ) {
+    if ( isEnabled("carbonio-directory-server") || isEnabled("carbonio-proxy") )
+    {
         $config{ldap_nginx_password} = getLocalConfig("ldap_nginx_password");
         if ( $config{ldap_nginx_password} eq "" ) {
             $config{ldap_nginx_password} = $config{LDAPADMINPASS};
@@ -1919,7 +2094,8 @@ sub setDefaultsFromLocalConfig {
         $config{mailboxd_server} = "jetty"
           if ( $config{mailboxd_server} eq "" );
         $config{mailboxd_keystore} = "$config{mailboxd_directory}/etc/keystore"
-          if ( $config{mailboxd_keystore} eq "" || $config{mailboxd_keystore} == "/opt/zextras/conf/keystore" );
+          if ( $config{mailboxd_keystore} eq ""
+            || $config{mailboxd_keystore} == "/opt/zextras/conf/keystore" );
     }
 
     if ( $options{d} ) {
@@ -2038,8 +2214,11 @@ sub setCreateDomain {
         $config{CREATEDOMAIN} = ask( "Create domain:", $config{CREATEDOMAIN} );
         my $ans = getDnsRecords( $config{CREATEDOMAIN}, 'MX' );
         if ( !defined($ans) ) {
-            progress("\n\nDNS ERROR - resolving \"MX\" for $config{CREATEDOMAIN}\n");
-            progress("It is suggested that the domain name have an \"MX\" record configured in DNS.\n");
+            progress(
+                "\n\nDNS ERROR - resolving \"MX\" for $config{CREATEDOMAIN}\n");
+            progress(
+"It is suggested that the domain name have an \"MX\" record configured in DNS.\n"
+            );
             if ( askYN( "Re-Enter domain name?", "Yes" ) eq "no" ) {
                 last;
             }
@@ -2061,18 +2240,23 @@ sub setCreateDomain {
                         foreach $h (@ha) {
                             if ($ipv6) {
                                 if ( $h->type eq 'AAAA' ) {
-                                    progress "\tMX: " . $a->exchange . " (" . $h->address . ")\n";
+                                    progress "\tMX: "
+                                      . $a->exchange . " ("
+                                      . $h->address . ")\n";
                                 }
                             }
                             else {
                                 if ( $h->type eq 'A' ) {
-                                    progress "\tMX: " . $a->exchange . " (" . $h->address . ")\n";
+                                    progress "\tMX: "
+                                      . $a->exchange . " ("
+                                      . $h->address . ")\n";
                                 }
                             }
                         }
                     }
                     else {
-                        progress "\n\nDNS ERROR - No \"A\" or \"AAAA\" record for $config{CREATEDOMAIN}.\n";
+                        progress
+"\n\nDNS ERROR - No \"A\" or \"AAAA\" record for $config{CREATEDOMAIN}.\n";
                     }
                 }
             }
@@ -2107,9 +2291,13 @@ sub setCreateDomain {
             }
             if ($good) { last; }
             else {
-                progress("\n\nDNS ERROR - none of the \"MX\" records for $config{CREATEDOMAIN}\n");
+                progress(
+"\n\nDNS ERROR - none of the \"MX\" records for $config{CREATEDOMAIN}\n"
+                );
                 progress("resolve to this host\n");
-                progress("It is suggested that the \"MX\" record resolve to this host.\n");
+                progress(
+"It is suggested that the \"MX\" record resolve to this host.\n"
+                );
                 if ( askYN( "Re-Enter domain name?", "Yes" ) eq "no" ) {
                     last;
                 }
@@ -2153,7 +2341,8 @@ sub setLdapBaseDN {
     while (1) {
         print "Warning: Do not change this from the default value unless\n";
         print "you are absolutely sure you know what you are doing!\n\n";
-        my $new = askNonBlank( "Ldap base DN:", $config{ldap_dit_base_dn_config} );
+        my $new =
+          askNonBlank( "Ldap base DN:", $config{ldap_dit_base_dn_config} );
         if ( $config{ldap_dit_base_dn_config} ne $new ) {
             $config{ldap_dit_base_dn_config} = $new;
         }
@@ -2168,10 +2357,14 @@ sub setNotebookAccount {
         my ( $adminUser, $adminDomain ) = split( '@', $config{CREATEADMIN} );
         if ( $d ne $config{CREATEDOMAIN} && $d ne $adminDomain ) {
             if ( $config{CREATEDOMAIN} eq $adminDomain ) {
-                progress("You must create the user under the domain $config{CREATEDOMAIN}\n");
+                progress(
+"You must create the user under the domain $config{CREATEDOMAIN}\n"
+                );
             }
             else {
-                progress("You must create the user under the domain $config{CREATEDOMAIN} or $adminDomain\n");
+                progress(
+"You must create the user under the domain $config{CREATEDOMAIN} or $adminDomain\n"
+                );
             }
         }
         else {
@@ -2190,10 +2383,14 @@ sub setTrainSASpam {
         my ( $adminUser, $adminDomain ) = split( '@', $config{CREATEADMIN} );
         if ( $d ne $config{CREATEDOMAIN} && $d ne $adminDomain ) {
             if ( $config{CREATEDOMAIN} eq $adminDomain ) {
-                progress("You must create the user under the domain $config{CREATEDOMAIN}\n");
+                progress(
+"You must create the user under the domain $config{CREATEDOMAIN}\n"
+                );
             }
             else {
-                progress("You must create the user under the domain $config{CREATEDOMAIN} or $adminDomain\n");
+                progress(
+"You must create the user under the domain $config{CREATEDOMAIN} or $adminDomain\n"
+                );
             }
         }
         else {
@@ -2210,10 +2407,14 @@ sub setTrainSAHam {
         my ( $adminUser, $adminDomain ) = split( '@', $config{CREATEADMIN} );
         if ( $d ne $config{CREATEDOMAIN} && $d ne $adminDomain ) {
             if ( $config{CREATEDOMAIN} eq $adminDomain ) {
-                progress("You must create the user under the domain $config{CREATEDOMAIN}\n");
+                progress(
+"You must create the user under the domain $config{CREATEDOMAIN}\n"
+                );
             }
             else {
-                progress("You must create the user under the domain $config{CREATEDOMAIN} or $adminDomain\n");
+                progress(
+"You must create the user under the domain $config{CREATEDOMAIN} or $adminDomain\n"
+                );
             }
         }
         else {
@@ -2225,15 +2426,20 @@ sub setTrainSAHam {
 
 sub setAmavisVirusQuarantine {
     while (1) {
-        my $new = ask( "Anti-virus quarantine user:", $config{VIRUSQUARANTINE} );
+        my $new =
+          ask( "Anti-virus quarantine user:", $config{VIRUSQUARANTINE} );
         my ( $u,         $d )           = split( '@', $new );
         my ( $adminUser, $adminDomain ) = split( '@', $config{CREATEADMIN} );
         if ( $d ne $config{CREATEDOMAIN} && $d ne $adminDomain ) {
             if ( $config{CREATEDOMAIN} eq $adminDomain ) {
-                progress("You must create the user under the domain $config{CREATEDOMAIN}\n");
+                progress(
+"You must create the user under the domain $config{CREATEDOMAIN}\n"
+                );
             }
             else {
-                progress("You must create the user under the domain $config{CREATEDOMAIN} or $adminDomain\n");
+                progress(
+"You must create the user under the domain $config{CREATEDOMAIN} or $adminDomain\n"
+                );
             }
         }
         else {
@@ -2250,16 +2456,19 @@ sub setCreateAdmin {
         my ( $u, $d ) = split( '@', $new );
 
         unless ( validEmailAddress($new) ) {
-            progress("Admin user must be a valid email account [$u\@$config{CREATEDOMAIN}]\n");
+            progress(
+"Admin user must be a valid email account [$u\@$config{CREATEDOMAIN}]\n"
+            );
             next;
         }
 
-        # spam/ham/quanrantine accounts follow admin domain if ldap isn't install
-        # this prevents us from trying to provision in a non-existent domain
+       # spam/ham/quanrantine accounts follow admin domain if ldap isn't install
+       # this prevents us from trying to provision in a non-existent domain
         if ( !isEnabled("carbonio-directory-server") ) {
-            my ( $spamUser,  $spamDomain )  = split( '@', $config{TRAINSASPAM} );
-            my ( $hamUser,   $hamDomain )   = split( '@', $config{TRAINSAHAM} );
-            my ( $virusUser, $virusDomain ) = split( '@', $config{VIRUSQUARANTINE} );
+            my ( $spamUser,  $spamDomain ) = split( '@', $config{TRAINSASPAM} );
+            my ( $hamUser,   $hamDomain )  = split( '@', $config{TRAINSAHAM} );
+            my ( $virusUser, $virusDomain ) =
+              split( '@', $config{VIRUSQUARANTINE} );
             $config{CREATEDOMAIN} = $d
               if ( $config{CREATEDOMAIN} ne $d );
 
@@ -2313,7 +2522,9 @@ sub validIPAddress {
 
 sub setLdapRootPass {
     while (1) {
-        my $new = askPassword( "Password for ldap root user (min 6 characters):", $config{LDAPROOTPASS} );
+        my $new =
+          askPassword( "Password for ldap root user (min 6 characters):",
+            $config{LDAPROOTPASS} );
         if ( length($new) >= 6 ) {
             if ( $config{LDAPROOTPASS} ne $new ) {
                 $config{LDAPROOTPASS} = $new;
@@ -2329,7 +2540,9 @@ sub setLdapRootPass {
 
 sub setLdapAdminPass {
     while (1) {
-        my $new = askPassword( "Password for ldap admin user (min 6 characters):", $config{LDAPADMINPASS} );
+        my $new =
+          askPassword( "Password for ldap admin user (min 6 characters):",
+            $config{LDAPADMINPASS} );
         if ( length($new) >= 6 ) {
             if ( $config{LDAPADMINPASS} ne $new ) {
                 $config{LDAPADMINPASS} = $new;
@@ -2346,7 +2559,9 @@ sub setLdapAdminPass {
 
 sub setLdapRepPass {
     while (1) {
-        my $new = askPassword( "Password for ldap replication user (min 6 characters):", $config{LDAPREPPASS} );
+        my $new =
+          askPassword( "Password for ldap replication user (min 6 characters):",
+            $config{LDAPREPPASS} );
         if ( length($new) >= 6 ) {
             if ( $config{LDAPREPPASS} ne $new ) {
                 $config{LDAPREPPASS} = $new;
@@ -2363,7 +2578,9 @@ sub setLdapRepPass {
 
 sub setLdapPostPass {
     while (1) {
-        my $new = askPassword( "Password for ldap Postfix user (min 6 characters):", $config{LDAPPOSTPASS} );
+        my $new =
+          askPassword( "Password for ldap Postfix user (min 6 characters):",
+            $config{LDAPPOSTPASS} );
         if ( length($new) >= 6 ) {
             if ( $config{LDAPPOSTPASS} ne $new ) {
                 $config{LDAPPOSTPASS} = $new;
@@ -2380,7 +2597,9 @@ sub setLdapPostPass {
 
 sub setLdapAmavisPass {
     while (1) {
-        my $new = askPassword( "Password for ldap Amavis user (min 6 characters):", $config{LDAPAMAVISPASS} );
+        my $new =
+          askPassword( "Password for ldap Amavis user (min 6 characters):",
+            $config{LDAPAMAVISPASS} );
         if ( length($new) >= 6 ) {
             if ( $config{LDAPAMAVISPASS} ne $new ) {
                 $config{LDAPAMAVISPASS} = $new;
@@ -2397,7 +2616,9 @@ sub setLdapAmavisPass {
 
 sub setLdapNginxPass {
     while (1) {
-        my $new = askPassword( "Password for ldap Nginx user (min 6 characters):", $config{ldap_nginx_password} );
+        my $new =
+          askPassword( "Password for ldap Nginx user (min 6 characters):",
+            $config{ldap_nginx_password} );
         if ( length($new) >= 6 ) {
             if ( $config{ldap_nginx_password} ne $new ) {
                 $config{ldap_nginx_password} = $new;
@@ -2413,15 +2634,18 @@ sub setLdapNginxPass {
 }
 
 sub setSmtpSource {
-    $config{SMTPSOURCE} = askNonBlank( "SMTP Source address:", $config{SMTPSOURCE} );
+    $config{SMTPSOURCE} =
+      askNonBlank( "SMTP Source address:", $config{SMTPSOURCE} );
 }
 
 sub setSmtpDest {
-    $config{SMTPDEST} = askNonBlank( "SMTP Destination address:", $config{SMTPDEST} );
+    $config{SMTPDEST} =
+      askNonBlank( "SMTP Destination address:", $config{SMTPDEST} );
 }
 
 sub setAvUser {
-    $config{AVUSER} = askNonBlank( "Notification address for AV alerts:", $config{AVUSER} );
+    $config{AVUSER} =
+      askNonBlank( "Notification address for AV alerts:", $config{AVUSER} );
     ( undef, $config{AVDOMAIN} ) = ( split( '@', $config{AVUSER} ) )[1];
 }
 
@@ -2601,9 +2825,11 @@ sub setUseProxy {
                 if ( $config{IMAPSSLPROXYPORT} == $config{IMAPSSLPORT} ) {
                     $config{IMAPSSLPORT} = 7000 + $config{IMAPSSLPROXYPORT};
                 }
-                if ( $config{IMAPSSLPORT} + 7000 == $config{IMAPSSLPROXYPORT} ) {
-                    $config{IMAPSSLPORT}      = $config{IMAPSSLPROXYPORT};
-                    $config{IMAPSSLPROXYPORT} = $config{IMAPSSLPROXYPORT} - 7000;
+                if ( $config{IMAPSSLPORT} + 7000 == $config{IMAPSSLPROXYPORT} )
+                {
+                    $config{IMAPSSLPORT} = $config{IMAPSSLPROXYPORT};
+                    $config{IMAPSSLPROXYPORT} =
+                      $config{IMAPSSLPROXYPORT} - 7000;
                 }
                 if ( $config{POPPROXYPORT} == $config{POPPORT} ) {
                     $config{POPPORT} = 7000 + $config{POPPROXYPORT};
@@ -2642,7 +2868,10 @@ sub setUseProxy {
 
 sub setStoreMode {
     while (1) {
-        my $m = askNonBlank( "Please enter the web server mode (http,https,both,mixed,redirect)", $config{MODE} );
+        my $m = askNonBlank(
+            "Please enter the web server mode (http,https,both,mixed,redirect)",
+            $config{MODE}
+        );
         if ( isInstalled("carbonio-proxy") ) {
             if ( $config{zimbra_require_interprocess_security} ) {
                 if ( $m eq "https" || $m eq "both" ) {
@@ -2650,7 +2879,8 @@ sub setStoreMode {
                     return;
                 }
                 else {
-                    print qq(Only "https" and "both" are valid modes when requiring interprocess security with web proxy.\n);
+                    print
+qq(Only "https" and "both" are valid modes when requiring interprocess security with web proxy.\n);
                 }
             }
             else {
@@ -2659,7 +2889,8 @@ sub setStoreMode {
                     return;
                 }
                 else {
-                    print qq(Only "http" and "both" are valid modes when not requiring interprocess security with web proxy.\n);
+                    print
+qq(Only "http" and "both" are valid modes when not requiring interprocess security with web proxy.\n);
                 }
             }
         }
@@ -2675,7 +2906,8 @@ sub setStoreMode {
                         return;
                     }
                     else {
-                        print qq(Only "https" and "both" are valid modes when requiring interprocess security with web proxy.\n);
+                        print
+qq(Only "https" and "both" are valid modes when requiring interprocess security with web proxy.\n);
                     }
                 }
                 else {
@@ -2684,12 +2916,18 @@ sub setStoreMode {
                         return;
                     }
                     else {
-                        print qq(Only "http" and "both" are valid modes when not requiring interprocess security with web proxy.\n);
+                        print
+qq(Only "http" and "both" are valid modes when not requiring interprocess security with web proxy.\n);
                     }
                 }
             }
             else {
-                if ( $m eq "http" || $m eq "https" || $m eq "mixed" || $m eq "both" || $m eq "redirect" ) {
+                if (   $m eq "http"
+                    || $m eq "https"
+                    || $m eq "mixed"
+                    || $m eq "both"
+                    || $m eq "redirect" )
+                {
                     $config{MODE} = $m;
                     return;
                 }
@@ -2701,14 +2939,17 @@ sub setStoreMode {
 
 sub setProxyMode {
     while (1) {
-        my $m = askNonBlank( "Please enter the proxy server mode (https,redirect)", $config{PROXYMODE} );
+        my $m =
+          askNonBlank( "Please enter the proxy server mode (https,redirect)",
+            $config{PROXYMODE} );
         if ( $config{zimbra_require_interprocess_security} ) {
             if ( $m eq "https" || $m eq "redirect" ) {
                 $config{PROXYMODE} = $m;
                 return;
             }
             else {
-                print qq(Only "https" and "redirect" are valid modes when requiring interprocess security with web proxy.\n);
+                print
+qq(Only "https" and "redirect" are valid modes when requiring interprocess security with web proxy.\n);
             }
         }
         else {
@@ -2728,11 +2969,15 @@ sub changeLdapHost {
         $ldapReplica = 0;
         $config{LDAPREPLICATIONTYPE} = "master";
     }
-    elsif ( isInstalled("carbonio-directory-server") && $config{LDAPHOST} ne $config{HOSTNAME} ) {
+    elsif ( isInstalled("carbonio-directory-server")
+        && $config{LDAPHOST} ne $config{HOSTNAME} )
+    {
         $ldapReplica = 1;
         $config{LDAPREPLICATIONTYPE} = "replica";
     }
-    elsif ( isInstalled("carbonio-directory-server") && $config{LDAPHOST} eq $config{HOSTNAME} ) {
+    elsif ( isInstalled("carbonio-directory-server")
+        && $config{LDAPHOST} eq $config{HOSTNAME} )
+    {
         $ldapReplica = 0;
         $config{LDAPREPLICATIONTYPE} = "master";
     }
@@ -2766,13 +3011,17 @@ sub lookupHostName {
     my $hostname   = shift;
     my $query_type = shift;
 
-    progress("\n\nQuerying DNS for \"$query_type\" record of current hostname $hostname...");
+    progress(
+"\n\nQuerying DNS for \"$query_type\" record of current hostname $hostname..."
+    );
 
     # perform DNS lookup for asked query_type for supplied hostname
     my $resolver = Net::DNS::Resolver->new;
     my $ans      = $resolver->search( $hostname, $query_type );
     if ( !defined $ans ) {
-        progress("\n\tNo results returned for \"$query_type\" record of current hostname $hostname\n");
+        progress(
+"\n\tNo results returned for \"$query_type\" record of current hostname $hostname\n"
+        );
         progress("\nChecked nameservers:\n");
         foreach my $server ( $resolver->nameservers() ) {
             progress("\t$server\n");
@@ -2782,22 +3031,26 @@ sub lookupHostName {
         return 1;
     }
 
-    # else check if resolved IP address is pointing to a loopback device or interface
+# else check if resolved IP address is pointing to a loopback device or interface
     foreach my $rr ( $ans->answer ) {
         next unless $rr->type eq 'A';
         my $ip = $rr->address;
 
-        # regexp based check that matches IP to check if its a possible loopback addresses (covers both IPv4 and IPv6)
+# regexp based check that matches IP to check if its a possible loopback addresses (covers both IPv4 and IPv6)
         if ( $ip =~ /^127\.|^::1$/ ) {
-            progress("\n\tError: Resolved IP address $ip for current hostname $hostname is pointing to a loopback device or interface");
+            progress(
+"\n\tError: Resolved IP address $ip for current hostname $hostname is pointing to a loopback device or interface"
+            );
             return 1;
         }
 
-        # check if IP address belongs to a local network interface on the current host by
-        # looking for "scope host" in interface detail
+# check if IP address belongs to a local network interface on the current host by
+# looking for "scope host" in interface detail
         my $ipo = `ip addr show $ip 2>&1`;
         if ( $? == 0 && $ipo =~ /scope host/ ) {
-            progress("\n\tError: Resolved IP address $ip for current hostname $hostname is pointing to a loopback device or interface");
+            progress(
+"\n\tError: Resolved IP address $ip for current hostname $hostname is pointing to a loopback device or interface"
+            );
             return 1;
         }
     }
@@ -2809,10 +3062,14 @@ sub lookupHostName {
 sub setHostName {
     my $old = $config{HOSTNAME};
     while (1) {
-        $config{HOSTNAME} = askNonBlank( "Please enter the logical hostname for this host", $config{HOSTNAME} );
+        $config{HOSTNAME} =
+          askNonBlank( "Please enter the logical hostname for this host",
+            $config{HOSTNAME} );
         if ( lookupHostName( $config{HOSTNAME}, 'A' ) ) {
             progress("\n\nDNS ERROR - resolving $config{HOSTNAME}\n");
-            progress("It is recommended that the hostname be resolvable via DNS and the resolved IP address not point to a loopback device\n");
+            progress(
+"It is recommended that the hostname be resolvable via DNS and the resolved IP address not point to a loopback device\n"
+            );
             if ( askYN( "Re-Enter hostname", "Yes" ) eq "no" ) {
                 last;
             }
@@ -2859,24 +3116,38 @@ sub setHostName {
 }
 
 sub setSmtpHost {
-    $config{SMTPHOST} = askNonBlank( "Please enter the SMTP server hostname:", $config{SMTPHOST} );
+    $config{SMTPHOST} = askNonBlank( "Please enter the SMTP server hostname:",
+        $config{SMTPHOST} );
 }
 
 sub setLdapHost {
-    changeLdapHost( askNonBlank( "Please enter the ldap server hostname:", $config{LDAPHOST} ) );
+    changeLdapHost(
+        askNonBlank(
+            "Please enter the ldap server hostname:",
+            $config{LDAPHOST}
+        )
+    );
 }
 
 sub setLdapPort {
-    changeLdapPort( askNum( "Please enter the ldap server port:", $config{LDAPPORT} ) );
+    changeLdapPort(
+        askNum( "Please enter the ldap server port:", $config{LDAPPORT} ) );
 }
 
 sub setLdapServerID {
-    changeLdapServerID( askPositiveInt( "Please enter the ldap Server ID:", $config{LDAPSERVERID} ) );
+    changeLdapServerID(
+        askPositiveInt(
+            "Please enter the ldap Server ID:",
+            $config{LDAPSERVERID}
+        )
+    );
 }
 
 sub setLdapReplicationType {
     while (1) {
-        my $m = askNonBlank( "Please enter the LDAP replication type (replica, mmr)", $config{LDAPREPLICATIONTYPE} );
+        my $m =
+          askNonBlank( "Please enter the LDAP replication type (replica, mmr)",
+            $config{LDAPREPLICATIONTYPE} );
         if ( $m eq "replica" || $m eq "mmr" ) {
             $config{LDAPREPLICATIONTYPE} = $m;
             return;
@@ -2886,7 +3157,8 @@ sub setLdapReplicationType {
 }
 
 sub setImapProxyPort {
-    $config{IMAPPROXYPORT} = askNum( "Please enter the IMAP Proxy server port:", $config{IMAPPROXYPORT} );
+    $config{IMAPPROXYPORT} = askNum( "Please enter the IMAP Proxy server port:",
+        $config{IMAPPROXYPORT} );
 
     if ( $config{MAILPROXY} eq "TRUE" || $config{zimbraMailProxy} eq "TRUE" ) {
         if ( $config{IMAPPROXYPORT} == $config{IMAPPORT} ) {
@@ -2896,7 +3168,9 @@ sub setImapProxyPort {
 }
 
 sub setImapSSLProxyPort {
-    $config{IMAPSSLPROXYPORT} = askNum( "Please enter the IMAP SSL Proxy server port:", $config{IMAPSSLPROXYPORT} );
+    $config{IMAPSSLPROXYPORT} =
+      askNum( "Please enter the IMAP SSL Proxy server port:",
+        $config{IMAPSSLPROXYPORT} );
 
     if ( $config{MAILPROXY} eq "TRUE" || $config{zimbraMailProxy} eq "TRUE" ) {
         if ( $config{IMAPSSLPROXYPORT} == $config{IMAPSSLPORT} ) {
@@ -2906,7 +3180,8 @@ sub setImapSSLProxyPort {
 }
 
 sub setPopProxyPort {
-    $config{POPPROXYPORT} = askNum( "Please enter the POP Proxy server port:", $config{POPPROXYPORT} );
+    $config{POPPROXYPORT} = askNum( "Please enter the POP Proxy server port:",
+        $config{POPPROXYPORT} );
 
     if ( $config{MAILPROXY} eq "TRUE" || $config{zimbraMailProxy} eq "TRUE" ) {
         if ( $config{POPPROXYPORT} == $config{POPPORT} ) {
@@ -2916,7 +3191,9 @@ sub setPopProxyPort {
 }
 
 sub setPopSSLProxyPort {
-    $config{POPSSLPROXYPORT} = askNum( "Please enter the POP SSL Proxyserver port:", $config{POPSSLPROXYPORT} );
+    $config{POPSSLPROXYPORT} =
+      askNum( "Please enter the POP SSL Proxyserver port:",
+        $config{POPSSLPROXYPORT} );
 
     if ( $config{MAILPROXY} eq "TRUE" || $config{zimbraMailProxy} eq "TRUE" ) {
         if ( $config{POPSSLPROXYPORT} == $config{POPSSLPORT} ) {
@@ -2928,13 +3205,18 @@ sub setPopSSLProxyPort {
 sub setPublicServiceHostname {
     my $old = $config{PUBLICSERVICEHOSTNAME};
     while (1) {
-        $config{PUBLICSERVICEHOSTNAME} = askNonBlank( "Please enter the Public Service hostname (FQDN):", $config{PUBLICSERVICEHOSTNAME} );
+        $config{PUBLICSERVICEHOSTNAME} =
+          askNonBlank( "Please enter the Public Service hostname (FQDN):",
+            $config{PUBLICSERVICEHOSTNAME} );
         if ( $config{PUBLICSERVICEHOSTNAME} ne $old ) {
             $publicServiceHostnameAlreadySet = 0;
         }
         if ( lookupHostName( $config{PUBLICSERVICEHOSTNAME}, 'A' ) ) {
-            progress("\n\nDNS ERROR - resolving $config{PUBLICSERVICEHOSTNAME}\n");
-            progress("It is suggested that the Public Service Hostname be resolvable via DNS.\n");
+            progress(
+                "\n\nDNS ERROR - resolving $config{PUBLICSERVICEHOSTNAME}\n");
+            progress(
+"It is suggested that the Public Service Hostname be resolvable via DNS.\n"
+            );
             if ( askYN( "Re-Enter Public Service Hostname", "Yes" ) eq "no" ) {
                 last;
             }
@@ -2947,7 +3229,8 @@ sub setPublicServiceHostname {
 }
 
 sub setHttpProxyPort {
-    $config{HTTPPROXYPORT} = askNum( "Please enter the HTTP Proxyserver port:", $config{HTTPPROXYPORT} );
+    $config{HTTPPROXYPORT} = askNum( "Please enter the HTTP Proxyserver port:",
+        $config{HTTPPROXYPORT} );
 
     if ( $config{HTTPPROXY} eq "TRUE" || $config{zimbraMailProxy} eq "TRUE" ) {
         if ( $config{HTTPPROXYPORT} == $config{HTTPPORT} ) {
@@ -2957,7 +3240,9 @@ sub setHttpProxyPort {
 }
 
 sub setHttpsProxyPort {
-    $config{HTTPSPROXYPORT} = askNum( "Please enter the HTTPS Proxyserver port:", $config{HTTPSPROXYPORT} );
+    $config{HTTPSPROXYPORT} =
+      askNum( "Please enter the HTTPS Proxyserver port:",
+        $config{HTTPSPROXYPORT} );
 
     if ( $config{HTTPPROXY} eq "TRUE" || $config{zimbraMailProxy} eq "TRUE" ) {
         if ( $config{HTTPSPROXYPORT} == $config{HTTPSPORT} ) {
@@ -2981,7 +3266,7 @@ sub setTimeZone {
         $TZID{$_} = $ctr++ foreach sort $tz->dump;
         my %RTZID = reverse %TZID;
 
-        # get a reference to the default value or attempt to lookup the system locale.
+  # get a reference to the default value or attempt to lookup the system locale.
         detail("Previous TimeZoneID $config{zimbraPrefTimeZoneId}\n");
         my $ltzref = $tz->gettzbyid("$config{zimbraPrefTimeZoneId}");
         unless ( defined $ltzref ) {
@@ -2998,7 +3283,8 @@ sub setTimeZone {
             foreach ( sort { $TZID{$a} <=> $TZID{$b} } keys %TZID ) {
                 print "$TZID{$_} $_\n";
             }
-            my $ans = askNum( "Enter the number for the local timezone:", $default );
+            my $ans =
+              askNum( "Enter the number for the local timezone:", $default );
             $new = $RTZID{$ans};
         }
         $config{zimbraPrefTimeZoneId} = $new;
@@ -3007,7 +3293,8 @@ sub setTimeZone {
 
 sub setIPMode {
     while (1) {
-        my $new = askPassword( "IP Mode (ipv4, both, ipv6):", $config{zimbraIPMode} );
+        my $new =
+          askPassword( "IP Mode (ipv4, both, ipv6):", $config{zimbraIPMode} );
         if ( $new eq "ipv4" || $new eq "both" || $new eq "ipv6" ) {
             if ( $config{zimbraIPMode} ne $new ) {
                 $config{zimbraIPMode} = $new;
@@ -3022,7 +3309,8 @@ sub setIPMode {
 
 sub setSSLDefaultDigest {
     while (1) {
-        my $new         = askPassword( "Default OpenSSL digest:", $config{ssl_default_digest} );
+        my $new =
+          askPassword( "Default OpenSSL digest:", $config{ssl_default_digest} );
         my $ssl_digests = join( ' ', @ssl_digests );
         if ( $ssl_digests =~ /\b$new\b/ ) {
             if ( $config{ssl_default_digest} ne $new ) {
@@ -3054,25 +3342,29 @@ sub setEnabledDependencies {
         if ( isEnabled("carbonio-mta") ) {
             $config{SMTPHOST} = $config{HOSTNAME};
         }
-        if ( $config{zimbraMailProxy} eq "TRUE" || $config{zimbraWebProxy} eq "TRUE" ) {
+        if (   $config{zimbraMailProxy} eq "TRUE"
+            || $config{zimbraWebProxy} eq "TRUE" )
+        {
             setUseProxy();
         }
     }
 
     if ( isEnabled("carbonio-mta") ) {
         if ($newinstall) {
-            $config{RUNAV}        = ( isServiceEnabled("antivirus") ? "yes" : "no" );
-            $config{RUNSA}        = "yes";
-            $config{RUNDKIM}      = "yes";
+            $config{RUNAV}   = ( isServiceEnabled("antivirus") ? "yes" : "no" );
+            $config{RUNSA}   = "yes";
+            $config{RUNDKIM} = "yes";
             $config{RUNCBPOLICYD} = "no";
         }
         else {
             $config{RUNSA} = ( isServiceEnabled("antispam")  ? "yes" : "no" );
             $config{RUNAV} = ( isServiceEnabled("antivirus") ? "yes" : "no" );
             if ( $config{RUNDKIM} ne "yes" ) {
-                $config{RUNDKIM} = ( isServiceEnabled("opendkim") ? "yes" : "no" );
+                $config{RUNDKIM} =
+                  ( isServiceEnabled("opendkim") ? "yes" : "no" );
             }
-            $config{RUNCBPOLICYD} = ( isServiceEnabled("cbpolicyd") ? "yes" : "no" );
+            $config{RUNCBPOLICYD} =
+              ( isServiceEnabled("cbpolicyd") ? "yes" : "no" );
         }
     }
 
@@ -3097,7 +3389,9 @@ sub toggleEnabled {
 }
 
 sub verifyQuit {
-    if ( askYN( "Quit without applying changes?", "No" ) eq "yes" ) { return 1; }
+    if ( askYN( "Quit without applying changes?", "No" ) eq "yes" ) {
+        return 1;
+    }
     return 0;
 }
 
@@ -3187,7 +3481,8 @@ sub createCommonMenu {
         $config{LDAPADMINPASSSET} = "UNSET";
     }
     else {
-        $config{LDAPADMINPASSSET} = "set" unless ( $config{LDAPADMINPASSSET} eq "Not Verified" );
+        $config{LDAPADMINPASSSET} = "set"
+          unless ( $config{LDAPADMINPASSSET} eq "Not Verified" );
     }
     $$lm{menuitems}{$i} = {
         "prompt"   => "Ldap Admin password:",
@@ -3296,7 +3591,8 @@ sub createLdapMenu {
             $config{LDAPROOTPASSSET} = "set";
         }
         else {
-            $config{LDAPROOTPASSSET} = "UNSET" unless ( $config{LDAPROOTPASSSET} eq "Not Verified" );
+            $config{LDAPROOTPASSSET} = "UNSET"
+              unless ( $config{LDAPROOTPASSSET} eq "Not Verified" );
         }
         $$lm{menuitems}{$i} = {
             "prompt"   => "Ldap root password:",
@@ -3308,7 +3604,8 @@ sub createLdapMenu {
             $config{LDAPREPPASSSET} = "UNSET";
         }
         else {
-            $config{LDAPREPPASSSET} = "set" unless ( $config{LDAPREPPASSSET} eq "Not Verified" );
+            $config{LDAPREPPASSSET} = "set"
+              unless ( $config{LDAPREPPASSSET} eq "Not Verified" );
         }
         $$lm{menuitems}{$i} = {
             "prompt"   => "Ldap replication password:",
@@ -3316,12 +3613,16 @@ sub createLdapMenu {
             "callback" => \&setLdapRepPass
         };
         $i++;
-        if ( $config{HOSTNAME} eq $config{LDAPHOST} || $config{LDAPREPLICATIONTYPE} ne "replica" || isEnabled("carbonio-mta") ) {
+        if (   $config{HOSTNAME} eq $config{LDAPHOST}
+            || $config{LDAPREPLICATIONTYPE} ne "replica"
+            || isEnabled("carbonio-mta") )
+        {
             if ( $config{LDAPPOSTPASS} eq "" ) {
                 $config{LDAPPOSTPASSSET} = "UNSET";
             }
             else {
-                $config{LDAPPOSTPASSSET} = "set" unless ( $config{LDAPPOSTPASSSET} eq "Not Verified" );
+                $config{LDAPPOSTPASSSET} = "set"
+                  unless ( $config{LDAPPOSTPASSSET} eq "Not Verified" );
             }
             $$lm{menuitems}{$i} = {
                 "prompt"   => "Ldap postfix password:",
@@ -3333,7 +3634,8 @@ sub createLdapMenu {
                 $config{LDAPAMAVISPASSSET} = "UNSET";
             }
             else {
-                $config{LDAPAMAVISPASSSET} = "set" unless ( $config{LDAPAMAVISPASSSET} eq "Not Verified" );
+                $config{LDAPAMAVISPASSSET} = "set"
+                  unless ( $config{LDAPAMAVISPASSSET} eq "Not Verified" );
             }
             $$lm{menuitems}{$i} = {
                 "prompt"   => "Ldap amavis password:",
@@ -3342,12 +3644,16 @@ sub createLdapMenu {
             };
             $i++;
         }
-        if ( $config{HOSTNAME} eq $config{LDAPHOST} || $config{LDAPREPLICATIONTYPE} ne "replica" || isEnabled("carbonio-proxy") ) {
+        if (   $config{HOSTNAME} eq $config{LDAPHOST}
+            || $config{LDAPREPLICATIONTYPE} ne "replica"
+            || isEnabled("carbonio-proxy") )
+        {
             if ( $config{ldap_nginx_password} eq "" ) {
                 $config{LDAPNGINXPASSSET} = "UNSET";
             }
             else {
-                $config{LDAPNGINXPASSSET} = "set" unless ( $config{LDAPNGINXPASSSET} eq "Not Verified" );
+                $config{LDAPNGINXPASSSET} = "set"
+                  unless ( $config{LDAPNGINXPASSSET} eq "Not Verified" );
             }
             $$lm{menuitems}{$i} = {
                 "prompt"   => "Ldap nginx password:",
@@ -3408,7 +3714,8 @@ sub createMtaMenu {
             $config{LDAPPOSTPASSSET} = "UNSET";
         }
         else {
-            $config{LDAPPOSTPASSSET} = "set" unless ( $config{LDAPPOSTPASSSET} eq "Not Verified" );
+            $config{LDAPPOSTPASSSET} = "set"
+              unless ( $config{LDAPPOSTPASSSET} eq "Not Verified" );
         }
         $$lm{menuitems}{$i} = {
             "prompt"   => "Bind password for postfix ldap user:",
@@ -3420,7 +3727,8 @@ sub createMtaMenu {
             $config{LDAPAMAVISPASSSET} = "UNSET";
         }
         else {
-            $config{LDAPAMAVISPASSSET} = "set" unless ( $config{LDAPAMAVISPASSSET} eq "Not Verified" );
+            $config{LDAPAMAVISPASSSET} = "set"
+              unless ( $config{LDAPAMAVISPASSSET} eq "Not Verified" );
         }
         $$lm{menuitems}{$i} = {
             "prompt"   => "Bind password for amavis ldap user:",
@@ -3494,7 +3802,8 @@ sub createProxyMenu {
                 $config{LDAPNGINXPASSSET} = "UNSET";
             }
             else {
-                $config{LDAPNGINXPASSSET} = "set" unless ( $config{LDAPNGINXPASSSET} eq "Not Verified" );
+                $config{LDAPNGINXPASSSET} = "set"
+                  unless ( $config{LDAPNGINXPASSSET} eq "Not Verified" );
             }
             $$lm{menuitems}{$i} = {
                 "prompt"   => "Bind password for nginx ldap user:",
@@ -3552,7 +3861,8 @@ sub createStoreMenu {
             "arg"      => "DOCREATEADMIN",
         };
         $i++;
-        my $ldap_virusquarantine = getLdapConfigValue("zimbraAmavisQuarantineAccount")
+        my $ldap_virusquarantine =
+          getLdapConfigValue("zimbraAmavisQuarantineAccount")
           if ( ldapIsAvailable() );
 
         if ( $ldap_virusquarantine eq "" ) {
@@ -3591,7 +3901,8 @@ sub createStoreMenu {
                 $config{TRAINSASPAM} = $ldap_trainsaspam;
             }
 
-            my $ldap_trainsaham = getLdapConfigValue("zimbraSpamIsNotSpamAccount")
+            my $ldap_trainsaham =
+              getLdapConfigValue("zimbraSpamIsNotSpamAccount")
               if ( ldapIsAvailable() );
 
             if ( $ldap_trainsaham eq "" ) {
@@ -3613,7 +3924,8 @@ sub createStoreMenu {
             "callback" => \&setSmtpHost,
         };
         $i++;
-        if ( !isEnabled("carbonio-proxy") && $config{zimbraWebProxy} eq "TRUE" ) {
+        if ( !isEnabled("carbonio-proxy") && $config{zimbraWebProxy} eq "TRUE" )
+        {
             $$lm{menuitems}{$i} = {
                 "prompt"   => "HTTP proxy port:",
                 "var"      => \$config{HTTPPROXYPORT},
@@ -3633,7 +3945,9 @@ sub createStoreMenu {
             "callback" => \&setStoreMode,
         };
         $i++;
-        if ( !isEnabled("carbonio-proxy") && $config{zimbraMailProxy} eq "TRUE" ) {
+        if ( !isEnabled("carbonio-proxy")
+            && $config{zimbraMailProxy} eq "TRUE" )
+        {
             $$lm{menuitems}{$i} = {
                 "prompt"   => "IMAP proxy port:",
                 "var"      => \$config{IMAPPROXYPORT},
@@ -3648,7 +3962,9 @@ sub createStoreMenu {
             $i++;
         }
 
-        if ( !isEnabled("carbonio-proxy") && $config{zimbraMailProxy} eq "TRUE" ) {
+        if ( !isEnabled("carbonio-proxy")
+            && $config{zimbraMailProxy} eq "TRUE" )
+        {
             $$lm{menuitems}{$i} = {
                 "prompt"   => "POP proxy port:",
                 "var"      => \$config{POPPROXYPORT},
@@ -3677,7 +3993,11 @@ sub displaySubMenuItems {
 
     #  print "$indent$$items{title}\n";
     foreach my $i ( sort menuSort keys %{ $$items{menuitems} } ) {
-        if ( defined( $$items{menuitems}{$i}{var} ) && $$items{menuitems}{$i}{var} == $parentmenuvar ) { next; }
+        if ( defined( $$items{menuitems}{$i}{var} )
+            && $$items{menuitems}{$i}{var} == $parentmenuvar )
+        {
+            next;
+        }
         my $len = 44 - ( length($indent) );
         my $v;
         my $ind = $indent;
@@ -3692,7 +4012,8 @@ sub displaySubMenuItems {
                 $ind =~ s/ /*/g;
             }
         }
-        printf( "%s +%-${len}s %-30s\n", $ind, $$items{menuitems}{$i}{prompt}, $v );
+        printf( "%s +%-${len}s %-30s\n",
+            $ind, $$items{menuitems}{$i}{prompt}, $v );
         if ( defined( $$items{menuitems}{$i}{submenu} ) ) {
             displaySubMenuItems( $$items{menuitems}{$i}{submenu}, "$indent  " );
         }
@@ -3730,23 +4051,32 @@ sub displayMenu {
                 || defined( $$items{menuitems}{$i}{callback} ) )
             {
                 if ( defined( $$items{menuitems}{$i}{submenu} ) ) {
-                    $subMenuCheck = checkMenuConfig( $$items{menuitems}{$i}{submenu} );
+                    $subMenuCheck =
+                      checkMenuConfig( $$items{menuitems}{$i}{submenu} );
                 }
-                printf( "${ind}%2s) %-40s %-30s\n", $i, $$items{menuitems}{$i}{prompt}, $v );
+                printf( "${ind}%2s) %-40s %-30s\n",
+                    $i, $$items{menuitems}{$i}{prompt}, $v );
             }
             else {
                 # Disabled items
-                printf( "${ind}    %-40s %-30s\n", $$items{menuitems}{$i}{prompt}, $v );
+                printf( "${ind}    %-40s %-30s\n",
+                    $$items{menuitems}{$i}{prompt}, $v );
             }
             if ( $config{EXPANDMENU} eq "yes" || !$subMenuCheck ) {
                 if ( defined( $$items{menuitems}{$i}{submenu} ) ) {
-                    displaySubMenuItems( $$items{menuitems}{$i}{submenu}, $$items{menuitems}{$i}{var}, "       " );
+                    displaySubMenuItems(
+                        $$items{menuitems}{$i}{submenu},
+                        $$items{menuitems}{$i}{var},
+                        "       "
+                    );
                     print "\n";
                 }
             }
         }
         if ( defined( $$items{lastitem} ) ) {
-            printf( "  %2s) %-40s\n", $$items{lastitem}{selector}, $$items{lastitem}{prompt} );
+            printf( "  %2s) %-40s\n",
+                $$items{lastitem}{selector},
+                $$items{lastitem}{prompt} );
         }
         my $menuprompt = "\n";
         if ( defined( $$items{promptitem} ) ) {
@@ -3783,7 +4113,9 @@ sub displayMenu {
             ask( "Press any key to continue", "" );
             print "\n\n";
         }
-        elsif ( defined $$items{promptitem} && $r eq $$items{promptitem}{selector} ) {
+        elsif ( defined $$items{promptitem}
+            && $r eq $$items{promptitem}{selector} )
+        {
             if ( defined $$items{promptitem}{callback} ) {
                 &{ $$items{promptitem}{callback} }( $$items{promptitem}{arg} );
             }
@@ -3801,7 +4133,8 @@ sub displayMenu {
         elsif ( defined $$items{menuitems}{$r} ) {
             print "\n";
             if ( defined $$items{menuitems}{$r}{callback} ) {
-                &{ $$items{menuitems}{$r}{callback} }( $$items{menuitems}{$r}{arg} );
+                &{ $$items{menuitems}{$r}{callback} }
+                  ( $$items{menuitems}{$r}{arg} );
             }
             elsif ( defined( $$items{menuitems}{$r}{submenu} ) ) {
                 displayMenu( $$items{menuitems}{$r}{submenu} );
@@ -3822,7 +4155,9 @@ sub createMainMenu {
         "selector" => "?",
         "prompt"   => "Help",
         "action"   => "help",
-        "helptext" => "Main Menu help\n\n" . "Items marked with ** MUST BE CONFIGURED prior to applying configuration\n\n" . "",
+        "helptext" => "Main Menu help\n\n"
+          . "Items marked with ** MUST BE CONFIGURED prior to applying configuration\n\n"
+          . "",
     };
     $mm{lastitem} = {
         "selector" => "q",
@@ -3868,12 +4203,6 @@ sub createMainMenu {
     }
     $i = mainMenuExtensions( \%mm, $i );
 
-    #  $mm{menuitems}{r} = {
-    #    "prompt" => "Start servers after configuration",
-    #    "callback" => \&toggleYN,
-    #    "var" => \$config{STARTSERVERS},
-    #    "arg" => "STARTSERVERS"
-    #    };
     if ( $config{EXPANDMENU} eq "yes" ) {
         $mm{menuitems}{c} = {
             "prompt"   => "Collapse menu",
@@ -3897,7 +4226,8 @@ sub createMainMenu {
     if ( checkMenuConfig( \%mm ) ) {
         $mm{promptitem} = {
             "selector" => "y",
-            "prompt"   => "*** CONFIGURATION COMPLETE - press 'y' to apply configuration\nSelect from menu, or press 'y' to apply config",
+            "prompt"   =>
+"*** CONFIGURATION COMPLETE - press 'y' to apply configuration\nSelect from menu, or press 'y' to apply config",
             "callback" => \&applyConfig,
         };
     }
@@ -3910,9 +4240,18 @@ sub createMainMenu {
         if ( !ldapIsAvailable() && $ldapConfigured ) {
             $mm{promptitem}{prompt} .= "or correct ldap configuration ";
         }
-        if ( $config{LDAPHOST} ne $config{HOSTNAME} && !ldapIsAvailable() && isInstalled("carbonio-directory-server") ) {
-            $mm{promptitem}{prompt} .= "and enable ldap replication on ldap master "
-              if ( checkLdapReplicationEnabled( $config{zimbra_ldap_userdn}, $config{LDAPADMINPASS} ) );
+        if (   $config{LDAPHOST} ne $config{HOSTNAME}
+            && !ldapIsAvailable()
+            && isInstalled("carbonio-directory-server") )
+        {
+            $mm{promptitem}{prompt} .=
+              "and enable ldap replication on ldap master "
+              if (
+                checkLdapReplicationEnabled(
+                    $config{zimbra_ldap_userdn},
+                    $config{LDAPADMINPASS}
+                )
+              );
         }
     }
     return \%mm;
@@ -3928,7 +4267,13 @@ sub checkMenuConfig {
         my $ind = "  ";
         if ( defined $$items{menuitems}{$i}{var} ) {
             $v = ${ $$items{menuitems}{$i}{var} };
-            if ( $v eq "" || $v eq "none" || $v eq "UNSET" || $v eq "Not Verified" ) { return 0; }
+            if (   $v eq ""
+                || $v eq "none"
+                || $v eq "UNSET"
+                || $v eq "Not Verified" )
+            {
+                return 0;
+            }
             foreach my $var (qw(LDAPHOST LDAPPORT)) {
                 if ( $$items{menuitems}{$i}{var} == \$config{$var} ) {
                     $needldapverified = 1;
@@ -3942,10 +4287,13 @@ sub checkMenuConfig {
         }
     }
     if ($needldapverified) {
-        return 1 if ( $config{LDAPHOST} eq $config{HOSTNAME} && !$ldapConfigured );
+        return 1
+          if ( $config{LDAPHOST} eq $config{HOSTNAME} && !$ldapConfigured );
         return 0 if ( !ldapIsAvailable() );
     }
-    if ( defined( $installedPackages{"carbonio-appserver"} ) && $config{SERVICEWEBAPP} eq "no" ) {
+    if ( defined( $installedPackages{"carbonio-appserver"} )
+        && $config{SERVICEWEBAPP} eq "no" )
+    {
         $config{SERVICEWEBAPP} = "UNSET";
         return 0;
     }
@@ -3960,13 +4308,19 @@ sub ldapIsAvailable {
     }
 
     # check zimbra ldap admin user binding to the master
-    if ( $config{LDAPADMINPASS} eq "" || $config{LDAPPORT} eq "" || $config{LDAPHOST} eq "" ) {
+    if (   $config{LDAPADMINPASS} eq ""
+        || $config{LDAPPORT} eq ""
+        || $config{LDAPHOST} eq "" )
+    {
         detail("ldap configuration not complete\n");
         return 0;
     }
 
-    if ( checkLdapBind( $config{zimbra_ldap_userdn}, $config{LDAPADMINPASS} ) ) {
-        detail("Couldn't bind to $config{LDAPHOST} as $config{zimbra_ldap_userdn}\n");
+    if ( checkLdapBind( $config{zimbra_ldap_userdn}, $config{LDAPADMINPASS} ) )
+    {
+        detail(
+"Couldn't bind to $config{LDAPHOST} as $config{zimbra_ldap_userdn}\n"
+        );
         $config{LDAPADMINPASSSET} = "Not Verified";
         $failedcheck++;
     }
@@ -3983,7 +4337,8 @@ sub ldapIsAvailable {
             detail("nginx configuration not complete\n");
             $failedcheck++;
         }
-        my $binduser = "uid=zmnginx,cn=appaccts,$config{ldap_dit_base_dn_config}";
+        my $binduser =
+          "uid=zmnginx,cn=appaccts,$config{ldap_dit_base_dn_config}";
         if ( checkLdapBind( $binduser, $config{ldap_nginx_password} ) ) {
             detail("Couldn't bind to $config{LDAPHOST} as $binduser\n");
             $config{LDAPNGINXPASSSET} = "Not Verified";
@@ -4001,22 +4356,26 @@ sub ldapIsAvailable {
             detail("mta configuration not complete\n");
             $failedcheck++;
         }
-        my $binduser = "uid=zmpostfix,cn=appaccts,$config{ldap_dit_base_dn_config}";
+        my $binduser =
+          "uid=zmpostfix,cn=appaccts,$config{ldap_dit_base_dn_config}";
         if ( checkLdapBind( $binduser, $config{LDAPPOSTPASS} ) ) {
             detail("Couldn't bind to $config{LDAPHOST} as $binduser\n");
             $config{LDAPPOSTPASSSET} = "Not Verified";
-            detail("Setting LDAPPOSTPASSSET to $config{LDAPPOSTPASSSET}") if $debug;
+            detail("Setting LDAPPOSTPASSSET to $config{LDAPPOSTPASSSET}")
+              if $debug;
             $failedcheck++;
         }
         else {
             detail("Verified $binduser on $config{LDAPHOST}.\n");
             $config{LDAPPOSTPASSSET} = "set";
         }
-        my $binduser = "uid=zmamavis,cn=appaccts,$config{ldap_dit_base_dn_config}";
+        my $binduser =
+          "uid=zmamavis,cn=appaccts,$config{ldap_dit_base_dn_config}";
         if ( checkLdapBind( $binduser, $config{LDAPAMAVISPASS} ) ) {
             detail("Couldn't bind to $config{LDAPHOST} as $binduser\n");
             $config{LDAPAMAVISPASSSET} = "Not Verified";
-            detail("Setting LDAPAMAVISPASSSET to $config{LDAPAMAVISPASSSET}") if $debug;
+            detail("Setting LDAPAMAVISPASSSET to $config{LDAPAMAVISPASSSET}")
+              if $debug;
             $failedcheck++;
         }
         else {
@@ -4026,24 +4385,38 @@ sub ldapIsAvailable {
     }
 
     # check replication user binding to master
-    if ( isInstalled("carbonio-directory-server") && $config{LDAPHOST} ne $config{HOSTNAME} ) {
+    if ( isInstalled("carbonio-directory-server")
+        && $config{LDAPHOST} ne $config{HOSTNAME} )
+    {
         if ( $config{LDAPREPPASS} eq "" ) {
-            detail("ldap configuration not complete. Ldap Replication password is not set.\n");
+            detail(
+"ldap configuration not complete. Ldap Replication password is not set.\n"
+            );
             $failedcheck++;
         }
-        my $binduser = "uid=zmreplica,cn=admins,$config{ldap_dit_base_dn_config}";
+        my $binduser =
+          "uid=zmreplica,cn=admins,$config{ldap_dit_base_dn_config}";
         if ( checkLdapBind( $binduser, $config{LDAPREPPASS} ) ) {
             detail("Couldn't bind to $config{LDAPHOST} as $binduser\n");
             $config{LDAPREPPASSSET} = "Not Verified";
-            detail("Setting LDAPREPPASSSET to $config{LDAPREPPASSSET}") if $debug;
+            detail("Setting LDAPREPPASSSET to $config{LDAPREPPASSSET}")
+              if $debug;
             $failedcheck++;
         }
         else {
             detail("Verified $binduser on $config{LDAPHOST}.\n");
             $config{LDAPREPPASSSET} = "set";
         }
-        if ( checkLdapReplicationEnabled( $config{zimbra_ldap_userdn}, $config{LDAPADMINPASS} ) ) {
-            detail("ldap configuration not complete. Unable to verify ldap replication is enabled on $config{LDAPHOST}\n");
+        if (
+            checkLdapReplicationEnabled(
+                $config{zimbra_ldap_userdn},
+                $config{LDAPADMINPASS}
+            )
+          )
+        {
+            detail(
+"ldap configuration not complete. Unable to verify ldap replication is enabled on $config{LDAPHOST}\n"
+            );
             $failedcheck++;
         }
         else {
@@ -4059,13 +4432,14 @@ sub checkLdapBind() {
     detail("Checking ldap on $config{LDAPHOST}:$config{LDAPPORT}");
     my $ldap;
     my $ldap_secure = ( ( $config{LDAPPORT} == "636" ) ? "s" : "" );
-    my $ldap_url    = "ldap${ldap_secure}://$config{LDAPHOST}:$config{LDAPPORT}";
+    my $ldap_url = "ldap${ldap_secure}://$config{LDAPHOST}:$config{LDAPPORT}";
     unless ( $ldap = Net::LDAP->new($ldap_url) ) {
         detail("failed: Unable to contact ldap at $ldap_url: $!");
         return 1;
     }
 
-    if ( $ldap_secure ne "s" && $config{zimbra_require_interprocess_security} ) {
+    if ( $ldap_secure ne "s" && $config{zimbra_require_interprocess_security} )
+    {
         $starttls = 1;
         my $result = $ldap->start_tls( verify => 'none' );
         if ( $result->code() ) {
@@ -4088,9 +4462,12 @@ sub checkLdapBind() {
         $ldap->unbind;
         detail("Verified ldap running at $ldap_url\n");
         if ($newinstall) {
-            setLocalConfig( "ldap_url",                             $ldap_url );
-            setLocalConfig( "ldap_starttls_supported",              $starttls );
-            setLocalConfig( "zimbra_require_interprocess_security", $config{zimbra_require_interprocess_security} );
+            setLocalConfig( "ldap_url",                $ldap_url );
+            setLocalConfig( "ldap_starttls_supported", $starttls );
+            setLocalConfig(
+                "zimbra_require_interprocess_security",
+                $config{zimbra_require_interprocess_security}
+            );
         }
         setLocalConfig( "ssl_allow_untrusted_certs", "true" ) if ($newinstall);
         return 0;
@@ -4100,10 +4477,12 @@ sub checkLdapBind() {
 
 sub checkLdapReplicationEnabled() {
     my ( $binduser, $bindpass ) = @_;
-    detail("Checking ldap replication is enabled on $config{LDAPHOST}:$config{LDAPPORT}");
+    detail(
+"Checking ldap replication is enabled on $config{LDAPHOST}:$config{LDAPPORT}"
+    );
     my $ldap;
     my $ldap_secure = ( ( $config{LDAPPORT} == "636" ) ? "s" : "" );
-    my $ldap_url    = "ldap${ldap_secure}://$config{LDAPHOST}:$config{LDAPPORT}";
+    my $ldap_url = "ldap${ldap_secure}://$config{LDAPHOST}:$config{LDAPPORT}";
     unless ( $ldap = Net::LDAP->new($ldap_url) ) {
         detail("failed: Unable to contact ldap at $ldap_url: $!");
         return 1;
@@ -4124,7 +4503,12 @@ sub checkLdapReplicationEnabled() {
         return 1;
     }
     else {
-        my $result = $ldap->search( base => "cn=accesslog", scope => "base", filter => "cn=accesslog", attrs => ['cn'] );
+        my $result = $ldap->search(
+            base   => "cn=accesslog",
+            scope  => "base",
+            filter => "cn=accesslog",
+            attrs  => ['cn']
+        );
         if ( $result->code() ) {
             detail("Unable to find accesslog database on master.\n");
             if ( $config{LDAPREPLICATIONTYPE} eq "replica" ) {
@@ -4144,7 +4528,8 @@ sub checkLdapReplicationEnabled() {
 
 sub runAsRoot {
     my $cmd = shift;
-    if ( $cmd =~ /ldappass/ || $cmd =~ /init/ || $cmd =~ /zmprov -r -m -l ca/ ) {
+    if ( $cmd =~ /ldappass/ || $cmd =~ /init/ || $cmd =~ /zmprov -r -m -l ca/ )
+    {
 
         # Suppress passwords in log file
         my $c = ( split ' ', $cmd )[0];
@@ -4160,7 +4545,8 @@ sub runAsRoot {
 
 sub runAsZextras {
     my $cmd = shift;
-    if ( $cmd =~ /ldappass/ || $cmd =~ /init/ || $cmd =~ /zmprov -r -m -l ca/ ) {
+    if ( $cmd =~ /ldappass/ || $cmd =~ /init/ || $cmd =~ /zmprov -r -m -l ca/ )
+    {
 
         # Suppress passwords in log file
         my $c = ( split ' ', $cmd )[0];
@@ -4176,7 +4562,8 @@ sub runAsZextras {
 
 sub runAsZextrasWithOutput {
     my $cmd = shift;
-    if ( $cmd =~ /ldappass/ || $cmd =~ /init/ || $cmd =~ /zmprov -r -m -l ca/ ) {
+    if ( $cmd =~ /ldappass/ || $cmd =~ /init/ || $cmd =~ /zmprov -r -m -l ca/ )
+    {
 
         # Suppress passwords in log file
         my $c = ( split ' ', $cmd )[0];
@@ -4200,7 +4587,8 @@ sub getLocalConfig {
       if ( exists $main::loaded{lc}{$key} && !$force );
 
     detail("Getting local config $key");
-    my $val = qx(/opt/zextras/bin/zmlocalconfig -x -s -m nokey ${key} 2> /dev/null);
+    my $val =
+      qx(/opt/zextras/bin/zmlocalconfig -x -s -m nokey ${key} 2> /dev/null);
     chomp $val;
     detail("DEBUG: LC Loaded $key=$val") if $debug;
     $main::loaded{lc}{$key} = $val;
@@ -4214,7 +4602,8 @@ sub getLocalConfigRaw {
       if ( exists $main::loaded{lc}{$key} && !$force );
 
     detail("Getting local config $key");
-    my $val = qx(/opt/zextras/bin/zmlocalconfig -s -m nokey ${key} 2> /dev/null);
+    my $val =
+      qx(/opt/zextras/bin/zmlocalconfig -s -m nokey ${key} 2> /dev/null);
     chomp $val;
     detail("DEBUG: LC Loaded $key=$val") if $debug;
     $main::loaded{lc}{$key} = $val;
@@ -4225,10 +4614,11 @@ sub deleteLocalConfig {
     my $key = shift;
 
     detail("Deleting local config $key");
-    my $rc = runAsZextras("/opt/zextras/bin/zmlocalconfig -u ${key} 2> /dev/null");
+    my $rc =
+      runAsZextras("/opt/zextras/bin/zmlocalconfig -u ${key} 2> /dev/null");
     if ( $rc == 0 ) {
         detail("DEBUG: deleted localconfig key $key") if $debug;
-        delete( $main::loaded{lc}{$key} )             if ( exists $main::loaded{lc}{$key} );
+        delete( $main::loaded{lc}{$key} ) if ( exists $main::loaded{lc}{$key} );
         return 1;
     }
     else {
@@ -4249,7 +4639,8 @@ sub setLocalConfig {
     $main::saved{lc}{$key}  = $val;
     $main::loaded{lc}{$key} = $val;
     $val =~ s/\$/\\\$/g;
-    runAsZextras("/opt/zextras/bin/zmlocalconfig -f -e ${key}=\'${val}\' 2> /dev/null");
+    runAsZextras(
+        "/opt/zextras/bin/zmlocalconfig -f -e ${key}=\'${val}\' 2> /dev/null");
 }
 
 sub updateKeyValue {
@@ -4262,7 +4653,8 @@ sub updateKeyValue {
     }
     elsif ( $key =~ /^-(.*)/ ) {
         if ( exists $main::loaded{$sec}{$sub}{$1} ) {
-            my %tmp = map { $_ => 1 } split( /\n/, $main::loaded{$sec}{$sub}{$1} );
+            my %tmp =
+              map { $_ => 1 } split( /\n/, $main::loaded{$sec}{$sub}{$1} );
             delete $tmp{$val};
             $main::loaded{$sec}{$sub}{$1} = join "\n", keys %tmp;
             $main::saved{$sec}{$sub}{$1}  = $main::loaded{$sec}{$sub}{$1};
@@ -4277,14 +4669,17 @@ sub updateKeyValue {
 sub ifKeyValueEquate {
     my ( $sec, $key, $val, $sub ) = @_;
     $key = $1 if ( $key =~ /^[+|-](.*)/ );
-    detail("Checking to see if $key=$val has changed for $sec $sub\n") if $debug;
-    if ( exists $main::saved{$sec}{$sub}{$key} && $main::saved{$sec}{$sub}{$key} eq $val ) {
+    detail("Checking to see if $key=$val has changed for $sec $sub\n")
+      if $debug;
+    if ( exists $main::saved{$sec}{$sub}{$key}
+        && $main::saved{$sec}{$sub}{$key} eq $val )
+    {
 
-        #detail("DEBUG: \"$main::saved{$sec}{$sub}{$key}\" eq \"$val\"\n") if $debug;
+   #detail("DEBUG: \"$main::saved{$sec}{$sub}{$key}\" eq \"$val\"\n") if $debug;
         return 1;
     }
     else {
-        #detail("DEBUG: \"$main::saved{$sec}{$sub}{$key}\" ne \"$val\"\n") if $debug;
+   #detail("DEBUG: \"$main::saved{$sec}{$sub}{$key}\" ne \"$val\"\n") if $debug;
         return 0;
     }
 }
@@ -4337,7 +4732,9 @@ sub setLdapServerConfig {
             detail("Skipping update of unchanged value for $key=$val.");
         }
         else {
-            detail("Updating cached config attribute for Server $server: $key=$val");
+            detail(
+                "Updating cached config attribute for Server $server: $key=$val"
+            );
             updateKeyValue( $sec, $key, $val, $server );
             $zmprov_arg_str .= " $key \'$val\'";
         }
@@ -4372,7 +4769,9 @@ sub setLdapDomainConfig {
             detail("Skipping update of unchanged value for $key=$val.");
         }
         else {
-            detail("Updating cached config attribute for Domain $domain: $key=$val");
+            detail(
+                "Updating cached config attribute for Domain $domain: $key=$val"
+            );
             updateKeyValue( $sec, $key, $val, $domain );
             $zmprov_arg_str .= " $key \'$val\'";
         }
@@ -4437,7 +4836,9 @@ sub setLdapAccountConfig {
             detail("Skipping update of unchanged value for $key=$val.");
         }
         else {
-            detail("Updating cached config attribute for Account $acct: $key=$val");
+            detail(
+                "Updating cached config attribute for Account $acct: $key=$val"
+            );
             updateKeyValue( $sec, $key, $val, $acct );
             $zmprov_arg_str .= " $key \'$val\'";
         }
@@ -4464,19 +4865,26 @@ sub configLCValues {
     }
 
     progress("Setting local config values...");
-    setLocalConfig( "zimbra_server_hostname",               lc( $config{HOSTNAME} ) );
-    setLocalConfig( "zimbra_require_interprocess_security", $config{zimbra_require_interprocess_security} );
+    setLocalConfig( "zimbra_server_hostname", lc( $config{HOSTNAME} ) );
+    setLocalConfig(
+        "zimbra_require_interprocess_security",
+        $config{zimbra_require_interprocess_security}
+    );
 
     if ($newinstall) {
         if ( $config{LDAPPORT} == 636 ) {
-            setLocalConfig( "ldap_master_url",         "ldaps://$config{LDAPHOST}:$config{LDAPPORT}" );
-            setLocalConfig( "ldap_url",                "ldaps://$config{LDAPHOST}:$config{LDAPPORT}" );
+            setLocalConfig( "ldap_master_url",
+                "ldaps://$config{LDAPHOST}:$config{LDAPPORT}" );
+            setLocalConfig( "ldap_url",
+                "ldaps://$config{LDAPHOST}:$config{LDAPPORT}" );
             setLocalConfig( "ldap_starttls_supported", 0 );
         }
         else {
-            setLocalConfig( "ldap_master_url", "ldap://$config{LDAPHOST}:$config{LDAPPORT}" );
+            setLocalConfig( "ldap_master_url",
+                "ldap://$config{LDAPHOST}:$config{LDAPPORT}" );
             if ( $config{ldap_url} eq "" ) {
-                setLocalConfig( "ldap_url", "ldap://$config{LDAPHOST}:$config{LDAPPORT}" );
+                setLocalConfig( "ldap_url",
+                    "ldap://$config{LDAPHOST}:$config{LDAPPORT}" );
                 if ( $config{zimbra_require_interprocess_security} ) {
                     setLocalConfig( "ldap_starttls_supported", 1 );
                 }
@@ -4486,7 +4894,9 @@ sub configLCValues {
             }
             else {
                 setLocalConfig( "ldap_url", "$config{ldap_url}" );
-                if ( $config{ldap_url} !~ /^ldaps/i && $config{zimbra_require_interprocess_security} ) {
+                if (   $config{ldap_url} !~ /^ldaps/i
+                    && $config{zimbra_require_interprocess_security} )
+                {
                     setLocalConfig( "ldap_starttls_supported", 1 );
                 }
                 else {
@@ -4526,16 +4936,21 @@ sub configLCValues {
     setLocalConfig( "ssl_allow_mismatched_certs", "true" ) if ($newinstall);
     setLocalConfig( "ssl_default_digest",         $config{ssl_default_digest} );
 
-    setLocalConfig( "mailboxd_java_heap_size",      $config{MAILBOXDMEMORY} );
-    setLocalConfig( "mailboxd_directory",           $config{mailboxd_directory} );
-    setLocalConfig( "mailboxd_keystore",            $config{mailboxd_keystore} );
-    setLocalConfig( "mailboxd_server",              $config{mailboxd_server} );
-    setLocalConfig( "mailboxd_truststore",          "$config{mailboxd_truststore}" );
-    setLocalConfig( "mailboxd_truststore_password", "$config{mailboxd_truststore_password}" );
-    setLocalConfig( "mailboxd_keystore_password",   "$config{mailboxd_keystore_password}" );
+    setLocalConfig( "mailboxd_java_heap_size", $config{MAILBOXDMEMORY} );
+    setLocalConfig( "mailboxd_directory",      $config{mailboxd_directory} );
+    setLocalConfig( "mailboxd_keystore",       $config{mailboxd_keystore} );
+    setLocalConfig( "mailboxd_server",         $config{mailboxd_server} );
+    setLocalConfig( "mailboxd_truststore",     "$config{mailboxd_truststore}" );
+    setLocalConfig(
+        "mailboxd_truststore_password",
+        "$config{mailboxd_truststore_password}"
+    );
+    setLocalConfig( "mailboxd_keystore_password",
+        "$config{mailboxd_keystore_password}" );
 
-    setLocalConfig( "zimbra_ldap_userdn",      "$config{zimbra_ldap_userdn}" );
-    setLocalConfig( "ldap_dit_base_dn_config", "$config{ldap_dit_base_dn_config}" )
+    setLocalConfig( "zimbra_ldap_userdn", "$config{zimbra_ldap_userdn}" );
+    setLocalConfig( "ldap_dit_base_dn_config",
+        "$config{ldap_dit_base_dn_config}" )
       if ( $config{ldap_dit_base_dn_config} ne "cn=zimbra" );
 
     configLog("configLCValues");
@@ -4546,7 +4961,9 @@ sub configLCValues {
 
 sub configCASetup {
 
-    if ( $configStatus{configCASetup} eq "CONFIGURED" && -d "/opt/zextras/ssl/carbonio/ca" ) {
+    if ( $configStatus{configCASetup} eq "CONFIGURED"
+        && -d "/opt/zextras/ssl/carbonio/ca" )
+    {
         configLog("configCASetup");
         return 0;
     }
@@ -4562,19 +4979,22 @@ sub configCASetup {
     progress("Setting up CA...");
     if ( !$newinstall ) {
         if ( -f "/opt/zextras/conf/ca/ca.pem" ) {
-            my $rc = runAsRoot("/opt/zextras/common/bin/openssl verify -purpose sslserver -CAfile /opt/zextras/conf/ca/ca.pem /opt/zextras/conf/ca/ca.pem | egrep \"^error 10\"");
+            my $rc = runAsRoot(
+"/opt/zextras/common/bin/openssl verify -purpose sslserver -CAfile /opt/zextras/conf/ca/ca.pem /opt/zextras/conf/ca/ca.pem | egrep \"^error 10\""
+            );
             $needNewCert = "-new" if ( $rc == 0 );
         }
     }
 
-    # regenerate the certificate authority if this is the ldap master and
-    # either the ca is expired from the test above or the ca directory doesn't exist.
+# regenerate the certificate authority if this is the ldap master and
+# either the ca is expired from the test above or the ca directory doesn't exist.
     my $needNewCA;
     if ( isLdapMaster() ) {
-        $needNewCA = "-new" if ( !-d "/opt/zextras/ssl/carbonio/ca" || $needNewCert eq "-new" );
+        $needNewCA = "-new"
+          if ( !-d "/opt/zextras/ssl/carbonio/ca" || $needNewCert eq "-new" );
     }
 
-    # we are going to download a new CA or otherwise create one so we need to regenerate the self signed cert.
+# we are going to download a new CA or otherwise create one so we need to regenerate the self signed cert.
     $needNewCert = "-new" if ( !-d "/opt/zextras/ssl/carbonio/ca" );
 
     my $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createca $needNewCA");
@@ -4604,60 +5024,81 @@ sub updatePasswordsInLocalConfig {
     if ( isEnabled("carbonio-directory-server") ) {
 
         # zmldappasswd starts ldap and re-applies the ldif
-        if ( $ldapRootPassChanged || $ldapAdminPassChanged || $ldapRepChanged || $ldapPostChanged || $ldapAmavisChanged || $ldapNginxChanged ) {
+        if (   $ldapRootPassChanged
+            || $ldapAdminPassChanged
+            || $ldapRepChanged
+            || $ldapPostChanged
+            || $ldapAmavisChanged
+            || $ldapNginxChanged )
+        {
 
             if ($ldapRootPassChanged) {
                 progress("Setting ldap root password...");
-                runAsZextras("/opt/zextras/bin/zmldappasswd -r $config{LDAPROOTPASS}");
+                runAsZextras(
+                    "/opt/zextras/bin/zmldappasswd -r $config{LDAPROOTPASS}");
                 progress("done.\n");
             }
             if ($ldapAdminPassChanged) {
                 progress("Setting ldap admin password...");
                 if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-                    runAsZextras("/opt/zextras/bin/zmldappasswd $config{LDAPADMINPASS}");
+                    runAsZextras(
+                        "/opt/zextras/bin/zmldappasswd $config{LDAPADMINPASS}");
                 }
                 else {
-                    setLocalConfig( "zimbra_ldap_password", "$config{LDAPADMINPASS}" );
+                    setLocalConfig( "zimbra_ldap_password",
+                        "$config{LDAPADMINPASS}" );
                 }
                 progress("done.\n");
             }
             if ( $ldapRepChanged == 1 ) {
                 progress("Setting replication password...");
                 if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -l $config{LDAPREPPASS}");
+                    runAsZextras(
+                        "/opt/zextras/bin/zmldappasswd -l $config{LDAPREPPASS}"
+                    );
                 }
                 else {
-                    setLocalConfig( "ldap_replication_password", "$config{LDAPREPPASS}" );
+                    setLocalConfig( "ldap_replication_password",
+                        "$config{LDAPREPPASS}" );
                 }
                 progress("done.\n");
             }
             if ( $ldapPostChanged == 1 ) {
                 progress("Setting Postfix password...");
                 if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -p $config{LDAPPOSTPASS}");
+                    runAsZextras(
+                        "/opt/zextras/bin/zmldappasswd -p $config{LDAPPOSTPASS}"
+                    );
                 }
                 else {
-                    setLocalConfig( "ldap_postfix_password", "$config{LDAPPOSTPASS}" );
+                    setLocalConfig( "ldap_postfix_password",
+                        "$config{LDAPPOSTPASS}" );
                 }
                 progress("done.\n");
             }
             if ( $ldapAmavisChanged == 1 ) {
                 progress("Setting amavis password...");
                 if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -a $config{LDAPAMAVISPASS}");
+                    runAsZextras(
+"/opt/zextras/bin/zmldappasswd -a $config{LDAPAMAVISPASS}"
+                    );
                 }
                 else {
-                    setLocalConfig( "ldap_amavis_password", "$config{LDAPAMAVISPASS}" );
+                    setLocalConfig( "ldap_amavis_password",
+                        "$config{LDAPAMAVISPASS}" );
                 }
                 progress("done.\n");
             }
             if ( $ldapNginxChanged == 1 ) {
                 progress("Setting nginx password...");
                 if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -n $config{ldap_nginx_password}");
+                    runAsZextras(
+"/opt/zextras/bin/zmldappasswd -n $config{ldap_nginx_password}"
+                    );
                 }
                 else {
-                    setLocalConfig( "ldap_nginx_password", "$config{ldap_nginx_password}" );
+                    setLocalConfig( "ldap_nginx_password",
+                        "$config{ldap_nginx_password}" );
                 }
                 progress("done.\n");
             }
@@ -4676,27 +5117,35 @@ sub updatePasswordsInLocalConfig {
         }
     }
     else {
-        # this sets the password for each component if they are enabled, use full in case of multiserver
-        # especially when we add components to existing configured node
-        if ( isEnabled("carbonio-mta") && ( $ldapPostChanged || $ldapAmavisChanged ) ) {
+# this sets the password for each component if they are enabled, use full in case of multiserver
+# especially when we add components to existing configured node
+        if ( isEnabled("carbonio-mta")
+            && ( $ldapPostChanged || $ldapAmavisChanged ) )
+        {
 
             if ( $ldapPostChanged == 1 ) {
                 progress("Setting postfix password...");
                 if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -p $config{LDAPPOSTPASS}");
+                    runAsZextras(
+                        "/opt/zextras/bin/zmldappasswd -p $config{LDAPPOSTPASS}"
+                    );
                 }
                 else {
-                    setLocalConfig( "ldap_postfix_password", "$config{LDAPPOSTPASS}" );
+                    setLocalConfig( "ldap_postfix_password",
+                        "$config{LDAPPOSTPASS}" );
                 }
                 progress("done.\n");
             }
             if ( $ldapAmavisChanged == 1 ) {
                 progress("Setting amavis password...");
                 if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -a $config{LDAPAMAVISPASS}");
+                    runAsZextras(
+"/opt/zextras/bin/zmldappasswd -a $config{LDAPAMAVISPASS}"
+                    );
                 }
                 else {
-                    setLocalConfig( "ldap_amavis_password", "$config{LDAPAMAVISPASS}" );
+                    setLocalConfig( "ldap_amavis_password",
+                        "$config{LDAPAMAVISPASS}" );
                 }
                 progress("done.\n");
             }
@@ -4706,10 +5155,13 @@ sub updatePasswordsInLocalConfig {
             if ( $ldapNginxChanged == 1 ) {
                 progress("Setting nginx password...");
                 if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -n $config{ldap_nginx_password}");
+                    runAsZextras(
+"/opt/zextras/bin/zmldappasswd -n $config{ldap_nginx_password}"
+                    );
                 }
                 else {
-                    setLocalConfig( "ldap_nginx_password", "$config{ldap_nginx_password}" );
+                    setLocalConfig( "ldap_nginx_password",
+                        "$config{ldap_nginx_password}" );
                 }
                 progress("done.\n");
             }
@@ -4728,7 +5180,12 @@ sub configSetupLdap {
         return 0;
     }
 
-    if ( !$ldapConfigured && isEnabled("carbonio-directory-server") && !-f "/opt/zextras/.enable_replica" && $newinstall && ( $config{LDAPHOST} eq $config{HOSTNAME} ) ) {
+    if (   !$ldapConfigured
+        && isEnabled("carbonio-directory-server")
+        && !-f "/opt/zextras/.enable_replica"
+        && $newinstall
+        && ( $config{LDAPHOST} eq $config{HOSTNAME} ) )
+    {
         progress("Initializing ldap...");
         ldapinit->preLdapStart( $config{LDAPROOTPASS}, $config{LDAPADMINPASS} );
         if ($systemdStatus) {
@@ -4747,22 +5204,30 @@ sub configSetupLdap {
             progress("done.\n");
             if ( $ldapRepChanged == 1 ) {
                 progress("Setting replication password...");
-                runAsZextras("/opt/zextras/bin/zmldappasswd -l \'$config{LDAPREPPASS}\'");
+                runAsZextras(
+                    "/opt/zextras/bin/zmldappasswd -l \'$config{LDAPREPPASS}\'"
+                );
                 progress("done.\n");
             }
             if ( $ldapPostChanged == 1 ) {
                 progress("Setting Postfix password...");
-                runAsZextras("/opt/zextras/bin/zmldappasswd -p \'$config{LDAPPOSTPASS}\'");
+                runAsZextras(
+                    "/opt/zextras/bin/zmldappasswd -p \'$config{LDAPPOSTPASS}\'"
+                );
                 progress("done.\n");
             }
             if ( $ldapAmavisChanged == 1 ) {
                 progress("Setting amavis password...");
-                runAsZextras("/opt/zextras/bin/zmldappasswd -a \'$config{LDAPAMAVISPASS}\'");
+                runAsZextras(
+"/opt/zextras/bin/zmldappasswd -a \'$config{LDAPAMAVISPASS}\'"
+                );
                 progress("done.\n");
             }
             if ( $ldapNginxChanged == 1 ) {
                 progress("Setting nginx password...");
-                runAsZextras("/opt/zextras/bin/zmldappasswd -n \'$config{ldap_nginx_password}\'");
+                runAsZextras(
+"/opt/zextras/bin/zmldappasswd -n \'$config{ldap_nginx_password}\'"
+                );
                 progress("done.\n");
             }
         }
@@ -4783,25 +5248,34 @@ sub configSetupLdap {
         }
 
         # enable replica for both new and upgrade installs if we are adding ldap
-        if ( $config{LDAPHOST} ne $config{HOSTNAME} || -f "/opt/zextras/.enable_replica" ) {
+        if ( $config{LDAPHOST} ne $config{HOSTNAME}
+            || -f "/opt/zextras/.enable_replica" )
+        {
             progress("Updating ldap_root_password and zimbra_ldap_password...");
-            setLocalConfig( "ldap_root_password",        $config{LDAPROOTPASS} );
-            setLocalConfig( "zimbra_ldap_password",      $config{LDAPADMINPASS} );
-            setLocalConfig( "ldap_replication_password", "$config{LDAPREPPASS}" );
+            setLocalConfig( "ldap_root_password",   $config{LDAPROOTPASS} );
+            setLocalConfig( "zimbra_ldap_password", $config{LDAPADMINPASS} );
+            setLocalConfig( "ldap_replication_password",
+                "$config{LDAPREPPASS}" );
             if ( $newinstall && $config{LDAPREPLICATIONTYPE} eq "mmr" ) {
                 if ( $ldapPostChanged == 1 ) {
                     progress("Setting Postfix password...");
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -p \'$config{LDAPPOSTPASS}\'");
+                    runAsZextras(
+"/opt/zextras/bin/zmldappasswd -p \'$config{LDAPPOSTPASS}\'"
+                    );
                     progress("done.\n");
                 }
                 if ( $ldapAmavisChanged == 1 ) {
                     progress("Setting amavis password...");
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -a \'$config{LDAPAMAVISPASS}\'");
+                    runAsZextras(
+"/opt/zextras/bin/zmldappasswd -a \'$config{LDAPAMAVISPASS}\'"
+                    );
                     progress("done.\n");
                 }
                 if ( $ldapNginxChanged == 1 ) {
                     progress("Setting nginx password...");
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -n \'$config{ldap_nginx_password}\'");
+                    runAsZextras(
+"/opt/zextras/bin/zmldappasswd -n \'$config{ldap_nginx_password}\'"
+                    );
                     progress("done.\n");
                 }
             }
@@ -4815,7 +5289,9 @@ sub configSetupLdap {
                     if ( $config{LDAPPORT} == "636" ) {
                         $proto = "ldaps";
                     }
-                    setLocalConfig( "ldap_url", "$proto://$config{HOSTNAME}:$config{LDAPPORT} $ldapMasterUrl" );
+                    setLocalConfig( "ldap_url",
+"$proto://$config{HOSTNAME}:$config{LDAPPORT} $ldapMasterUrl"
+                    );
                     if ( $ldapMasterUrl !~ /\/$/ ) {
                         $ldapMasterUrl = $ldapMasterUrl . "/";
                     }
@@ -4825,10 +5301,13 @@ sub configSetupLdap {
                     else {
                         runAsZextras("/opt/zextras/bin/ldap start");
                     }
-                    $rc = runAsZextras("/opt/zextras/libexec/zmldapenable-mmr -s $config{LDAPSERVERID} -m $ldapMasterUrl");
+                    $rc = runAsZextras(
+"/opt/zextras/libexec/zmldapenable-mmr -s $config{LDAPSERVERID} -m $ldapMasterUrl"
+                    );
                 }
                 else {
-                    $rc = runAsZextras("/opt/zextras/libexec/zmldapenablereplica");
+                    $rc =
+                      runAsZextras("/opt/zextras/libexec/zmldapenablereplica");
                 }
                 my $file = "/opt/zextras/.enable_replica";
                 open( ER, ">>$file" );
@@ -4847,9 +5326,12 @@ sub configSetupLdap {
             }
             else {
                 progress("failed.\n");
-                progress("You will have to correct the problem and manually enable replication.\n");
+                progress(
+"You will have to correct the problem and manually enable replication.\n"
+                );
                 progress("Disabling ldap on $config{HOSTNAME}...");
-                my $rc = setLdapServerConfig( "-zimbraServiceEnabled", "directory-server" );
+                my $rc = setLdapServerConfig( "-zimbraServiceEnabled",
+                    "directory-server" );
                 progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
                 progress("Stopping ldap...");
                 runAsZextras("/opt/zextras/bin/ldap stop");
@@ -4863,8 +5345,8 @@ sub configSetupLdap {
         setLocalConfig( "zimbra_ldap_password",      $config{LDAPADMINPASS} );
         setLocalConfig( "ldap_replication_password", "$config{LDAPREPPASS}" );
         setLocalConfig( "ldap_postfix_password",     "$config{LDAPPOSTPASS}" );
-        setLocalConfig( "ldap_amavis_password",      "$config{LDAPAMAVISPASS}" );
-        setLocalConfig( "ldap_nginx_password",       "$config{ldap_nginx_password}" );
+        setLocalConfig( "ldap_amavis_password", "$config{LDAPAMAVISPASS}" );
+        setLocalConfig( "ldap_nginx_password", "$config{ldap_nginx_password}" );
     }
 
     configLog("configSetupLdap");
@@ -4876,7 +5358,8 @@ sub configLDAPSchemaVersion {
     return if ($haveSetLdapSchemaVersion);
     if ( isEnabled("carbonio-directory-server") ) {
         progress("Updating LDAP Schema version to '$ldapSchemaVersion'...");
-        my $ec = setLdapGlobalConfig( 'zimbraLDAPSchemaVersion', $ldapSchemaVersion );
+        my $ec =
+          setLdapGlobalConfig( 'zimbraLDAPSchemaVersion', $ldapSchemaVersion );
         if ( $ec != 0 ) {
             progress("failed.\n");
         }
@@ -4907,18 +5390,24 @@ sub configSaveCA {
 
 sub configCreateCert {
 
-    if ( $configStatus{configCreateCert} eq "CONFIGURED" && -d "/opt/zextras/ssl/carbonio/server" ) {
+    if ( $configStatus{configCreateCert} eq "CONFIGURED"
+        && -d "/opt/zextras/ssl/carbonio/server" )
+    {
         configLog("configCreateCert");
         return 0;
     }
 
     if ( !$newinstall ) {
-        my $rc = runAsZextras("/opt/zextras/bin/zmcertmgr verifycrt comm > /dev/null 2>&1");
+        my $rc = runAsZextras(
+            "/opt/zextras/bin/zmcertmgr verifycrt comm > /dev/null 2>&1");
         if ( $rc != 0 ) {
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr verifycrt self > /dev/null 2>&1");
+            $rc = runAsZextras(
+                "/opt/zextras/bin/zmcertmgr verifycrt self > /dev/null 2>&1");
             if ( $rc != 0 ) {
                 progress("Warning: No valid SSL certificates were found.\n");
-                progress("New self-signed certificates will be generated and installed.\n");
+                progress(
+"New self-signed certificates will be generated and installed.\n"
+                );
                 $needNewCert   = "-new" if ( $rc != 0 );
                 $ssl_cert_type = "self";
             }
@@ -4932,14 +5421,17 @@ sub configCreateCert {
     my $rc;
 
     if ( isInstalled("carbonio-appserver") ) {
-        if ( !-f "$config{mailboxd_keystore}" && !-f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
+        if (   !-f "$config{mailboxd_keystore}"
+            && !-f "/opt/zextras/ssl/carbonio/server/server.crt" )
+        {
             if ( !-d "$config{mailboxd_directory}" ) {
                 qx(mkdir -p $config{mailboxd_directory}/etc);
                 qx(chown -R zextras:zextras $config{mailboxd_directory});
                 qx(chmod 744 $config{mailboxd_directory}/etc);
             }
             progress("Creating SSL carbonio-appserver certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
+            $rc =
+              runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
             if ( $rc != 0 ) {
                 progress("failed.\n");
                 exit 1;
@@ -4950,7 +5442,8 @@ sub configCreateCert {
         }
         elsif ( $needNewCert ne "" && $ssl_cert_type eq "self" ) {
             progress("Creating new carbonio-appserver SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
+            $rc =
+              runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
             if ( $rc != 0 ) {
                 progress("failed.\n");
                 exit 1;
@@ -4962,9 +5455,12 @@ sub configCreateCert {
     }
 
     if ( isInstalled("carbonio-directory-server") ) {
-        if ( !-f "/opt/zextras/conf/slapd.crt" && !-f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
+        if (   !-f "/opt/zextras/conf/slapd.crt"
+            && !-f "/opt/zextras/ssl/carbonio/server/server.crt" )
+        {
             progress("Creating carbonio-directory-server SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
+            $rc =
+              runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
             if ( $rc != 0 ) {
                 progress("failed.\n");
                 exit 1;
@@ -4974,8 +5470,10 @@ sub configCreateCert {
             }
         }
         elsif ( $needNewCert ne "" && $ssl_cert_type eq "self" ) {
-            progress("Creating new carbonio-directory-server SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
+            progress(
+                "Creating new carbonio-directory-server SSL certificate...");
+            $rc =
+              runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
             if ( $rc != 0 ) {
                 progress("failed.\n");
                 exit 1;
@@ -4987,9 +5485,12 @@ sub configCreateCert {
     }
 
     if ( isInstalled("carbonio-mta") ) {
-        if ( !-f "/opt/zextras/conf/smtpd.crt" && !-f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
+        if (   !-f "/opt/zextras/conf/smtpd.crt"
+            && !-f "/opt/zextras/ssl/carbonio/server/server.crt" )
+        {
             progress("Creating carbonio-mta SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
+            $rc =
+              runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
             if ( $rc != 0 ) {
                 progress("failed.\n");
                 exit 1;
@@ -5000,7 +5501,8 @@ sub configCreateCert {
         }
         elsif ( $needNewCert ne "" && $ssl_cert_type eq "self" ) {
             progress("Creating new carbonio-mta SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
+            $rc =
+              runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
             if ( $rc != 0 ) {
                 progress("failed.\n");
                 exit 1;
@@ -5012,9 +5514,12 @@ sub configCreateCert {
     }
 
     if ( isInstalled("carbonio-proxy") ) {
-        if ( !-f "/opt/zextras/conf/nginx.crt" && !-f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
+        if (   !-f "/opt/zextras/conf/nginx.crt"
+            && !-f "/opt/zextras/ssl/carbonio/server/server.crt" )
+        {
             progress("Creating carbonio-proxy SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
+            $rc =
+              runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
             if ( $rc != 0 ) {
                 progress("failed.\n");
                 exit 1;
@@ -5025,7 +5530,8 @@ sub configCreateCert {
         }
         elsif ( $needNewCert ne "" && $ssl_cert_type eq "self" ) {
             progress("Creating new carbonio-proxy SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
+            $rc =
+              runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
             if ( $rc != 0 ) {
                 progress("failed.\n");
                 exit 1;
@@ -5047,7 +5553,8 @@ sub configSaveCert {
     }
     if ( -f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
         progress("Saving SSL Certificate in ldap...");
-        my $rc = runAsZextras("/opt/zextras/bin/zmcertmgr savecrt $ssl_cert_type");
+        my $rc =
+          runAsZextras("/opt/zextras/bin/zmcertmgr savecrt $ssl_cert_type");
         if ( $rc != 0 ) {
             progress("failed.\n");
             exit 1;
@@ -5061,7 +5568,9 @@ sub configSaveCert {
 
 sub configInstallCert {
     my $rc;
-    if ( $configStatus{configInstallCertStore} eq "CONFIGURED" && $needNewCert eq "" ) {
+    if (   $configStatus{configInstallCertStore} eq "CONFIGURED"
+        && $needNewCert eq "" )
+    {
         configLog("configInstallCertStore");
     }
     elsif ( isInstalled("carbonio-appserver") ) {
@@ -5071,7 +5580,8 @@ sub configInstallCert {
             detail("$needNewCert was ne \"\".")
               if ( $needNewCert ne "" );
             progress("Installing mailboxd SSL certificates...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deploycrt $ssl_cert_type");
+            $rc = runAsZextras(
+                "/opt/zextras/bin/zmcertmgr deploycrt $ssl_cert_type");
             if ( $rc != 0 ) {
                 progress("failed.\n");
                 exit 1;
@@ -5086,16 +5596,24 @@ sub configInstallCert {
         }
     }
 
-    if ( $configStatus{configInstallCertMTA} eq "CONFIGURED" && $needNewCert eq "" ) {
+    if (   $configStatus{configInstallCertMTA} eq "CONFIGURED"
+        && $needNewCert eq "" )
+    {
         configLog("configInstallCertMTA");
     }
     elsif ( isInstalled("carbonio-mta") ) {
 
-        if ( !( -f "/opt/zextras/conf/smtpd.key" || -f "/opt/zextras/conf/smtpd.crt" )
-            || $needNewCert ne "" )
+        if (
+            !(
+                   -f "/opt/zextras/conf/smtpd.key"
+                || -f "/opt/zextras/conf/smtpd.crt"
+            )
+            || $needNewCert ne ""
+          )
         {
             progress("Installing MTA SSL certificates...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deploycrt $ssl_cert_type");
+            $rc = runAsZextras(
+                "/opt/zextras/bin/zmcertmgr deploycrt $ssl_cert_type");
             if ( $rc != 0 ) {
                 progress("failed.\n");
                 exit 1;
@@ -5110,15 +5628,23 @@ sub configInstallCert {
         }
     }
 
-    if ( $configStatus{configInstallCertLDAP} eq "CONFIGURED" && $needNewCert eq "" ) {
+    if (   $configStatus{configInstallCertLDAP} eq "CONFIGURED"
+        && $needNewCert eq "" )
+    {
         configLog("configInstallCertLDAP");
     }
     elsif ( isInstalled("carbonio-directory-server") ) {
-        if ( !( -f "/opt/zextras/conf/slapd.key" || -f "/opt/zextras/conf/slapd.crt" )
-            || $needNewCert ne "" )
+        if (
+            !(
+                   -f "/opt/zextras/conf/slapd.key"
+                || -f "/opt/zextras/conf/slapd.crt"
+            )
+            || $needNewCert ne ""
+          )
         {
             progress("Installing LDAP SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deploycrt $ssl_cert_type");
+            $rc = runAsZextras(
+                "/opt/zextras/bin/zmcertmgr deploycrt $ssl_cert_type");
             if ( $rc != 0 ) {
                 progress("failed.\n");
                 exit 1;
@@ -5135,15 +5661,23 @@ sub configInstallCert {
         }
     }
 
-    if ( $configStatus{configInstallCertProxy} eq "CONFIGURED" && $needNewCert eq "" ) {
+    if (   $configStatus{configInstallCertProxy} eq "CONFIGURED"
+        && $needNewCert eq "" )
+    {
         configLog("configInstallCertProxy");
     }
     elsif ( isInstalled("carbonio-proxy") ) {
-        if ( !( -f "/opt/zextras/conf/nginx.key" || -f "/opt/zextras/conf/nginx.crt" )
-            || $needNewCert ne "" )
+        if (
+            !(
+                   -f "/opt/zextras/conf/nginx.key"
+                || -f "/opt/zextras/conf/nginx.crt"
+            )
+            || $needNewCert ne ""
+          )
         {
             progress("Installing Proxy SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deploycrt $ssl_cert_type");
+            $rc = runAsZextras(
+                "/opt/zextras/bin/zmcertmgr deploycrt $ssl_cert_type");
             if ( $rc != 0 ) {
                 progress("failed.\n");
                 exit 1;
@@ -5179,37 +5713,46 @@ sub configCreateServerEntry {
     progress("Setting IP Mode...");
     my $rc = setLdapServerConfig( "zimbraIPMode", $config{zimbraIPMode} );
     progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
-    my $rc = runAsZextras("/opt/zextras/libexec/zmiptool >/dev/null 2>/dev/null");
+    my $rc =
+      runAsZextras("/opt/zextras/libexec/zmiptool >/dev/null 2>/dev/null");
 
     configLog("configCreateServerEntry");
 }
 
 sub configSetStoreDefaults {
-    if ( isEnabled("carbonio-proxy") || $config{zimbraMailProxy} eq "TRUE" || $config{zimbraWebProxy} eq "TRUE" ) {
+    if (   isEnabled("carbonio-proxy")
+        || $config{zimbraMailProxy} eq "TRUE"
+        || $config{zimbraWebProxy} eq "TRUE" )
+    {
         $config{zimbraReverseProxyLookupTarget} = "TRUE";
     }
 
-    # for mailstore split, set zimbraReverseProxyAvailableLookupTargets on service-only nodes
+# for mailstore split, set zimbraReverseProxyAvailableLookupTargets on service-only nodes
     if ( $newinstall && isStoreServiceNode() ) {
         my $adding = 0;
-        progress("Checking current setting of ReverseProxyAvailableLookupTargets\n");
-        my $zrpALT = getLdapConfigValue("zimbraReverseProxyAvailableLookupTargets");
+        progress(
+            "Checking current setting of ReverseProxyAvailableLookupTargets\n");
+        my $zrpALT =
+          getLdapConfigValue("zimbraReverseProxyAvailableLookupTargets");
         if ( $zrpALT ne "" ) {
             $adding = 1;
         }
         else {
             progress("Querying LDAP for other mailstores\n");
 
-            # query LDAP to see if there are other mailstores.  If there are none, add this
-            # new service node to zimbraReverseProxyAvailableLookupTargets.  Otherwise do not
+# query LDAP to see if there are other mailstores.  If there are none, add this
+# new service node to zimbraReverseProxyAvailableLookupTargets.  Otherwise do not
             my $count = countReverseProxyLookupTargets();
             if ( !defined($count) || $count == 0 ) {
                 $adding = 1;
             }
         }
         if ($adding) {
-            progress("Adding $config{HOSTNAME} to ReverseProxyAvailableLookupTargets\n");
-            setLdapGlobalConfig( "+zimbraReverseProxyAvailableLookupTargets", $config{HOSTNAME} );
+            progress(
+"Adding $config{HOSTNAME} to ReverseProxyAvailableLookupTargets\n"
+            );
+            setLdapGlobalConfig( "+zimbraReverseProxyAvailableLookupTargets",
+                $config{HOSTNAME} );
         }
     }
     $config{zimbraMtaAuthTarget} = "TRUE";
@@ -5217,21 +5760,37 @@ sub configSetStoreDefaults {
         $config{zimbraMtaAuthTarget} = "FALSE";
     }
     if ( $newinstall && isStoreServiceNode() ) {
-        setLdapGlobalConfig( "+zimbraReverseProxyUpstreamEwsServers", "$config{HOSTNAME}" );
+        setLdapGlobalConfig( "+zimbraReverseProxyUpstreamEwsServers",
+            "$config{HOSTNAME}" );
     }
 
-    setLdapServerConfig( "zimbraReverseProxyLookupTarget", $config{zimbraReverseProxyLookupTarget} );
-    setLdapServerConfig( "zimbraMtaAuthTarget",            $config{zimbraMtaAuthTarget} );
+    setLdapServerConfig(
+        "zimbraReverseProxyLookupTarget",
+        $config{zimbraReverseProxyLookupTarget}
+    );
+    setLdapServerConfig( "zimbraMtaAuthTarget", $config{zimbraMtaAuthTarget} );
     my $upstream = "-u";
     if ( $config{zimbra_require_interprocess_security} ) {
         $upstream = "-U";
     }
-    if ( $newinstall && ( $config{zimbraWebProxy} eq "TRUE" || $config{zimbraMailProxy} eq "TRUE" ) ) {
+    if (
+        $newinstall
+        && (   $config{zimbraWebProxy} eq "TRUE"
+            || $config{zimbraMailProxy} eq "TRUE" )
+      )
+    {
         if ( $config{zimbraMailProxy} eq "TRUE" ) {
-            runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -m -e -o " . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} " . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}" );
+            runAsZextras(
+                    "/opt/zextras/libexec/zmproxyconfig $upstream -m -e -o "
+                  . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} "
+                  . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}"
+            );
         }
         if ( $config{zimbraWebProxy} eq "TRUE" ) {
-            runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -w -e -o " . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}" );
+            runAsZextras(
+                    "/opt/zextras/libexec/zmproxyconfig $upstream -w -e -o "
+                  . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}"
+            );
         }
     }
 }
@@ -5254,30 +5813,61 @@ sub configSetServicePorts {
 
     progress("Setting service ports on $config{HOSTNAME}...");
     if ( $config{MAILPROXY} eq "FALSE" ) {
-        if ( $config{IMAPPORT} == 7143 && $config{IMAPPROXYPORT} == $config{IMAPPORT} ) {
+        if (   $config{IMAPPORT} == 7143
+            && $config{IMAPPROXYPORT} == $config{IMAPPORT} )
+        {
             $config{IMAPPROXYPORT} = 143;
         }
-        if ( $config{IMAPSSLPORT} == 7993 && $config{IMAPSSLPROXYPORT} == $config{IMAPSSLPORT} ) {
+        if (   $config{IMAPSSLPORT} == 7993
+            && $config{IMAPSSLPROXYPORT} == $config{IMAPSSLPORT} )
+        {
             $config{IMAPSSLPROXYPORT} = 993;
         }
-        if ( $config{POPPORT} == 7110 && $config{POPPROXYPORT} == $config{POPPORT} ) {
+        if (   $config{POPPORT} == 7110
+            && $config{POPPROXYPORT} == $config{POPPORT} )
+        {
             $config{POPPROXYPORT} = 110;
         }
-        if ( $config{POPSSLPORT} == 7995 && $config{POPSSLPROXYPORT} == $config{POPSSLPORT} ) {
+        if (   $config{POPSSLPORT} == 7995
+            && $config{POPSSLPROXYPORT} == $config{POPSSLPORT} )
+        {
             $config{POPSSLPORT} = 995;
         }
     }
-    setLdapServerConfig( $config{HOSTNAME}, "zimbraImapBindPort", $config{IMAPPORT}, "zimbraImapSSLBindPort", $config{IMAPSSLPORT}, "zimbraImapProxyBindPort", $config{IMAPPROXYPORT}, "zimbraImapSSLProxyBindPort", $config{IMAPSSLPROXYPORT} );
-    setLdapServerConfig( $config{HOSTNAME}, "zimbraPop3BindPort", $config{POPPORT},  "zimbraPop3SSLBindPort", $config{POPSSLPORT},  "zimbraPop3ProxyBindPort", $config{POPPROXYPORT},  "zimbraPop3SSLProxyBindPort", $config{POPSSLPROXYPORT} );
+    setLdapServerConfig(
+        $config{HOSTNAME},      "zimbraImapBindPort",
+        $config{IMAPPORT},      "zimbraImapSSLBindPort",
+        $config{IMAPSSLPORT},   "zimbraImapProxyBindPort",
+        $config{IMAPPROXYPORT}, "zimbraImapSSLProxyBindPort",
+        $config{IMAPSSLPROXYPORT}
+    );
+    setLdapServerConfig(
+        $config{HOSTNAME},     "zimbraPop3BindPort",
+        $config{POPPORT},      "zimbraPop3SSLBindPort",
+        $config{POPSSLPORT},   "zimbraPop3ProxyBindPort",
+        $config{POPPROXYPORT}, "zimbraPop3SSLProxyBindPort",
+        $config{POPSSLPROXYPORT}
+    );
     if ( $config{HTTPPROXY} eq "FALSE" ) {
-        if ( $config{HTTPPORT} == 8080 && $config{HTTPPROXYPORT} == $config{HTTPPORT} ) {
+        if (   $config{HTTPPORT} == 8080
+            && $config{HTTPPROXYPORT} == $config{HTTPPORT} )
+        {
             $config{HTTPPROXYPORT} = 80;
         }
-        if ( $config{HTTPSPORT} == 8443 && $config{HTTPSPROXYPORT} == $config{HTTPSPORT} ) {
+        if (   $config{HTTPSPORT} == 8443
+            && $config{HTTPSPROXYPORT} == $config{HTTPSPORT} )
+        {
             $config{HTTPSPROXYPORT} = 443;
         }
     }
-    setLdapServerConfig( $config{HOSTNAME}, "zimbraMailPort", $config{HTTPPORT}, "zimbraMailSSLPort", $config{HTTPSPORT}, "zimbraMailProxyPort", $config{HTTPPROXYPORT}, "zimbraMailSSLProxyPort", $config{HTTPSPROXYPORT}, "zimbraMailMode", $config{MODE} );
+    setLdapServerConfig(
+        $config{HOSTNAME},       "zimbraMailPort",
+        $config{HTTPPORT},       "zimbraMailSSLPort",
+        $config{HTTPSPORT},      "zimbraMailProxyPort",
+        $config{HTTPPROXYPORT},  "zimbraMailSSLProxyPort",
+        $config{HTTPSPROXYPORT}, "zimbraMailMode",
+        $config{MODE}
+    );
     setLocalConfig( "zimbra_mail_service_port", $config{HTTPPORT} );
 
     progress("done.\n");
@@ -5290,7 +5880,8 @@ sub configSetKeyboardShortcutsPref {
         return 0;
     }
     progress("Setting Keyboard Shortcut Preferences...");
-    my $rc = setLdapCOSConfig( "zimbraPrefUseKeyboardShortcuts", $config{USEKBSHORTCUTS} );
+    my $rc = setLdapCOSConfig( "zimbraPrefUseKeyboardShortcuts",
+        $config{USEKBSHORTCUTS} );
     progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
     configLog("zimbraPrefUseKeyboardShortcuts");
 }
@@ -5302,7 +5893,8 @@ sub configSetTimeZonePref {
     }
     if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
         progress("Setting TimeZone Preference...");
-        my $rc = setLdapCOSConfig( "zimbraPrefTimeZoneId", $config{zimbraPrefTimeZoneId} );
+        my $rc = setLdapCOSConfig( "zimbraPrefTimeZoneId",
+            $config{zimbraPrefTimeZoneId} );
         progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
     }
     configLog("zimbraPrefTimeZoneId");
@@ -5310,18 +5902,24 @@ sub configSetTimeZonePref {
 
 sub setProxyBits {
     detail("Setting Proxy pieces\n");
-    my $ReverseProxyMailHostQuery   = "\(\|\(zimbraMailDeliveryAddress=\${USER}\)\(zimbraMailAlias=\${USER}\)\(zimbraId=\${USER}\)\)";
-    my $ReverseProxyDomainNameQuery = '\(\&\(zimbraVirtualIPAddress=\${IPADDR}\)\(objectClass=zimbraDomain\)\)';
-    my $ReverseProxyPortQuery       = '\(\&\(zimbraServiceHostname=\${MAILHOST}\)\(objectClass=zimbraServer\)\)';
+    my $ReverseProxyMailHostQuery =
+"\(\|\(zimbraMailDeliveryAddress=\${USER}\)\(zimbraMailAlias=\${USER}\)\(zimbraId=\${USER}\)\)";
+    my $ReverseProxyDomainNameQuery =
+      '\(\&\(zimbraVirtualIPAddress=\${IPADDR}\)\(objectClass=zimbraDomain\)\)';
+    my $ReverseProxyPortQuery =
+'\(\&\(zimbraServiceHostname=\${MAILHOST}\)\(objectClass=zimbraServer\)\)';
 
     my @zmprov_args = ();
-    push( @zmprov_args, ( 'zimbraReverseProxyMailHostQuery', $ReverseProxyMailHostQuery ) )
+    push( @zmprov_args,
+        ( 'zimbraReverseProxyMailHostQuery', $ReverseProxyMailHostQuery ) )
       if ( getLdapConfigValue("zimbraReverseProxyMailHostQuery") eq "" );
 
-    push( @zmprov_args, ( 'zimbraReverseProxyPortQuery', $ReverseProxyPortQuery ) )
+    push( @zmprov_args,
+        ( 'zimbraReverseProxyPortQuery', $ReverseProxyPortQuery ) )
       if ( getLdapConfigValue("zimbraReverseProxyPortQuery") eq "" );
 
-    push( @zmprov_args, ( 'zimbraReverseProxyDomainNameQuery', $ReverseProxyDomainNameQuery ) )
+    push( @zmprov_args,
+        ( 'zimbraReverseProxyDomainNameQuery', $ReverseProxyDomainNameQuery ) )
       if ( getLdapConfigValue("zimbraReverseProxyDomainNameQuery") eq "" );
 
     push( @zmprov_args, ( 'zimbraMemcachedBindPort', '11211' ) )
@@ -5330,22 +5928,28 @@ sub setProxyBits {
     push( @zmprov_args, ( 'zimbraMemcachedBindAddress', '127.0.0.1' ) )
       if ( getLdapConfigValue("zimbraMemcachedBindAddress") eq "" );
 
-    push( @zmprov_args, ( 'zimbraReverseProxyMailHostAttribute', 'zimbraMailHost' ) )
+    push( @zmprov_args,
+        ( 'zimbraReverseProxyMailHostAttribute', 'zimbraMailHost' ) )
       if ( getLdapConfigValue("zimbraReverseProxyMailHostAttribute") eq "" );
 
-    push( @zmprov_args, ( 'zimbraReverseProxyPop3PortAttribute', 'zimbraPop3BindPort' ) )
+    push( @zmprov_args,
+        ( 'zimbraReverseProxyPop3PortAttribute', 'zimbraPop3BindPort' ) )
       if ( getLdapConfigValue("zimbraReverseProxyPop3PortAttribute") eq "" );
 
-    push( @zmprov_args, ( 'zimbraReverseProxyPop3SSLPortAttribute', 'zimbraPop3SSLBindPort' ) )
+    push( @zmprov_args,
+        ( 'zimbraReverseProxyPop3SSLPortAttribute', 'zimbraPop3SSLBindPort' ) )
       if ( getLdapConfigValue("zimbraReverseProxyPop3SSLPortAttribute") eq "" );
 
-    push( @zmprov_args, ( 'zimbraReverseProxyImapPortAttribute', 'zimbraImapBindPort' ) )
+    push( @zmprov_args,
+        ( 'zimbraReverseProxyImapPortAttribute', 'zimbraImapBindPort' ) )
       if ( getLdapConfigValue("zimbraReverseProxyImapPortAttribute") eq "" );
 
-    push( @zmprov_args, ( 'zimbraReverseProxyImapSSLPortAttribute', 'zimbraImapSSLBindPort' ) )
+    push( @zmprov_args,
+        ( 'zimbraReverseProxyImapSSLPortAttribute', 'zimbraImapSSLBindPort' ) )
       if ( getLdapConfigValue("zimbraReverseProxyImapSSLPortAttribute") eq "" );
 
-    push( @zmprov_args, ( 'zimbraReverseProxyDomainNameAttribute', 'zimbraDomainName' ) )
+    push( @zmprov_args,
+        ( 'zimbraReverseProxyDomainNameAttribute', 'zimbraDomainName' ) )
       if ( getLdapConfigValue("zimbraReverseProxyDomainNameAttribute") eq "" );
 
     push( @zmprov_args, ( 'zimbraImapCleartextLoginEnabled', 'FALSE' ) )
@@ -5388,13 +5992,21 @@ sub setProxyBits {
 sub configSetProxyPrefs {
     if ( isEnabled("carbonio-proxy") ) {
         if ( $config{STRICTSERVERNAMEENABLED} eq "yes" ) {
-            progress("Enabling strict server name enforcement on $config{HOSTNAME}...");
-            runAsZextras("$ZMPROV ms $config{HOSTNAME} zimbraReverseProxyStrictServerNameEnabled TRUE");
+            progress(
+"Enabling strict server name enforcement on $config{HOSTNAME}..."
+            );
+            runAsZextras(
+"$ZMPROV ms $config{HOSTNAME} zimbraReverseProxyStrictServerNameEnabled TRUE"
+            );
             progress("done.\n");
         }
         else {
-            progress("Disabling strict server name enforcement on $config{HOSTNAME}...");
-            runAsZextras("$ZMPROV ms $config{HOSTNAME} zimbraReverseProxyStrictServerNameEnabled FALSE");
+            progress(
+"Disabling strict server name enforcement on $config{HOSTNAME}..."
+            );
+            runAsZextras(
+"$ZMPROV ms $config{HOSTNAME} zimbraReverseProxyStrictServerNameEnabled FALSE"
+            );
             progress("done.\n");
         }
         if ( $config{MAILPROXY} eq "FALSE" && $config{HTTPPROXY} eq "FALSE" ) {
@@ -5406,16 +6018,30 @@ sub configSetProxyPrefs {
                 $upstream = "-U";
             }
             if ( $config{MAILPROXY} eq "TRUE" ) {
-                runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -m -e -o " . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} " . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}" );
+                runAsZextras(
+                        "/opt/zextras/libexec/zmproxyconfig $upstream -m -e -o "
+                      . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} "
+                      . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}"
+                );
             }
             else {
-                runAsZextras( "/opt/zextras/libexec/zmproxyconfig -m -d -o " . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} " . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}" );
+                runAsZextras( "/opt/zextras/libexec/zmproxyconfig -m -d -o "
+                      . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} "
+                      . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}"
+                );
             }
             if ( $config{HTTPPROXY} eq "TRUE" ) {
-                runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -w -e -o " . " -x $config{PROXYMODE} " . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}" );
+                runAsZextras(
+                        "/opt/zextras/libexec/zmproxyconfig $upstream -w -e -o "
+                      . " -x $config{PROXYMODE} "
+                      . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}"
+                );
             }
             else {
-                runAsZextras( "/opt/zextras/libexec/zmproxyconfig -w -d -o " . "-x $config{MODE} " . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}" );
+                runAsZextras( "/opt/zextras/libexec/zmproxyconfig -w -d -o "
+                      . "-x $config{MODE} "
+                      . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}"
+                );
             }
         }
         if ( !( isEnabled("carbonio-appserver") ) ) {
@@ -5425,7 +6051,9 @@ sub configSetProxyPrefs {
             chomp( @storetargets = <ZMPROV> );
             close(ZMPROV);
             if ( $storetargets[0] !~ /nginx-lookup/ ) {
-                progress("WARNING: There is currently no mailstore to proxy. Proxy will restart once one becomes available.\n");
+                progress(
+"WARNING: There is currently no mailstore to proxy. Proxy will restart once one becomes available.\n"
+                );
             }
         }
         if ( !( isEnabled("carbonio-memcached") ) ) {
@@ -5435,18 +6063,32 @@ sub configSetProxyPrefs {
             chomp( @memcachetargets = <ZMPROV> );
             close(ZMPROV);
             if ( $memcachetargets[0] !~ /:11211/ ) {
-                progress("WARNING: There are currently no memcached servers for the proxy.  Proxy will start once one becomes available.\n");
+                progress(
+"WARNING: There are currently no memcached servers for the proxy.  Proxy will start once one becomes available.\n"
+                );
             }
         }
-        if ( ( !( $config{PUBLICSERVICEHOSTNAME} eq "" ) ) && ( !($publicServiceHostnameAlreadySet) ) ) {
-            progress("Setting Public Service Hostname $config{PUBLICSERVICEHOSTNAME}...");
-            runAsZextras("$ZMPROV mcf zimbraPublicServiceHostname $config{PUBLICSERVICEHOSTNAME}");
+        if (   ( !( $config{PUBLICSERVICEHOSTNAME} eq "" ) )
+            && ( !($publicServiceHostnameAlreadySet) ) )
+        {
+            progress(
+"Setting Public Service Hostname $config{PUBLICSERVICEHOSTNAME}..."
+            );
+            runAsZextras(
+"$ZMPROV mcf zimbraPublicServiceHostname $config{PUBLICSERVICEHOSTNAME}"
+            );
             progress("done.\n");
         }
     }
     else {
-        runAsZextras( "/opt/zextras/libexec/zmproxyconfig -m -d -o " . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} " . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}" );
-        runAsZextras( "/opt/zextras/libexec/zmproxyconfig -w -d -o " . "-x $config{MODE} " . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}" );
+        runAsZextras( "/opt/zextras/libexec/zmproxyconfig -m -d -o "
+              . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} "
+              . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}"
+        );
+        runAsZextras( "/opt/zextras/libexec/zmproxyconfig -w -d -o "
+              . "-x $config{MODE} "
+              . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}"
+        );
     }
 }
 
@@ -5473,7 +6115,11 @@ sub countReverseProxyLookupTargets {
     else {
         detail("ldap bind done for $ldap_dn");
         progress("Searching LDAP for reverseProxyLookupTargets...");
-        $result = $ldap->search( base => 'cn=zimbra', filter => '(zimbraReverseProxyLookupTarget=TRUE)', attrs => ['1.1'] );
+        $result = $ldap->search(
+            base   => 'cn=zimbra',
+            filter => '(zimbraReverseProxyLookupTarget=TRUE)',
+            attrs  => ['1.1']
+        );
 
         progress( ( $result->code() ) ? "failed.\n" : "done.\n" );
         return if ( $result->code() );
@@ -5540,11 +6186,13 @@ sub configCreateDomain {
             }
 
             progress("Setting default domain name...");
-            my $rc = setLdapGlobalConfig( "zimbraDefaultDomainName", $config{CREATEDOMAIN} );
+            my $rc = setLdapGlobalConfig( "zimbraDefaultDomainName",
+                $config{CREATEDOMAIN} );
             progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
 
             progress("Setting value of postfix myorigin...");
-            my $rc = setLdapGlobalConfig( "zimbraMtaMyOrigin", $config{CREATEDOMAIN} );
+            my $rc =
+              setLdapGlobalConfig( "zimbraMtaMyOrigin", $config{CREATEDOMAIN} );
             progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
         }
     }
@@ -5564,42 +6212,68 @@ sub configCreateDomain {
             }
 
             progress("Creating admin account $config{CREATEADMIN}...");
-            my $acctId = getLdapAccountValue( "zimbraId", $config{CREATEADMIN} );
+            my $acctId =
+              getLdapAccountValue( "zimbraId", $config{CREATEADMIN} );
             if ( $acctId ne "" ) {
                 progress("already exists.\n");
             }
             else {
-                my $rc = runAsZextras( "$ZMPROV ca " . "$config{CREATEADMIN} \'$config{CREATEADMINPASS}\' " . "zimbraAdminConsoleUIComponents cartBlancheUI " . "description \'Administrative Account\' " . "displayName \'Carbonio Admin\' " . "zimbraIsAdminAccount TRUE" );
+                my $rc =
+                  runAsZextras( "$ZMPROV ca "
+                      . "$config{CREATEADMIN} \'$config{CREATEADMINPASS}\' "
+                      . "zimbraAdminConsoleUIComponents cartBlancheUI "
+                      . "description \'Administrative Account\' "
+                      . "displayName \'Carbonio Admin\' "
+                      . "zimbraIsAdminAccount TRUE" );
                 progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
             }
 
             # no root/postmaster accounts on web-only nodes
             if ( isStoreServiceNode() ) {
                 progress("Creating root alias...");
-                my $rc = runAsZextras( "$ZMPROV aaa " . "$config{CREATEADMIN} root\@$config{CREATEDOMAIN}" );
+                my $rc = runAsZextras( "$ZMPROV aaa "
+                      . "$config{CREATEADMIN} root\@$config{CREATEDOMAIN}" );
                 progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
 
                 progress("Creating postmaster alias...");
-                $rc = runAsZextras( "$ZMPROV aaa " . "$config{CREATEADMIN} postmaster\@$config{CREATEDOMAIN}" );
+                $rc =
+                  runAsZextras( "$ZMPROV aaa "
+                      . "$config{CREATEADMIN} postmaster\@$config{CREATEDOMAIN}"
+                  );
                 progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
             }
 
-            # set carbonioNotificationFrom & carbonioNotificationRecipients global config attributes
-            progress("Setting infrastructure notification sender and recipients accounts...");
-            my $rc = setLdapGlobalConfig( 'carbonioNotificationFrom', "$config{CREATEADMIN}", 'carbonioNotificationRecipients', "$config{CREATEADMIN}" );
+# set carbonioNotificationFrom & carbonioNotificationRecipients global config attributes
+            progress(
+"Setting infrastructure notification sender and recipients accounts..."
+            );
+            my $rc = setLdapGlobalConfig(
+                'carbonioNotificationFrom',       "$config{CREATEADMIN}",
+                'carbonioNotificationRecipients', "$config{CREATEADMIN}"
+            );
             progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
         }
 
         if ( $config{DOTRAINSA} eq "yes" ) {
             $config{TRAINSASPAM} = lc( $config{TRAINSASPAM} );
             progress("Creating user $config{TRAINSASPAM}...");
-            my $acctId = getLdapAccountValue( "zimbraId", $config{TRAINSASPAM} );
+            my $acctId =
+              getLdapAccountValue( "zimbraId", $config{TRAINSASPAM} );
             if ( $acctId ne "" ) {
                 progress("already exists.\n");
             }
             else {
                 my $pass = genRandomPass();
-                my $rc   = runAsZextras( "$ZMPROV ca " . "$config{TRAINSASPAM} \'$pass\' " . "amavisBypassSpamChecks TRUE " . "zimbraAttachmentsIndexingEnabled FALSE " . "zimbraIsSystemResource TRUE " . "zimbraIsSystemAccount TRUE " . "zimbraHideInGal TRUE " . "zimbraMailQuota 0 " . "description \'System account for spam training.\'" );
+                my $rc =
+                  runAsZextras( "$ZMPROV ca "
+                      . "$config{TRAINSASPAM} \'$pass\' "
+                      . "amavisBypassSpamChecks TRUE "
+                      . "zimbraAttachmentsIndexingEnabled FALSE "
+                      . "zimbraIsSystemResource TRUE "
+                      . "zimbraIsSystemAccount TRUE "
+                      . "zimbraHideInGal TRUE "
+                      . "zimbraMailQuota 0 "
+                      . "description \'System account for spam training.\'" );
                 progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
             }
 
@@ -5611,24 +6285,51 @@ sub configCreateDomain {
             }
             else {
                 my $pass = genRandomPass();
-                my $rc   = runAsZextras( "$ZMPROV ca " . "$config{TRAINSAHAM} \'$pass\' " . "amavisBypassSpamChecks TRUE " . "zimbraAttachmentsIndexingEnabled FALSE " . "zimbraIsSystemResource TRUE " . "zimbraIsSystemAccount TRUE " . "zimbraHideInGal TRUE " . "zimbraMailQuota 0 " . "description \'System account for Non-Spam (Ham) training.\'" );
+                my $rc =
+                  runAsZextras( "$ZMPROV ca "
+                      . "$config{TRAINSAHAM} \'$pass\' "
+                      . "amavisBypassSpamChecks TRUE "
+                      . "zimbraAttachmentsIndexingEnabled FALSE "
+                      . "zimbraIsSystemResource TRUE "
+                      . "zimbraIsSystemAccount TRUE "
+                      . "zimbraHideInGal TRUE "
+                      . "zimbraMailQuota 0 "
+                      . "description \'System account for Non-Spam (Ham) training.\'"
+                  );
                 progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
             }
 
             $config{VIRUSQUARANTINE} = lc( $config{VIRUSQUARANTINE} );
             progress("Creating user $config{VIRUSQUARANTINE}...");
-            my $acctId = getLdapAccountValue( "zimbraId", $config{VIRUSQUARANTINE} );
+            my $acctId =
+              getLdapAccountValue( "zimbraId", $config{VIRUSQUARANTINE} );
             if ( $acctId ne "" ) {
                 progress("already exists.\n");
             }
             else {
                 my $pass = genRandomPass();
-                my $rc   = runAsZextras( "$ZMPROV ca " . "$config{VIRUSQUARANTINE} \'$pass\' " . "amavisBypassSpamChecks TRUE " . "zimbraAttachmentsIndexingEnabled FALSE " . "zimbraIsSystemResource TRUE " . "zimbraIsSystemAccount TRUE " . "zimbraHideInGal TRUE " . "zimbraMailMessageLifetime 30d " . "zimbraMailQuota 0 " . "description \'System account for Anti-virus quarantine.\'" );
+                my $rc =
+                  runAsZextras( "$ZMPROV ca "
+                      . "$config{VIRUSQUARANTINE} \'$pass\' "
+                      . "amavisBypassSpamChecks TRUE "
+                      . "zimbraAttachmentsIndexingEnabled FALSE "
+                      . "zimbraIsSystemResource TRUE "
+                      . "zimbraIsSystemAccount TRUE "
+                      . "zimbraHideInGal TRUE "
+                      . "zimbraMailMessageLifetime 30d "
+                      . "zimbraMailQuota 0 "
+                      . "description \'System account for Anti-virus quarantine.\'"
+                  );
                 progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
             }
 
-            progress("Setting spam, training and anti-virus quarantine accounts...");
-            my $rc = setLdapGlobalConfig( 'zimbraSpamIsSpamAccount', "$config{TRAINSASPAM}", 'zimbraSpamIsNotSpamAccount', "$config{TRAINSAHAM}", 'zimbraAmavisQuarantineAccount', "$config{VIRUSQUARANTINE}" );
+            progress(
+                "Setting spam, training and anti-virus quarantine accounts...");
+            my $rc = setLdapGlobalConfig(
+                'zimbraSpamIsSpamAccount',       "$config{TRAINSASPAM}",
+                'zimbraSpamIsNotSpamAccount',    "$config{TRAINSAHAM}",
+                'zimbraAmavisQuarantineAccount', "$config{VIRUSQUARANTINE}"
+            );
             progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
         }
     }
@@ -5644,7 +6345,9 @@ sub configInitSql {
 
     if ( !$sqlConfigured && isEnabled("carbonio-appserver") ) {
         progress("Initializing store sql database...");
-        runAsRoot("/opt/zextras/libexec/zmmyinit --mysql_memory_percent $config{MYSQLMEMORYPERCENT}");
+        runAsRoot(
+"/opt/zextras/libexec/zmmyinit --mysql_memory_percent $config{MYSQLMEMORYPERCENT}"
+        );
         progress("done.\n");
         configLog("configInitSql");
     }
@@ -5672,28 +6375,39 @@ sub configInitMta {
         setLocalConfig( "postfix_mail_owner",   $config{postfix_mail_owner} );
         setLocalConfig( "postfix_setgid_group", $config{postfix_setgid_group} );
 
-        runAsZextras("/opt/zextras/libexec/zmmtainit $config{LDAPHOST} $config{LDAPPORT}");
+        runAsZextras(
+            "/opt/zextras/libexec/zmmtainit $config{LDAPHOST} $config{LDAPPORT}"
+        );
         progress("done.\n");
         if ( isZCS() ) {
-            push( @installedServiceList, ( 'zimbraServiceInstalled', 'amavis' ) );
-            push( @installedServiceList, ( 'zimbraServiceInstalled', 'antivirus' ) );
-            push( @installedServiceList, ( 'zimbraServiceInstalled', 'antispam' ) );
-            push( @installedServiceList, ( 'zimbraServiceInstalled', 'opendkim' ) );
-            push( @enabledServiceList,   ( 'zimbraServiceEnabled',   'amavis' ) );
+            push( @installedServiceList,
+                ( 'zimbraServiceInstalled', 'amavis' ) );
+            push( @installedServiceList,
+                ( 'zimbraServiceInstalled', 'antivirus' ) );
+            push( @installedServiceList,
+                ( 'zimbraServiceInstalled', 'antispam' ) );
+            push( @installedServiceList,
+                ( 'zimbraServiceInstalled', 'opendkim' ) );
+            push( @enabledServiceList, ( 'zimbraServiceEnabled', 'amavis' ) );
             if ( $config{RUNAV} eq "yes" ) {
-                push( @enabledServiceList, ( 'zimbraServiceEnabled', 'antivirus' ) );
+                push( @enabledServiceList,
+                    ( 'zimbraServiceEnabled', 'antivirus' ) );
             }
             if ( $config{RUNSA} eq "yes" ) {
-                push( @enabledServiceList, ( 'zimbraServiceEnabled', 'antispam' ) );
+                push( @enabledServiceList,
+                    ( 'zimbraServiceEnabled', 'antispam' ) );
             }
             if ( $config{RUNDKIM} eq "yes" ) {
-                push( @enabledServiceList, ( 'zimbraServiceEnabled', 'opendkim' ) );
+                push( @enabledServiceList,
+                    ( 'zimbraServiceEnabled', 'opendkim' ) );
             }
             if ( $config{RUNCBPOLICYD} eq "yes" ) {
-                push( @enabledServiceList, ( 'zimbraServiceEnabled', 'cbpolicyd' ) );
+                push( @enabledServiceList,
+                    ( 'zimbraServiceEnabled', 'cbpolicyd' ) );
             }
         }
-        setLdapServerConfig( "zimbraMtaMyNetworks", $config{zimbraMtaMyNetworks} )
+        setLdapServerConfig( "zimbraMtaMyNetworks",
+            $config{zimbraMtaMyNetworks} )
           if ( $config{zimbraMtaMyNetworks} ne "" );
 
         configLog("configInitMta");
@@ -5708,14 +6422,15 @@ sub configInitGALSyncAccts {
     }
 
     return 1
-      unless ( isEnabled("carbonio-directory-server") && $config{LDAPHOST} eq $config{HOSTNAME} );
+      unless ( isEnabled("carbonio-directory-server")
+        && $config{LDAPHOST} eq $config{HOSTNAME} );
 
-    #if ($config{ENABLEGALSYNCACCOUNTS} eq "yes") {
-    #progress("Creating galsync accounts in all domains...");
-    #my $rc = runAsZextras("zmjava com.zimbra.cs.account.ldap.upgrade.LdapUpgrade -b 14531 -v");
-    #progress(($rc == 0) ? "done.\n" : "failed.\n");
-    #configLog("configInitGALSyncAccts") if ($rc == 0);
-    #}
+#if ($config{ENABLEGALSYNCACCOUNTS} eq "yes") {
+#progress("Creating galsync accounts in all domains...");
+#my $rc = runAsZextras("zmjava com.zimbra.cs.account.ldap.upgrade.LdapUpgrade -b 14531 -v");
+#progress(($rc == 0) ? "done.\n" : "failed.\n");
+#configLog("configInitGALSyncAccts") if ($rc == 0);
+#}
 }
 
 sub configCreateDefaultDomainGALSyncAcct {
@@ -5727,10 +6442,16 @@ sub configCreateDefaultDomainGALSyncAcct {
 
     if ( isEnabled("carbonio-appserver") ) {
         progress("Creating galsync account for default domain...");
-        my $_server  = getLocalConfig("zimbra_server_hostname");
-        my $default_domain = ( ($newinstall) ? "$config{CREATEDOMAIN}" : "$config{zimbraDefaultDomainName}" );
-        my $galsyncacct    = "galsync." . lc( genRandomPass() ) . '@' . $default_domain;
-        my $rc             = runAsZextras("/opt/zextras/bin/zmgsautil createAccount -a $galsyncacct -n InternalGAL --domain $default_domain -s $_server -t zimbra -f _InternalGAL -p 1d");
+        my $_server = getLocalConfig("zimbra_server_hostname");
+        my $default_domain =
+          ( ($newinstall)
+            ? "$config{CREATEDOMAIN}"
+            : "$config{zimbraDefaultDomainName}" );
+        my $galsyncacct =
+          "galsync." . lc( genRandomPass() ) . '@' . $default_domain;
+        my $rc = runAsZextras(
+"/opt/zextras/bin/zmgsautil createAccount -a $galsyncacct -n InternalGAL --domain $default_domain -s $_server -t zimbra -f _InternalGAL -p 1d"
+        );
         progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
         configLog("configCreateDefaultDomainGALSyncAcct") if ( $rc == 0 );
     }
@@ -5740,14 +6461,17 @@ sub configSetEnabledServices {
 
     foreach my $p ( keys %installedPackages ) {
         if ( $p eq "carbonio-core" ) {
-            push( @installedServiceList, ( 'zimbraServiceInstalled', 'stats' ) );
+            push( @installedServiceList,
+                ( 'zimbraServiceInstalled', 'stats' ) );
             next;
         }
         $p =~ s/carbonio-//;
         if ( $p eq "appserver" ) { $p = "mailbox"; }
 
-        # do not push antivirus if already exists, required to enable support for single & multi-node installs
-        if ( $p eq "clamav" && !grep( /^antivirus$/, @installedServiceList ) ) { $p = "antivirus"; }
+# do not push antivirus if already exists, required to enable support for single & multi-node installs
+        if ( $p eq "clamav" && !grep( /^antivirus$/, @installedServiceList ) ) {
+            $p = "antivirus";
+        }
 
         # do not add clamav as service, it is known as antivirus
         if ( $p eq "clamav" ) { next; }
@@ -5766,12 +6490,16 @@ sub configSetEnabledServices {
 
                 # Add carbonio-appserver webapps to service list
                 if ( $installedWebapps{$serviceWebApp} eq "Enabled" ) {
-                    push( @enabledServiceList, 'zimbraServiceEnabled', "$serviceWebApp" );
+                    push( @enabledServiceList,
+                        'zimbraServiceEnabled', "$serviceWebApp" );
                 }
             }
 
-            # do not push antivirus if already exists, required to enable support for single & multi-node installs
-            if ( $p eq "clamav" && !grep( /^antivirus$/, @enabledServiceList ) ) { $p = "antivirus"; }
+# do not push antivirus if already exists, required to enable support for single & multi-node installs
+            if ( $p eq "clamav" && !grep( /^antivirus$/, @enabledServiceList ) )
+            {
+                $p = "antivirus";
+            }
 
             # do not add clamav as service, it is known as antivirus
             if ( $p eq "clamav" ) { next; }
@@ -5781,20 +6509,26 @@ sub configSetEnabledServices {
 
     progress("Setting services on $config{HOSTNAME}...");
 
-    # add service-discover as enabled service if it was in zimbraServiceEnabled before.
-    # service-discover is special case which is not handled by regular logic, since it
-    # has no explicit package mapping. we also do not add it to installedServiceList
-    # for the same reason.
-    if ( $prevEnabledServices{"service-discover"} && $prevEnabledServices{"service-discover"} eq "Enabled" ) {
-        detail("Restoring service-discover serviceEnabled state from previous install.");
-        push( @enabledServiceList, ( 'zimbraServiceEnabled', 'service-discover' ) );
+# add service-discover as enabled service if it was in zimbraServiceEnabled before.
+# service-discover is special case which is not handled by regular logic, since it
+# has no explicit package mapping. we also do not add it to installedServiceList
+# for the same reason.
+    if (   $prevEnabledServices{"service-discover"}
+        && $prevEnabledServices{"service-discover"} eq "Enabled" )
+    {
+        detail(
+"Restoring service-discover serviceEnabled state from previous install."
+        );
+        push( @enabledServiceList,
+            ( 'zimbraServiceEnabled', 'service-discover' ) );
     }
 
     setLdapServerConfig( $config{HOSTNAME}, @installedServiceList );
     setLdapServerConfig( $config{HOSTNAME}, @enabledServiceList );
     progress("done.\n");
 
-    my $rc = runAsZextras("/opt/zextras/libexec/zmiptool >/dev/null 2>/dev/null");
+    my $rc =
+      runAsZextras("/opt/zextras/libexec/zmiptool >/dev/null 2>/dev/null");
 
     configLog("configSetEnabledServices");
 }
@@ -5867,16 +6601,21 @@ sub applyConfig {
     # Generating dhparam key
     if ($newinstall) {
         progress("Generating dhparam key...");
-        my $rc = runAsZextras("/opt/zextras/common/bin/openssl dhparam -out /opt/zextras/conf/dhparam.pem.crb 2048 > /dev/null 2>&1");
+        my $rc = runAsZextras(
+"/opt/zextras/common/bin/openssl dhparam -out /opt/zextras/conf/dhparam.pem.crb 2048 > /dev/null 2>&1"
+        );
         if ( $rc != 0 ) {
             progress("\nfailed to generate dhparam key");
-            progress("\nCarbonio bootstrap process exited cause one of the subprocess failed.\n");
+            progress(
+"\nCarbonio bootstrap process exited cause one of the subprocess failed.\n"
+            );
             exit();
         }
         else {
-            # Added the following for bug 103803. Could not just add the cert as a globalConfigValue
-            # for zimbraSSldHParam.  See bug 104244.
-            setLdapGlobalConfig( "zimbraSSLDHParam", "/opt/zextras/conf/dhparam.pem.crb" );
+# Added the following for bug 103803. Could not just add the cert as a globalConfigValue
+# for zimbraSSldHParam.  See bug 104244.
+            setLdapGlobalConfig( "zimbraSSLDHParam",
+                "/opt/zextras/conf/dhparam.pem.crb" );
             progress("done.\n");
         }
     }
@@ -5945,9 +6684,13 @@ sub applyConfig {
     }
 
     if ( $newinstall != 1 ) {
-        if ( ( isInstalled("carbonio-proxy") && isEnabled("carbonio-proxy") ) && ( $config{HTTPPROXY} eq "TRUE" ) ) {
-            setLdapServerConfig( $config{HOSTNAME}, 'zimbraMailProxyPort',    $config{HTTPPROXYPORT} );
-            setLdapServerConfig( $config{HOSTNAME}, 'zimbraMailSSLProxyPort', $config{HTTPSPROXYPORT} );
+        if (   ( isInstalled("carbonio-proxy") && isEnabled("carbonio-proxy") )
+            && ( $config{HTTPPROXY} eq "TRUE" ) )
+        {
+            setLdapServerConfig( $config{HOSTNAME}, 'zimbraMailProxyPort',
+                $config{HTTPPROXYPORT} );
+            setLdapServerConfig( $config{HOSTNAME}, 'zimbraMailSSLProxyPort',
+                $config{HTTPSPROXYPORT} );
         }
     }
 
@@ -5987,16 +6730,21 @@ sub applyConfig {
         }
         else {
             if ($newinstall) {
-                progress("Skipping creation of default domain GAL sync account - not a service node.\n");
+                progress(
+"Skipping creation of default domain GAL sync account - not a service node.\n"
+                );
             }
             else {
-                progress("Skipping creation of default domain GAL sync account - existing install detected.\n");
+                progress(
+"Skipping creation of default domain GAL sync account - existing install detected.\n"
+                );
             }
         }
     }
     else {
-        progress("WARNING: galsync account creation for default domain skipped because Application Server was not configured to start.\n")
-          if ( isEnabled("carbonio-appserver") );
+        progress(
+"WARNING: galsync account creation for default domain skipped because Application Server was not configured to start.\n"
+        ) if ( isEnabled("carbonio-appserver") );
     }
 
     setupCrontab();
@@ -6066,37 +6814,45 @@ sub setupCrontab {
     detail("crontab: Taking a copy of zextras user crontab file.");
     qx(crontab -u zextras -l > /tmp/crontab.zextras.orig 2> /dev/null);
     detail("crontab: Looking for ZEXTRAS-START in existing crontab entry.");
-    my $rc = 0xffff & system("grep ZEXTRAS-START /tmp/crontab.zextras.orig > /dev/null 2>&1");
+    my $rc = 0xffff &
+      system("grep ZEXTRAS-START /tmp/crontab.zextras.orig > /dev/null 2>&1");
     if ($rc) {
-        detail("crontab: ZEXTRAS-START not found truncating zextras crontab and starting fresh.");
+        detail(
+"crontab: ZEXTRAS-START not found truncating zextras crontab and starting fresh."
+        );
         qx(cp -f /dev/null /tmp/crontab.zextras.orig 2>> $logfile);
     }
     detail("crontab: Looking for ZEXTRAS-END in existing crontab entry.");
-    $rc = 0xffff & system("grep ZEXTRAS-END /tmp/crontab.zextras.orig > /dev/null 2>&1");
+    $rc = 0xffff &
+      system("grep ZEXTRAS-END /tmp/crontab.zextras.orig > /dev/null 2>&1");
     if ($rc) {
-        detail("crontab: ZEXTRAS-END not found truncating zextras crontab and starting fresh.");
+        detail(
+"crontab: ZEXTRAS-END not found truncating zextras crontab and starting fresh."
+        );
         qx(cp -f /dev/null /tmp/crontab.zextras.orig);
     }
-    qx(cat /tmp/crontab.zextras.orig | sed -e '/# ZEXTRAS-START/,/# ZEXTRAS-END/d' > /tmp/crontab.zextras.proc);
+qx(cat /tmp/crontab.zextras.orig | sed -e '/# ZEXTRAS-START/,/# ZEXTRAS-END/d' > /tmp/crontab.zextras.proc);
     detail("crontab: Adding carbonio-core specific crontab entries");
     qx(cp -f /opt/zextras/conf/crontabs/crontab /tmp/crontab.zextras);
 
     if ( isEnabled("carbonio-directory-server") ) {
-        detail("crontab: Adding carbonio-directory-server specific crontab entries");
-        qx(cat /opt/zextras/conf/crontabs/crontab.ldap >> /tmp/crontab.zextras 2>> $logfile);
+        detail(
+            "crontab: Adding carbonio-directory-server specific crontab entries"
+        );
+qx(cat /opt/zextras/conf/crontabs/crontab.ldap >> /tmp/crontab.zextras 2>> $logfile);
     }
 
     if ( isEnabled("carbonio-appserver") ) {
         detail("crontab: Adding carbonio-appserver specific crontab entries");
-        qx(cat /opt/zextras/conf/crontabs/crontab.store >> /tmp/crontab.zextras 2>> $logfile);
+qx(cat /opt/zextras/conf/crontabs/crontab.store >> /tmp/crontab.zextras 2>> $logfile);
     }
 
     if ( isEnabled("carbonio-mta") ) {
         detail("crontab: Adding carbonio-mta specific crontab entries");
-        qx(cat /opt/zextras/conf/crontabs/crontab.mta >> /tmp/crontab.zextras 2>> $logfile);
+qx(cat /opt/zextras/conf/crontabs/crontab.mta >> /tmp/crontab.zextras 2>> $logfile);
     }
 
-    qx(echo "# ZEXTRAS-END -- DO NOT EDIT ANYTHING BETWEEN THIS LINE AND ZEXTRAS-START" >> /tmp/crontab.zextras);
+qx(echo "# ZEXTRAS-END -- DO NOT EDIT ANYTHING BETWEEN THIS LINE AND ZEXTRAS-START" >> /tmp/crontab.zextras);
     qx(cat /tmp/crontab.zextras.proc >> /tmp/crontab.zextras);
     detail("crontab: installing new crontab");
     qx(crontab -u zextras /tmp/crontab.zextras 2> /dev/null);
@@ -6148,7 +6904,8 @@ sub addServerToHostPool {
     my $hp = getLdapCOSValue("zimbraMailHostPool");
 
     if ( $id eq "" ) {
-        progress("failed. Couldn't find a server entry for $config{HOSTNAME}\n");
+        progress(
+            "failed. Couldn't find a server entry for $config{HOSTNAME}\n");
         return undef;
     }
     $hp .= ( ( $hp eq "" ) ? "$id" : "\n$id" );
@@ -6175,7 +6932,8 @@ sub mainMenu {
 sub stopLdap {
     progress("Stopping ldap...");
     my $rc = runAsZextras("/opt/zextras/bin/ldap stop");
-    progress( ( $rc == 0 ) ? "done.\n" : "failed. ldap had exit status: $rc.\n" );
+    progress(
+        ( $rc == 0 ) ? "done.\n" : "failed. ldap had exit status: $rc.\n" );
     sleep 5 unless $rc;    # give it a chance to shutdown.
     return $rc;
 }
@@ -6209,7 +6967,8 @@ sub startLdap {
             else {
                 $rc = runAsZextras("/opt/zextras/bin/ldap start");
             }
-            progress( ( $rc == 0 ) ? "done.\n" : "failed with exit code: $rc.\n" );
+            progress(
+                ( $rc == 0 ) ? "done.\n" : "failed with exit code: $rc.\n" );
             if ($rc) {
                 return $rc;
             }
@@ -6220,7 +6979,8 @@ sub startLdap {
 
 sub resumeConfiguration {
     progress("\n\nNote\n\n");
-    progress("The previous configuration appears to have failed to complete\n\n");
+    progress(
+        "The previous configuration appears to have failed to complete\n\n");
     if ( askYN( "Attempt to complete configuration now?", "yes" ) eq "yes" ) {
         applyConfig();
     }
