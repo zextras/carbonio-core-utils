@@ -6442,11 +6442,12 @@ sub configCreateDefaultDomainGALSyncAcct {
 
     if ( isEnabled("carbonio-appserver") ) {
         progress("Creating galsync account for default domain...");
-        my $_server = getLocalConfig("zimbra_server_hostname");
-        my $default_domain =
-          ( ($newinstall)
+        my $_server        = getLocalConfig("zimbra_server_hostname");
+        my $default_domain = (
+            ($newinstall)
             ? "$config{CREATEDOMAIN}"
-            : "$config{zimbraDefaultDomainName}" );
+            : "$config{zimbraDefaultDomainName}"
+        );
         my $galsyncacct =
           "galsync." . lc( genRandomPass() ) . '@' . $default_domain;
         my $rc = runAsZextras(
@@ -6461,8 +6462,13 @@ sub configSetEnabledServices {
 
     foreach my $p ( keys %installedPackages ) {
         if ( $p eq "carbonio-core" ) {
-            push( @installedServiceList,
-                ( 'zimbraServiceInstalled', 'stats' ) );
+            push(
+                @installedServiceList,
+                (
+                    'zimbraServiceInstalled', 'stats',
+                    'zimbraServiceInstalled', 'service-discover'
+                )
+            );
             next;
         }
         $p =~ s/carbonio-//;
@@ -6480,7 +6486,13 @@ sub configSetEnabledServices {
 
     foreach my $p ( keys %enabledPackages ) {
         if ( $p eq "carbonio-core" ) {
-            push( @enabledServiceList, ( 'zimbraServiceEnabled', 'stats' ) );
+            push(
+                @enabledServiceList,
+                (
+                    'zimbraServiceEnabled', 'stats',
+                    'zimbraServiceEnabled', 'service-discover'
+                )
+            );
             next;
         }
         if ( $enabledPackages{$p} eq "Enabled" ) {
@@ -6508,21 +6520,6 @@ sub configSetEnabledServices {
     }
 
     progress("Setting services on $config{HOSTNAME}...");
-
-# add service-discover as enabled service if it was in zimbraServiceEnabled before.
-# service-discover is special case which is not handled by regular logic, since it
-# has no explicit package mapping. we also do not add it to installedServiceList
-# for the same reason.
-    if (   $prevEnabledServices{"service-discover"}
-        && $prevEnabledServices{"service-discover"} eq "Enabled" )
-    {
-        detail(
-"Restoring service-discover serviceEnabled state from previous install."
-        );
-        push( @enabledServiceList,
-            ( 'zimbraServiceEnabled', 'service-discover' ) );
-    }
-
     setLdapServerConfig( $config{HOSTNAME}, @installedServiceList );
     setLdapServerConfig( $config{HOSTNAME}, @enabledServiceList );
     progress("done.\n");
