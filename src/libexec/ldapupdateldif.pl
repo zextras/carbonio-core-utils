@@ -8,6 +8,7 @@
 use strict;
 use lib "/opt/zextras/common/lib/perl5";
 use Zextras::Util::Common;
+use Zextras::Util::Systemd;
 use File::Grep qw (fgrep);
 use File::Path;
 use Net::LDAP;
@@ -15,6 +16,13 @@ use Net::LDAP::LDIF;
 use Net::LDAP::Entry;
 use Crypt::SaltedHash;
 use MIME::Base64;
+
+my $id = getpwuid($<);
+chomp $id;
+if ( $id ne "root" ) {
+    print STDERR "Error: must be run as root user\n";
+    exit(1);
+}
 
 my $source_config_dir = "/opt/zextras/common/etc/openldap";
 my $config_dir = "/opt/zextras/conf";
@@ -37,7 +45,13 @@ if (!-d $zimbra_tmp_directory) {
   File::Path::mkpath("$zimbra_tmp_directory");
 }
 
-my $rc=qx(/opt/zextras/bin/ldap start);
+if ( isSystemd() ) {
+  system("systemctl start carbonio-openldap.service");
+  sleep 5;
+}
+else {
+  system("su - zextras -c '/opt/zextras/bin/ldap start'");
+}
 
 my @masters=split(/ /, $ldap_master_url);
 my $master_ref=\@masters;
@@ -150,7 +164,7 @@ if ( -d "/opt/zextras/lib/conf/" ) {
                 print "Error msg: ", $entry->dn(), " ", $msg->error(), "\n";
               }
             }
-       }
+        }
     }
     closedir DIR;
 }
@@ -170,4 +184,3 @@ sub getLocalConfig {
   $main::loaded{lc}{$key} = $val;
   return $val;
 }
-

@@ -13,6 +13,7 @@ if ( $id ne "zextras" ) { die "Run as the zextras user!\n"; }
 
 use lib "/opt/zextras/common/lib/perl5";
 use Zextras::Util::Common;
+use Zextras::Util::Systemd;
 use Zextras::Mon::Logger;
 use Net::LDAP;
 
@@ -88,14 +89,6 @@ my %allservices = (
     "cbpolicyd"        => "/opt/zextras/bin/zmcbpolicydctl",
 );
 
-# Array of systemd targets to check and start
-my @systemd_targets = (
-    "carbonio-directory-server.target",
-    "carbonio-appserver.target",
-    "carbonio-proxy.target",
-    "carbonio-mta.target",
-);
-
 my %rewrites = (
     "antivirus" => "antivirus amavis",
     "antispam"  => "antispam amavis",
@@ -143,7 +136,9 @@ my %REMOTECOMMANDS = (
 my $zal_path     = "/opt/zextras/lib/ext/carbonio/zal.jar";
 my $zextras_path = "/opt/zextras/lib/ext/carbonio/carbonio.jar";
 
-isSystemd();
+if ( isSystemd() ) {
+    systemdPrint();
+}
 
 $| = 1;
 
@@ -538,50 +533,6 @@ sub getEnabledServices {
         close(CACHE);
     }
     return \%s;
-}
-
-sub isSystemd {
-
-    # Check if any of the systemd targets are enabled
-    foreach my $target (@systemd_targets) {
-        if ( isSystemdEnabledUnit($target) ) {
-            systemdPrint();    # At least one target is enabled
-        }
-    }
-}
-
-sub isSystemdEnabledUnit {
-    my ($unitName) = @_;
-
-    # Construct the command to check if the unit is enabled
-    my $command = "systemctl is-enabled $unitName 2>&1";
-
-    # Execute the command and capture the output
-    my $output = `$command`;
-    my $rc     = $? >> 8;      # Get the exit status of the command
-
-    # Check the exit status
-    if ( $rc == 0 ) {
-        return 1;              # The unit is enabled
-    }
-    elsif ( $rc == 1 ) {
-        return 0;              # The unit is not enabled
-    }
-    else {
-        return undef;          # An error occurred
-    }
-}
-
-sub systemdPrint {
-    print "Services are now handled by systemd.\n\n";
-    print "Enabled systemd targets:\n\n";
-    foreach my $target (@systemd_targets) {
-        if ( isSystemdEnabledUnit($target) ) {
-            print "  - $target\n"    # At least one target is enabled
-        }
-    }
-    print "\nPlease check the documentation for further details.\nExiting.\n";
-    exit 1;
 }
 
 sub isLdapLocal {

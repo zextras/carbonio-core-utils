@@ -9,15 +9,8 @@ use strict;
 use lib "/opt/zextras/common/lib/perl5";
 use File::Basename;
 use Zextras::Mon::Stat;
+use Zextras::Util::Systemd;
 use POSIX qw(setsid);
-
-# Array of systemd targets to check and start
-my @systemd_targets = (
-    "carbonio-directory-server.target",
-    "carbonio-appserver.target",
-    "carbonio-proxy.target",
-    "carbonio-mta.target",
-);
 
 my @TOOL_ALL        = ( 'zmstat-proc', 'zmstat-cpu', 'zmstat-vm', 'zmstat-io -x', 'zmstat-df', 'zmstat-io', 'zmstat-fd', 'zmstat-allprocs', );
 
@@ -223,73 +216,33 @@ _USAGE_
     exit(1);
 }
 
-sub isSystemd {
-
-    # Check if any of the systemd targets are enabled
-    foreach my $target (@systemd_targets) {
-        if ( isSystemdEnabledUnit($target) ) {
-            systemdPrint();    # At least one target is enabled
-        }
-    }
-}
-
-sub isSystemdEnabledUnit {
-    my ($unitName) = @_;
-
-    # Construct the command to check if the unit is enabled
-    my $command = "systemctl is-enabled $unitName 2>&1";
-
-    # Execute the command and capture the output
-    my $output = `$command`;
-    my $rc     = $? >> 8;      # Get the exit status of the command
-
-    # Check the exit status
-    if ( $rc == 0 ) {
-        return 1;              # The unit is enabled
-    }
-    elsif ( $rc == 1 ) {
-        return 0;              # The unit is not enabled
-    }
-    else {
-        return undef;          # An error occurred
-    }
-}
-
-sub systemdPrint {
-    print "Services are now handled by systemd.\n\n";
-    print "Enabled systemd targets:\n\n";
-    foreach my $target (@systemd_targets) {
-        if ( isSystemdEnabledUnit($target) ) {
-            print "  - $target\n"    # At least one target is enabled
-        }
-    }
-    print "\nPlease check the documentation for further details.\nExiting.\n";
-    exit 1;
-}
-
 #
 # main
 #
 
 my $cmd = $ARGV[0];
 if ( defined($cmd) ) {
-
     if ( $cmd eq 'stop' || $cmd eq 'restart' ) {
-        isSystemd();
-        stopRestart();
+        if ( isSystemd() ) {
+            systemdPrint();
+        }
         if ( $cmd eq 'stop' ) {
-            isSystemd();
-            exit(0);    # always return success to calling script
+            if ( isSystemd() ) {
+                systemdPrint();
+            }
+            exit(0);
         }
     }
     if ( $cmd eq 'stop-systemd' || $cmd eq 'restart-systemd' ) {
         stopRestart();
         if ( $cmd eq 'stop-systemd' ) {
-            exit(0);    # always return success to calling script
+            exit(0);
         }
     }
     if ( $cmd eq 'start' || $cmd eq 'restart' ) {
-        isSystemd();
+        if ( isSystemd() ) {
+            systemdPrint();
+        }
         startRestart();
     }
     if ( $cmd eq 'start-systemd' || $cmd eq 'restart-systemd' ) {
@@ -335,4 +288,3 @@ if ( defined($cmd) ) {
 else {
     usage();
 }
-

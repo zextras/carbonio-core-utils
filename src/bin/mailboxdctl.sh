@@ -6,8 +6,8 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 source /opt/zextras/bin/zmshutil || exit 1
-is_systemd
-if [ $? -eq 1 ]; then
+
+if is_systemd; then
   systemd_print
 fi
 zmsetvars

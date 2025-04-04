@@ -5,8 +5,8 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-if [ "$(whoami)" != zextras ]; then
-  echo "Error: must be run as zextras user"
+if [ "$(whoami)" != root ]; then
+  echo "Error: must be run as root user"
   exit 1
 fi
 
@@ -101,7 +101,11 @@ if [ "$response" != "yes" ]; then
   exit
 fi
 
-/opt/zextras/bin/zmcontrol stop
+if is_systemd; then
+  stop_all_systemd_targets
+else
+  /opt/zextras/bin/zmcontrol stop
+fi
 
 echo "Starting mysqld"
 /opt/zextras/common/bin/mysqld_safe --defaults-file="${mysql_mycnf}" --skip-grant-tables --ledir=/opt/zextras/common/sbin &
@@ -117,7 +121,15 @@ echo "Changing root passwd"
 
 echo "Flushing privileges"
 /opt/zextras/bin/mysql -Dmysql -P "${mysql_port}"-e "flush privileges;"
-/opt/zextras/bin/mysql.server stop
+if is_systemd; then
+  systemctl stop carbonio-appserver-db.service
+else
+  /opt/zextras/bin/mysql.server stop
+fi
 
 echo "Restarting carbonio services"
-/opt/zextras/bin/zmcontrol start
+if is_systemd; then
+  start_all_systemd_targets
+else
+  /opt/zextras/bin/zmcontrol start
+fi

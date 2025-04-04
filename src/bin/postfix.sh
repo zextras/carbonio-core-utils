@@ -12,8 +12,8 @@ if [ ! -x /opt/zextras/common/sbin/postfix ]; then
   exit 1
 fi
 
-is_systemd
-if [ $? -eq 1 ]; then
+
+if is_systemd; then
   systemd_print
 fi
 zmsetvars

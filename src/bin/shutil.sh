@@ -65,13 +65,12 @@ zmsysmemkb() {
 }
 
 is_systemd() {
-  local systemd_status=0 # Default to not enabled
+  local systemd_status=1 # Default to not enabled
 
   # Check if any of the systemd targets are enabled
   for target in "${systemd_targets[@]}"; do
     if is_systemd_enabled_unit "$target"; then
-      systemd_status=1 # At least one target is enabled
-      break
+      systemd_status=0 # At least one target is enabled
     fi
   done
 
@@ -98,12 +97,41 @@ is_systemd_enabled_unit() {
   # Execute the command and check if the unit is enabled
   if systemctl is-enabled "${unit_name}" &>/dev/null; then
     return 0 # The unit is enabled
-  elif [ $? -eq 1 ]; then
-    return 1 # The unit is not enabled
   else
-    echo "Error: Unable to check the status of ${unit_name}" >&2
-    return 2 # An error occurred
+    return 1 # The unit is disabled
   fi
+}
+
+start_all_systemd_targets() {
+  local target
+
+  # Start all enabled systemd units
+  for target in "${systemd_targets[@]}"; do
+    if is_systemd_enabled_unit "$target"; then
+      systemctl start "${target}"
+      if [ $? -eq 0 ]; then
+        echo "Started ${target}"
+      else
+        echo "Failed to start ${target}"
+      fi
+    fi
+  done
+}
+
+stop_all_systemd_targets() {
+  local target
+
+  # Stop all enabled systemd units
+  for target in "${systemd_targets[@]}"; do
+    if is_systemd_enabled_unit "$target"; then
+      systemctl stop "${target}"
+      if [ $? -eq 0 ]; then
+        echo "Stopped ${target}"
+      else
+        echo "Failed to stop ${target}"
+      fi
+    fi
+  done
 }
 
 systemd_print() {
