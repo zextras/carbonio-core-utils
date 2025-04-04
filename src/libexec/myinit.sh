@@ -99,8 +99,7 @@ su - zextras -c "
 #
 
 echo "* Starting mysql server"
-is_systemd
-if [ $? -eq 1 ]; then
+if is_systemd; then
   systemctl start carbonio-appserver-db.service
 else
   su - zextras -c "/opt/zextras/bin/mysql.server start \

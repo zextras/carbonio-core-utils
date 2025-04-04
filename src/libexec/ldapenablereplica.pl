@@ -12,17 +12,18 @@ use XML::Simple;
 use Getopt::Long;
 use File::Copy qw/ cp /;
 use File::Path;
+use Zextras::Util::Systemd;
+
+my $id = getpwuid($<);
+chomp $id;
+if ($id ne "root") {
+    print STDERR "Error: must be run as root user\n";
+    exit (1);
+}
 
 if ( ! -d "/opt/zextras/common/etc/openldap/schema" ) {
   print "ERROR: openldap does not appear to be installed - exiting\n";
   exit(1);
-}
-
-my $id = getpwuid($<);
-chomp $id;
-if ($id ne "zextras") {
-    print STDERR "Error: must be run as zextras user\n";
-    exit (1);
 }
 
 my ($help);
@@ -70,7 +71,7 @@ if ( $ldap_port == 636 ) {
 sub verifyLdap {
   # Ensure we can bind to the master server before doing anything else
 
-  print "Verifying ldap on $lmr...";
+  print "Verifying ldap on $lmr...\n";
   my $ldap = Net::LDAP->new("$lmr")  or  die "$@";
 
   # startTLS Operation
@@ -134,8 +135,9 @@ sub verifySyncProv {
 }
 
 sub enableSyncProv {
-  print "Enabling sync provider on master...";
+  print "Enabling sync provider on master...\n";
   File::Path::mkpath("/opt/zextras/data/ldap/accesslog/db");
+  system("chown -R zextras:zextras /opt/zextras/data/ldap/accesslog");
 
   my $ldap = Net::LDAP->new('ldapi://%2frun%2fcarbonio%2frun%2fldapi/') or die "$@";
   my $mesg = $ldap->bind("cn=config", password=>"$ldap_root_password");
@@ -305,12 +307,22 @@ sub resetLdapUrl {
 
 sub startLdap {
   print "Starting LDAP on ${zimbra_server_hostname}...";
-  my $cmd = "/opt/zextras/bin/ldap status";
-  my $rc = system($cmd);
-  $rc >>= 8;
+  my $rc;
+  if ( isSystemd() ) {
+    $rc = isSystemdActiveUnit("carbonio-openldap.service");
+  }
+  else {
+    $rc = system("su - zextras -c '/opt/zextras/bin/ldap status'");
+  }
+
   if ($rc != 0) {
-    $cmd = "/opt/zextras/bin/ldap start";
-    $rc = system($cmd);
+    if ( isSystemd() ) {
+      $rc = system("systemctl start carbonio-openldap.service");
+      sleep 5;
+    }
+    else {
+      $rc = system("su - zextras -c '/opt/zextras/bin/ldap start'");
+    }
     $rc >>= 8;
     if ($rc == 1) {
       print "Error: Unable to start ldap, exiting.\n";

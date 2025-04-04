@@ -25,6 +25,7 @@ About this script:
 use strict;
 use lib "/opt/zextras/common/lib/perl5";
 use Zextras::Util::Common;
+use Zextras::Util::Systemd;
 use File::Path;
 use Net::LDAP;
 use Net::LDAP::LDIF;
@@ -41,15 +42,29 @@ my $ldap_is_master = getLocalConfig("ldap_is_master");
 my $ldap_starttls_supported = getLocalConfig("ldap_starttls_supported");
 my $zimbra_tmp_directory = getLocalConfig("zimbra_tmp_directory");
 
+my $id = getpwuid($<);
+chomp $id;
+if ( $id ne "root" ) {
+    print STDERR "Error: must be run as root user\n";
+    exit(1);
+}
+
 if (lc($ldap_is_master) ne "true") {
     exit(0);
 }
 
 if (!-d $zimbra_tmp_directory) {
     File::Path::mkpath("$zimbra_tmp_directory");
+    system("chown -R zextras:zextras $zimbra_tmp_directory");
 }
 
-my $rc = qx(/opt/zextras/bin/ldap start);
+if ( isSystemd() ) {
+    system("systemctl start carbonio-openldap.service");
+    sleep 5;
+}
+else {
+    system("/opt/zextras/bin/ldap start");
+}
 
 my @masters = split(/ /, $ldap_master_url);
 my $master_ref = \@masters;

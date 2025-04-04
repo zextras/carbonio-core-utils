@@ -13,15 +13,15 @@ use Net::LDAP;
 use Net::LDAP::LDIF;
 use Getopt::Long;
 use File::Basename;
-
+use Zextras::Util::Systemd;
 
 my (%c,%loaded,%saved,$rc);
 my ($oldServerName, $newServerName, $help, $verbose, $force, $delete, $skipusers, $usersonly);
 
-my (undef, undef,$uid,$gid) = getpwnam('zextras');
-if ($> ne $uid) {
-  print "Must be run as user zextras.\n";
-  &usage
+my ( undef, undef, $uid, $gid ) = getpwnam('root');
+if ( $> ne $uid ) {
+  print "Must be run as user root.\n";
+  &usage;
 }
 
 GetOptions("help" => \$help, 
@@ -94,10 +94,15 @@ if ($delete && $c{zimbra_log_host} eq "") {
 
 if (!$usersonly) {
   print "Renaming $c{zimbra_server_hostname} to $newServerName\n";
-  print "Shutting down zimbra...";
-  my $rc = runCommand("/opt/zextras/bin/zmcontrol stop");
-  print (($rc==0) ? "done.\n" : "failed.\n");
-
+  print "Shutting down services...\n";
+  my $rc;
+  if ( isSystemd() ) {
+    stopAllSystemdTargets();
+  }
+  else {
+    $rc = system("su - zextras -c '/opt/zextras/bin/zmcontrol stop'");
+  }
+  print( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
 
   updateLocalConfig("ldap_master_url");
   updateLocalConfig("ldap_url");
@@ -108,7 +113,7 @@ if (!$usersonly) {
   updateLocalConfig("smtp_destination");
   updateLocalConfig("zimbra_server_hostname");
 
-  &startLdap if (lc($c{ldap_is_master}) eq "true");
+  &startLdap if ( lc( $c{ldap_is_master} ) eq "true" );
 
   $c{zimbraServiceEnabled} = getLdapServerConfig("zimbraServiceEnabled");
 
@@ -142,7 +147,6 @@ if (!$usersonly) {
     } else {
       runCommand("/opt/zextras/libexec/zmrc $c{zimbra_log_host} HOST:$c{zimbra_log_host} zmloggerhostmap $oldServerName $newServerName");
     }
-  }
 
   # Regenerate Self-signed certs
   if (!-f "/opt/zextras/ssl/carbonio/commercial/commercial.crt") {
@@ -687,15 +691,23 @@ sub isLdapRunning {
 }
 
 sub startLdap {
+  my $rc;
   print "Starting ldap...";
   if (&isLdapRunning) {
     print "already running.\n";
     return;
   }
-  $rc = runCommand("/opt/zextras/bin/ldap start");
-  if ($rc==0) {
+  if ( isSystemd() ) {
+    $rc = system("systemctl start carbonio-openldap.service");
+  }
+  else {
+    $rc = system("su - zextras -c '/opt/zextras/bin/ldap start'");
+  }
+  sleep 5;
+  if ( $rc == 0 ) {
     print "done.\n";
-  } else {
+  }
+  else {
     print "failed.\n";
     exit 1;
   }

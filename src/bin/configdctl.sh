@@ -11,8 +11,8 @@ if [ "$(whoami)" != zextras ]; then
 fi
 
 source /opt/zextras/bin/zmshutil || exit 1
-is_systemd
-if [ $? -eq 1 ]; then
+
+if is_systemd; then
   systemd_print
 fi
 zmsetvars
