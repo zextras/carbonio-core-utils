@@ -66,9 +66,7 @@ sub sendEmailReport {
     my $smtphost               = getLdapConfigValue("zimbraSmtpHostname") || "localhost";
     my $smtpport               = getLdapConfigValue("zimbraSmtpPort")     || 25;
     my $zimbra_server_hostname = getLocalConfig("zimbra_server_hostname");
-    push( @$msg, "\n\nThe Administration Console and CLI Certificate Tools guide provides\n" );
-    push( @$msg, "instructions on how to replace you self-signed or commercial certificate.\n" );
-    push( @$msg, "http://wiki.zimbra.com/index.php?title=Administration_Console_and_CLI_Certificate_Tools\n" );
+
     push( @$msg, "\n\nSSL Certificate expiration checked with $0 on $zimbra_server_hostname.\n" );
 
     print "Sending report to $to_address via $smtphost\n" if $debug;
