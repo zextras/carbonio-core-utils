@@ -45,7 +45,7 @@ $c{zmprov}="/opt/zextras/bin/zmprov -l --";
 # ***** Main *****
 my $ldappass = qx($c{zmlocalconfig} -s -m nokey zimbra_ldap_password);
 my $ldapdn  = qx($c{zmlocalconfig} -s -m nokey zimbra_ldap_userdn);
-my $ldapurl  = qx($c{zmlocalconfig} -s -m nokey ldap_url);
+my $ldapurl  = qx($c{zmlocalconfig} -s -m nokey ldap_master_url);
 chop($ldappass);
 chop($ldapdn);
 chop($ldapurl);
