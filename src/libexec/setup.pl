@@ -66,6 +66,7 @@ my @packageList = (
     "carbonio-appserver",
     "carbonio-memcached",
     "carbonio-proxy",
+    "service-discover-server",
 );
 
 my %packageServiceMap = (
@@ -77,7 +78,7 @@ my %packageServiceMap = (
     mta                => "carbonio-mta",
     mailbox            => "carbonio-appserver",
     'directory-server' => "carbonio-directory-server",
-    'service-discover' => "carbonio-core",
+    'service-discover' => "service-discover-server",
     stats              => "carbonio-core",
     memcached          => "carbonio-memcached",
     proxy              => "carbonio-proxy",
@@ -3840,6 +3841,7 @@ sub createMainMenu {
     foreach my $package (@packageList) {
         if ( $package eq "carbonio-core" )      { next; }
         if ( $package eq "carbonio-memcached" ) { next; }
+        if ( $package eq "service-discover-server" ) { next; }
 
         if ( defined( $installedPackages{$package} ) ) {
 
@@ -3862,18 +3864,9 @@ sub createMainMenu {
             };
             $i++;
         }
-        else {
-            #push @mm, "$package not installed";
-        }
     }
     $i = mainMenuExtensions( \%mm, $i );
 
-    #  $mm{menuitems}{r} = {
-    #    "prompt" => "Start servers after configuration",
-    #    "callback" => \&toggleYN,
-    #    "var" => \$config{STARTSERVERS},
-    #    "arg" => "STARTSERVERS"
-    #    };
     if ( $config{EXPANDMENU} eq "yes" ) {
         $mm{menuitems}{c} = {
             "prompt"   => "Collapse menu",
@@ -5743,6 +5736,10 @@ sub configSetEnabledServices {
             push( @installedServiceList, ( 'zimbraServiceInstalled', 'stats' ) );
             next;
         }
+        if ( $p eq "service-discover-server" ) {
+            push( @installedServiceList, ( 'zimbraServiceInstalled', 'service-discover' ) );
+            next;
+        }
         $p =~ s/carbonio-//;
         if ( $p eq "appserver" ) { $p = "mailbox"; }
 
@@ -5757,6 +5754,9 @@ sub configSetEnabledServices {
     foreach my $p ( keys %enabledPackages ) {
         if ( $p eq "carbonio-core" ) {
             push( @enabledServiceList, ( 'zimbraServiceEnabled', 'stats' ) );
+            next;
+        }
+        if ( $p eq "service-discover-server" ) {
             next;
         }
         if ( $enabledPackages{$p} eq "Enabled" ) {
@@ -5780,16 +5780,6 @@ sub configSetEnabledServices {
     }
 
     progress("Setting services on $config{HOSTNAME}...");
-
-    # add service-discover as enabled service if it was in zimbraServiceEnabled before.
-    # service-discover is special case which is not handled by regular logic, since it
-    # has no explicit package mapping. we also do not add it to installedServiceList
-    # for the same reason.
-    if ( $prevEnabledServices{"service-discover"} && $prevEnabledServices{"service-discover"} eq "Enabled" ) {
-        detail("Restoring service-discover serviceEnabled state from previous install.");
-        push( @enabledServiceList, ( 'zimbraServiceEnabled', 'service-discover' ) );
-    }
-
     setLdapServerConfig( $config{HOSTNAME}, @installedServiceList );
     setLdapServerConfig( $config{HOSTNAME}, @enabledServiceList );
     progress("done.\n");
