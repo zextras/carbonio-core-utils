@@ -328,7 +328,6 @@ SECTION mailbox
 	LOCAL zimbra_uid
 	LOCAL zimbra_gid
 	REWRITE conf/log4j.properties.in conf/log4j.properties
-	REWRITE conf/spnego_java_options.in conf/spnego_java_options
 	RESTART mailboxd
 
 SECTION proxy
