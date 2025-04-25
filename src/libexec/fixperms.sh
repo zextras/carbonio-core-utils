@@ -418,12 +418,6 @@ if [ -L /opt/zextras/jetty ]; then
     fi
   done
 
-  if [ ! -d /opt/zextras/jetty/work/spnego ]; then
-    mkdir -p /opt/zextras/jetty/work/spnego
-  fi
-  chown -R ${zextras_user}:${zextras_group} /opt/zextras/jetty/work/spnego
-  chmod 750 /opt/zextras/jetty/work/spnego
-
   if [ ! -d /opt/zextras/fbqueue ]; then
     mkdir -p /opt/zextras/fbqueue
   fi
@@ -452,13 +446,6 @@ if [ -L /opt/zextras/jetty ]; then
   fi
   chown ${zextras_user}:${zextras_group} /opt/zextras/data/mailboxd
   chmod 755 /opt/zextras/data/mailboxd
-
-  if [ ! -d /opt/zextras/data/mailboxd/spnego ]; then
-    mkdir -p /opt/zextras/data/mailboxd/spnego
-  fi
-  chown ${zextras_user}:${zextras_group} /opt/zextras/data/mailboxd/spnego
-  chmod 755 /opt/zextras/data/mailboxd/spnego
-
 fi
 
 if [ -f /opt/zextras/common/etc/java/cacerts ]; then
