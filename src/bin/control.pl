@@ -136,9 +136,10 @@ my %REMOTECOMMANDS = (
 my $zal_path     = "/opt/zextras/lib/ext/carbonio/zal.jar";
 my $zextras_path = "/opt/zextras/lib/ext/carbonio/carbonio.jar";
 
-if ( isSystemd() ) {
-    systemdPrint();
-}
+# Commands: start, stop, restart and status
+my $command = $ARGV[0];
+
+systemdPrint() if isSystemd() && $command !~ /^-[vVhH]$/;
 
 $| = 1;
 
@@ -152,9 +153,6 @@ if ( !$GlobalOpts{H} ) {
 if ( $GlobalOpts{h} ) { usage(); }
 if ( $GlobalOpts{v} ) { displayVersion(); exit 0; }
 if ( $GlobalOpts{V} ) { displayPackagesVersion(); exit 0; }
-
-# Commands: start, stop, restart and status
-my $command = $ARGV[0];
 
 unless ( defined( $COMMANDS{$command} ) ) { usage(); }
 
