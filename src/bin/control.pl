@@ -139,9 +139,7 @@ my $zextras_path = "/opt/zextras/lib/ext/carbonio/carbonio.jar";
 # Commands: start, stop, restart and status
 my $command = $ARGV[0];
 
-if ( isSystemd() && $command ne "-v" && $command ne "-V") {
-    systemdPrint();
-}
+systemdPrint() if isSystemd() && $command !~ /^-[vVhH]$/;
 
 $| = 1;
 
