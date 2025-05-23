@@ -295,13 +295,13 @@ sub enableLdapService {
 
 sub updateLdapHost {
 	print "Setting ldap_url on ${zimbra_server_hostname}...";
-	qx(/opt/zextras/bin/zmlocalconfig -f -e ldap_url="${proto}://${zimbra_server_hostname}:${ldap_port} ${lmr}");
+	qx(su - zextras -c "/opt/zextras/bin/zmlocalconfig -f -e ldap_url='${proto}://${zimbra_server_hostname}:${ldap_port} ${lmr}'");
 	print "done\n";
 }
 
 sub resetLdapUrl {
 	print "Resetting ldap_url on ${zimbra_server_hostname}...";
-	qx(/opt/zextras/bin/zmlocalconfig -f -e ldap_url="${lmr}");
+	qx(su - zextras -c "/opt/zextras/bin/zmlocalconfig -f -e ldap_url='${lmr}'");
 	print "done\n";
 }
 
