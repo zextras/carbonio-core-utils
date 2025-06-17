@@ -4591,7 +4591,6 @@ sub updatePasswordsInLocalConfig {
             else {
                 runAsZextras("/opt/zextras/bin/ldap stop");
             }
-            runAsZextras("/opt/zextras/bin/ldap stop");
             progress("done.\n");
             startLdap();
         }
@@ -4762,7 +4761,12 @@ sub configSetupLdap {
                 $config{DOCREATEDOMAIN} = "no";
                 progress("done.\n");
                 progress("Stopping ldap...");
-                runAsZextras("/opt/zextras/bin/ldap stop");
+                if ( isSystemd() ) {
+                    $rc = system("systemctl stop carbonio-openldap.service");
+                }
+                else {
+                    $rc = runAsZextras("/opt/zextras/bin/ldap stop");
+                }
                 progress("done.\n");
                 startLdap();
             }
@@ -4773,7 +4777,12 @@ sub configSetupLdap {
                 my $rc = setLdapServerConfig( "-zimbraServiceEnabled", "directory-server" );
                 progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
                 progress("Stopping ldap...");
-                runAsZextras("/opt/zextras/bin/ldap stop");
+                if ( isSystemd() ) {
+                    $rc = system("systemctl stop carbonio-openldap.service");
+                }
+                else {
+                    $rc = runAsZextras("/opt/zextras/bin/ldap stop");
+                }
                 progress("done.\n");
             }
         }
@@ -6081,14 +6090,6 @@ sub mainMenu {
     displayMenu( \%mm );
 }
 
-sub stopLdap {
-    progress("Stopping ldap...");
-    my $rc = runAsZextras("/opt/zextras/bin/ldap stop");
-    progress( ( $rc == 0 ) ? "done.\n" : "failed. ldap had exit status: $rc.\n" );
-    sleep 5 unless $rc;    # give it a chance to shutdown.
-    return $rc;
-}
-
 sub startLdap {
     my $rc;
     detail("Checking ldap status....");
@@ -6101,30 +6102,40 @@ sub startLdap {
     detail( ( $rc == 0 ) ? "already running.\n" : "not running.\n" );
 
     if ($rc) {
-        progress("Checking ldap status....");
+        progress("Starting ldap...");
         if ( isSystemd() ) {
-            $rc = isSystemdActiveUnit("carbonio-openldap.service");
+            $rc = system("systemctl start carbonio-openldap.service");
         }
         else {
-            $rc = runAsZextras("/opt/zextras/bin/ldap status");
+            $rc = runAsZextras("/opt/zextras/bin/ldap start");
         }
-        progress( ( $rc == 0 ) ? "already running.\n" : "not running.\n" );
-
-        if ($rc) {
-            progress("Starting ldap...");
-            if ( isSystemd() ) {
-                $rc = system("systemctl start carbonio-openldap.service");
-            }
-            else {
-                $rc = runAsZextras("/opt/zextras/bin/ldap start");
-            }
-            progress( ( $rc == 0 ) ? "done.\n" : "failed with exit code: $rc.\n" );
-            if ($rc) {
-                return $rc;
-            }
-        }
+        progress( ( $rc == 0 ) ? "done.\n" : "failed with exit code: $rc.\n" );
     }
-    return 0;
+    return $rc;
+}
+
+sub stopLdap {
+    my $rc;
+    detail("Checking ldap status....");
+    if ( isSystemd() ) {
+        $rc = isSystemdActiveUnit("carbonio-openldap.service");
+    }
+    else {
+        $rc = runAsZextras("/opt/zextras/bin/ldap status");
+    }
+    detail( ( $rc == 0 ) ? "already stopped.\n" : "running.\n" );
+
+    if ($rc) {
+        progress("Stopping ldap...");
+        if ( isSystemd() ) {
+            $rc = system("systemctl stop carbonio-openldap.service");
+        }
+        else {
+            $rc = runAsZextras("/opt/zextras/bin/ldap stop");
+        }
+        progress( ( $rc == 0 ) ? "done.\n" : "failed with exit code: $rc.\n" );
+    }
+    return $rc;
 }
 
 sub resumeConfiguration {
