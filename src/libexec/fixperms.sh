@@ -535,22 +535,22 @@ fi
 
 if [ -d /opt/zextras/index ]; then
   printMsg "Fixing ownership of /opt/zextras/index"
-  chown -R ${zextras_user}:${zextras_group} /opt/zextras/index
+  chown ${zextras_user}:${zextras_group} /opt/zextras/index
 fi
 
 if [ -d /opt/zextras/backup ]; then
   printMsg "Fixing ownership of /opt/zextras/backup"
-  chown -R ${zextras_user}:${zextras_group} /opt/zextras/backup
+  chown ${zextras_user}:${zextras_group} /opt/zextras/backup
 fi
 
 if [ -d /opt/zextras/redolog ]; then
   printMsg "Fixing ownership of /opt/zextras/redolog"
-  chown -R ${zextras_user}:${zextras_group} /opt/zextras/redolog
+  chown ${zextras_user}:${zextras_group} /opt/zextras/redolog
 fi
 
 if [ -d /opt/zextras/store ]; then
   printMsg "Fixing ownership of /opt/zextras/store"
-  chown -R ${zextras_user}:${zextras_group} /opt/zextras/store
+  chown ${zextras_user}:${zextras_group} /opt/zextras/store
 fi
 
 # Fix permissions for default openldap configuration files
