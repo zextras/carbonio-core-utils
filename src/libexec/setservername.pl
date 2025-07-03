@@ -147,6 +147,7 @@ if (!$usersonly) {
     } else {
       runCommand("/opt/zextras/libexec/zmrc $c{zimbra_log_host} HOST:$c{zimbra_log_host} zmloggerhostmap $oldServerName $newServerName");
     }
+  }
 
   # Regenerate Self-signed certs
   if (!-f "/opt/zextras/ssl/carbonio/commercial/commercial.crt") {
