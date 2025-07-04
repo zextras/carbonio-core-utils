@@ -152,8 +152,7 @@ if [ -d /opt/zextras ]; then
 
   # Required by HSM features
   if [ -d /opt/zextras/cache ]; then
-    chown -R ${zextras_user}:${zextras_group} /opt/zextras/cache
-    chmod 755 /opt/zextras/cache/* 2>/dev/null
+    chown ${zextras_user}:${zextras_group} /opt/zextras/cache
   fi
 
   if [ -d /opt/zextras/contrib ]; then
