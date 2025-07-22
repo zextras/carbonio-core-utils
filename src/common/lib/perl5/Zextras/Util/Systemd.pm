@@ -11,8 +11,8 @@ use strict;
 use warnings;
 use Exporter 'import';
 our @EXPORT =
-  qw($systemdStatus isSystemd isSystemdActiveUnit startAllSystemdTargets
-  stopAllSystemdTargets systemdPrint);
+  qw($systemdStatus isSystemd isSystemdActiveUnit startSystemdUnit startAllSystemdTargets
+  stopAllSystemdTargets restartSystemdUnit restartAllSystemdTargets systemdPrint);
 
 # Define a variable to track the status of the systemd service
 our $systemdStatus = 0;
@@ -87,7 +87,7 @@ sub startSystemdUnit {
     # Check the exit status
     if ( $rc == 0 ) {
         print "Done.\n";
-        return 1;              # The target was stopped successfully
+        return 1;              # The target was started successfully
     }
     else {
         return 0;
@@ -128,10 +128,11 @@ sub systemdPrint {
     print "Enabled systemd targets:\n\n";
     foreach my $target (@systemdTargets) {
         if ( isSystemdEnabledUnit($target) ) {
-            print "  - $target\n"    # At least one target is enabled
+            print "  - $target\n";    # At least one target is enabled
         }
     }
     print "\nPlease check the documentation for further details.\nExiting.\n";
     exit 1;
 }
+
 1;    # End of module
