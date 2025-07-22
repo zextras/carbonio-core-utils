@@ -41,12 +41,12 @@ ldap_domain="${url%:*}"
 
 # memcached
 addr=$(/opt/zextras/bin/zmprov \
-  -l gs "${zimbra_server_hostname}" zimbraMemcachedBindAddress |
-  awk '/^zimbraMemcachedBindAddress:/{ print $2 }' || true)
+  -l gs "${zimbra_server_hostname}" zimbraMemcachedBindAddress \
+  | awk '/^zimbraMemcachedBindAddress:/{ print $2 }' || true)
 addr="${addr//$'\n'/,}"
 port=$(/opt/zextras/bin/zmprov -l \
-  gs "${zimbra_server_hostname}" zimbraMemcachedBindPort |
-  awk '/^zimbraMemcachedBindPort:/{ print $2 }' || true)
+  gs "${zimbra_server_hostname}" zimbraMemcachedBindPort \
+  | awk '/^zimbraMemcachedBindPort:/{ print $2 }' || true)
 if [[ "${addr}" = "" ]]; then
   memcached_flags="-U 0 -l 127.0.1.1,127.0.0.1 -p ${port:-11211}"
 else
@@ -82,6 +82,9 @@ if ! echo "${mailboxd_java_options}" | grep -q 'log4j'; then
 fi
 
 {
+  echo "antispam_enable_restarts=${antispam_enable_restarts}"
+  echo "antispam_enable_rule_compilation=${antispam_enable_rule_compilation}"
+  echo "antispam_enable_rule_updates=${antispam_enable_rule_updates}"
   echo "bind_url=${first_url}"
   echo "configd_listen_port=${zmconfigd_listen_port}"
   echo "configd_rewrite_timeout=${zimbra_configrewrite_timeout}"
