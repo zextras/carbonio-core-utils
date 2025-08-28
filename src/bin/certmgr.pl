@@ -1794,8 +1794,7 @@ use lib qw(/opt/zextras/common/lib/perl5 /opt/zextras/zimbramon/lib/);
         }
 
         print("** Creating keystore '$keystore'\n");
-        my $cpath =
-"/opt/zextras/lib/ext/com_zimbra_cert_manager/com_zimbra_cert_manager.jar";
+        my $cpath = "/opt/zextras/mailbox/jars/mailbox.jar";
         my $class = "com.zimbra.cert.MyPKCS12Import";
 
         @out = $self->run(
