@@ -5,7 +5,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-if [ "$(whoami)" != zextras ]; then
+if [[ "$(whoami)" != "zextras" ]]; then
   echo Error: must be run as zextras user
   exit 1
 fi
@@ -18,7 +18,7 @@ fi
 zmsetvars
 
 # These variables are not set if run via cron.  Make sure they are set prior to execution
-if [ "$JYTHONPATH" = "" ]; then
+if [[ -z "${JYTHONPATH}" ]]; then
   JAVA_HOME=/opt/zextras/common/lib/jvm/java
   PATH=/opt/zextras/bin:/opt/zextras/common/bin:${JAVA_HOME}/bin:/usr/sbin:${PATH}
   export PATH
@@ -39,12 +39,12 @@ get_pid() {
 check_running() {
   get_pid
 
-  if [[ "${pid}" = "" ]]; then
+  if [[ -z "${pid}" ]]; then
     running=0
   else
     status=$(echo STATUS | $NC -w 15 localhost "${zmconfigd_listen_port}" 2>/dev/null)
-    rc=$?
-    if [ $rc -eq 0 ] && [ "$status" = "SUCCESS ACTIVE" ]; then
+    local rc=$?
+    if [[ $rc -eq 0 && "$status" = "SUCCESS ACTIVE" ]]; then
       running=1
     else
       running=0
@@ -107,20 +107,20 @@ case "$1" in
   'kill' | 'stop')
     check_running
     echo -n "Stopping zmconfigd..."
-    if [[ ${running} -lt 1 ]]; then
+    if [[ ${running} -eq 0 ]]; then
       echo "zmconfigd is not running."
       exit 0
     else
-      kill "$pid" 2>/dev/null
+      kill "${pid}" 2>/dev/null
       rc=$?
       for ((i = 0; i < 10; i++)); do
         check_running
-        if [ $running = 0 ]; then
+        if [[ ${running} -eq 0 ]]; then
           break
         fi
         sleep 1
       done
-      if [ "$rc" -ne 0 ]; then
+      if [[ $rc -ne 0 ]]; then
         echo "failed."
         exit 1
       else
@@ -138,7 +138,7 @@ case "$1" in
   'status')
     echo -n "zmconfigd is "
     check_running
-    if [[ ${running} -lt 1 ]]; then
+    if [[ ${running} -eq 0 ]]; then
       echo "not running."
       exit 1
     else
