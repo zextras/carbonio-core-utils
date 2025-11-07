@@ -28,12 +28,19 @@ if [[ -n "${EXT_JAR_PATH}" ]]; then
 fi
 
 # openldap
-# Read LDAP bind urls as bash array
-read -ra bind_url <<<"$ldap_url"
+# Check for ldap_bind_url first (can contain multiple URLs), then fall back to ldap_url
+if [[ -n "$ldap_bind_url" ]]; then
+  bind_url="$ldap_bind_url"
+  # Extract first URL for ldap_domain
+  read -ra bind_url_array <<<"$ldap_bind_url"
+  first_url=${bind_url_array[0]}
+else
+  # Read LDAP bind urls as bash array from ldap_url
+  read -ra bind_url_array <<<"$ldap_url"
+  first_url=${bind_url_array[0]}
+  bind_url="$first_url"
+fi
 
-# Our ldap url should be the first in the list in localconfig as stated in
-# ldap.production script.
-first_url=${bind_url[0]}
 # Remove the protocol
 url="${first_url#*//}"
 # Retrieve the hostname
@@ -85,7 +92,7 @@ fi
   echo "antispam_enable_restarts=${antispam_enable_restarts}"
   echo "antispam_enable_rule_compilation=${antispam_enable_rule_compilation}"
   echo "antispam_enable_rule_updates=${antispam_enable_rule_updates}"
-  echo "bind_url=${first_url}"
+  echo "bind_url=${bind_url}"
   echo "configd_listen_port=${zmconfigd_listen_port}"
   echo "configd_rewrite_timeout=${zimbra_configrewrite_timeout}"
   echo "java_ext_dirs=${zimbra_zmjava_java_ext_dirs}"
