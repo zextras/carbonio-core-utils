@@ -139,7 +139,7 @@ my $zextras_path = "/opt/zextras/lib/ext/carbonio/carbonio.jar";
 # Commands: start, stop, restart and status
 my $command = $ARGV[0];
 
-systemdPrint() if isSystemd() && $command !~ /^-[vVhH]$/;
+systemdPrint() if isSystemd() && $command !~ /^-[vVhH]$/ && $command ne 'status';
 
 $| = 1;
 
@@ -189,6 +189,16 @@ sub runRemoteCommand {
 }
 
 sub doStatus {
+    # If systemd is enabled, only check advanced_status
+    if ( isSystemd() ) {
+        print "Host $localHostName\n";
+        my $res = `/opt/zextras/bin/advanced_status 0`;
+        foreach my $line ( split /\n/, $res ) {
+            print "\t" . $line . "\n";
+        }
+        return 0;
+    }
+
     $services = getEnabledServices();
     getServiceStatusList();
     alarm($timeout);
