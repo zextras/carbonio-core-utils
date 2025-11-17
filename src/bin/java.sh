@@ -15,7 +15,7 @@ else
   JRE_EXT_DIR=${zimbra_java_home}/lib/ext
 fi
 
-ZIMBRA_EXTENSIONS="backup clamscanner network zimbrahsm zimbrasync twofactorauth"
+ZIMBRA_EXTENSIONS="backup"
 ZIMBRA_EXT_DIR="/opt/zextras/lib/ext-common/*"
 for i in $ZIMBRA_EXTENSIONS; do
   if [ -d "/opt/zextras/lib/ext/$i" ]; then
@@ -42,5 +42,5 @@ exec "${zimbra_java_home}/bin/java" ${java_options} \
   -client ${zimbra_zmjava_options} \
   -Dzimbra.home=/opt/zextras \
   -Djava.library.path=${zimbra_zmjava_java_library_path} \
-  -classpath "${zimbra_zmjava_java_ext_dirs}:/opt/zextras/lib/jars/*:/opt/zextras/mailbox/jars/*:/opt/zextras/conf" \
+  -classpath "${zimbra_zmjava_java_ext_dirs}:/opt/zextras/mailbox/jars/*:/opt/zextras/conf" \
   "$@"
