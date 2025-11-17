@@ -9,12 +9,6 @@
 source /opt/zextras/bin/zmshutil || exit 1
 zmsetvars -f
 
-for i in $ZIMBRA_EXTENSIONS; do
-  if [ -d "/opt/zextras/lib/ext/$i" ]; then
-    ZIMBRA_EXT_DIR="${ZIMBRA_EXT_DIR}:/opt/zextras/lib/ext/$i/*"
-  fi
-done
-
 java_options="-XX:ErrorFile=/opt/zextras/log"
 
 if [ "${zimbra_zmjava_java_library_path}" = "" ]; then
