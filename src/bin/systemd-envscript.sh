@@ -9,22 +9,9 @@ eval "$(/opt/zextras/common/bin/java \
   com.zimbra.cs.localconfig.LocalConfigCLI -q -m shell || true)"
 
 # java
-if [[ -d ${zimbra_java_home}/jre ]]; then
-  JRE_EXT_DIR=${zimbra_java_home}/jre/lib/ext
-else
-  JRE_EXT_DIR=${zimbra_java_home}/lib/ext
-fi
 
 if [[ "${zimbra_zmjava_java_library_path}" = "" ]]; then
   zimbra_zmjava_java_library_path=/opt/zextras/lib
-fi
-
-if [[ "${zimbra_zmjava_java_ext_dirs}" = "" ]]; then
-  zimbra_zmjava_java_ext_dirs=${JRE_EXT_DIR}:/opt/zextras/mailbox/jars:/opt/zextras/lib/ext/clamscanner
-fi
-
-if [[ -n "${EXT_JAR_PATH}" ]]; then
-  zimbra_zmjava_java_ext_dirs=${zimbra_zmjava_java_ext_dirs}:${EXT_JAR_PATH}
 fi
 
 # openldap
@@ -95,7 +82,6 @@ fi
   echo "bind_url=${bind_url}"
   echo "configd_listen_port=${zmconfigd_listen_port}"
   echo "configd_rewrite_timeout=${zimbra_configrewrite_timeout}"
-  echo "java_ext_dirs=${zimbra_zmjava_java_ext_dirs}"
   echo "java_library_path=${zimbra_zmjava_java_library_path}"
   echo "java_options=${zimbra_zmjava_options}"
   echo "java_xms=${javaXms}"
