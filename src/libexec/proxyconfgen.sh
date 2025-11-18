@@ -7,4 +7,3 @@
 #
 
 zmjava -classpath "/opt/zextras/lib/jars/proxyconfgen.jar" com.zimbra.cs.util.proxyconfgen.ProxyConfGen "$@"
-
