@@ -6,4 +6,4 @@
 # SPDX-License-Identifier: GPL-2.0-only
 #
 
-zmjava -classpath "/opt/zextras/lib/jars/proxyconfgen.jar" com.zimbra.cs.util.proxyconfgen.ProxyConfGen "$@"
+exec zmjava -classpath "/opt/zextras/lib/jars/proxyconfgen.jar" com.zimbra.cs.util.proxyconfgen.ProxyConfGen "$@"
