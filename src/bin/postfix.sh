@@ -12,7 +12,6 @@ if [ ! -x /opt/zextras/common/sbin/postfix ]; then
   exit 1
 fi
 
-
 if is_systemd; then
   systemd_print
 fi

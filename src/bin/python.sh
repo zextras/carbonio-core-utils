@@ -7,5 +7,5 @@
 
 export TMP=/opt/zextras/data/tmp
 exec /opt/zextras/bin/zmjava \
--classpath "/opt/zextras/jython/jars/*:/opt/zextras/mailbox/jars/*:/opt/zextras/conf" \
--Djava.io.tmpdir=/opt/zextras/data/tmp -Dpython.cachedir.skip=true org.python.util.jython "$@"
+  -classpath "/opt/zextras/jython/jars/*:/opt/zextras/mailbox/jars/*:/opt/zextras/conf" \
+  -Djava.io.tmpdir=/opt/zextras/data/tmp -Dpython.cachedir.skip=true org.python.util.jython "$@"
