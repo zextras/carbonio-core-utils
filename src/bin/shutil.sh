@@ -108,8 +108,7 @@ start_all_systemd_targets() {
   # Start all enabled systemd units
   for target in "${systemd_targets[@]}"; do
     if is_systemd_enabled_unit "$target"; then
-      systemctl start "${target}"
-      if [ $? -eq 0 ]; then
+      if systemctl start "${target}"; then
         echo "Started ${target}"
       else
         echo "Failed to start ${target}"
@@ -124,8 +123,7 @@ stop_all_systemd_targets() {
   # Stop all enabled systemd units
   for target in "${systemd_targets[@]}"; do
     if is_systemd_enabled_unit "$target"; then
-      systemctl stop "${target}"
-      if [ $? -eq 0 ]; then
+      if systemctl stop "${target}"; then
         echo "Stopped ${target}"
       else
         echo "Failed to stop ${target}"
