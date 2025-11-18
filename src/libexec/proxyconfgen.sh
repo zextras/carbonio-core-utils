@@ -20,7 +20,7 @@ exec "${zimbra_java_home}/bin/java" ${java_options} \
   -client ${zimbra_zmjava_options} \
   -Dzimbra.home=/opt/zextras \
   -Djava.library.path=${zimbra_zmjava_java_library_path} \
-  -classpath "/opt/zextras/proxyconfgen/proxyconfgen.jar" \
+  -classpath "/opt/zextras/lib/jars/proxyconfgen.jar" \
   com.zimbra.cs.util.proxyconfgen.ProxyConfGen
   "$@"
 
