@@ -35,12 +35,12 @@ ldap_domain="${url%:*}"
 
 # memcached
 addr=$(/opt/zextras/bin/zmprov \
-  -l gs "${zimbra_server_hostname}" zimbraMemcachedBindAddress \
-  | awk '/^zimbraMemcachedBindAddress:/{ print $2 }' || true)
+  -l gs "${zimbra_server_hostname}" zimbraMemcachedBindAddress |
+  awk '/^zimbraMemcachedBindAddress:/{ print $2 }' || true)
 addr="${addr//$'\n'/,}"
 port=$(/opt/zextras/bin/zmprov -l \
-  gs "${zimbra_server_hostname}" zimbraMemcachedBindPort \
-  | awk '/^zimbraMemcachedBindPort:/{ print $2 }' || true)
+  gs "${zimbra_server_hostname}" zimbraMemcachedBindPort |
+  awk '/^zimbraMemcachedBindPort:/{ print $2 }' || true)
 if [[ "${addr}" = "" ]]; then
   memcached_flags="-U 0 -l 127.0.1.1,127.0.0.1 -p ${port:-11211}"
 else
