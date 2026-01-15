@@ -5867,9 +5867,6 @@ sub applyConfig {
 
     setupSyslog();
 
-    qx(touch /opt/zextras/.bash_history);
-    qx(chown zextras:zextras /opt/zextras/.bash_history);
-
     if ( $newinstall != 1 ) {
         startLdap() if ($ldapConfigured);
     }
