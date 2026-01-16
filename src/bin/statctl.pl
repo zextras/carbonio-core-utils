@@ -227,10 +227,11 @@ if ( defined($cmd) ) {
             systemdPrint();
         }
         if ( $cmd eq 'stop' ) {
-            if ( isSystemd() ) {
-                systemdPrint();
-            }
+            stopRestart();
             exit(0);
+        }
+        if ( $cmd eq 'restart' ) {
+            stopRestart();
         }
     }
     if ( $cmd eq 'stop-systemd' || $cmd eq 'restart-systemd' ) {
@@ -257,20 +258,37 @@ if ( defined($cmd) ) {
             exit(1);
         }
         my $numDeadProcs = 0;
+        my $numRunningProcs = 0;
+        my $piddir = getPidFileDir();
         foreach my $pidFile (@pids) {
             my $pid = readPidFile($pidFile);
             if ($pid) {
-                if ( !kill( 0, $pid ) ) {
+                my $isRunning = kill( 0, $pid );
+
+                # Special case for zmstat-fd: the wrapper process (fd.pid) exits
+                # after spawning the root process. Check fd-real.pid instead.
+                # Use /proc check since zextras can't send signals to root processes.
+                if ( !$isRunning && $pidFile =~ /\/fd\.pid$/ ) {
+                    my $fdRealPid = readPidFile("$piddir/fd-real.pid");
+                    if ( $fdRealPid && -d "/proc/$fdRealPid" ) {
+                        $isRunning = 1;
+                    }
+                }
+
+                if ( !$isRunning ) {
                     print STDERR "process $pid in $pidFile not running\n";
                     $numDeadProcs++;
                 }
                 else {
                     $pidFile =~ m#/.*/(.*?)\.pid#;
                     print STDERR "Running: $1\n";
+                    $numRunningProcs++;
                 }
             }
         }
-        exit( $numDeadProcs > 0 ? 1 : 0 );
+        # Exit with 0 if at least one process is running
+        # Exit with 1 only if all processes are dead or none are running
+        exit( $numRunningProcs > 0 ? 0 : 1 );
     }
     elsif ( $cmd eq 'rotate' ) {
         my @pids = getPidFiles();
