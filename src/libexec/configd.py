@@ -179,11 +179,17 @@ while True:
 
 	for th in threading.enumerate():
 		Log.logMsg(4, "Active Thread %s found" % th.getName())
-		if (th.getName() != "listener" and th.getName() != "MainThread" and th.getName() != "Thread" and th.getName != "SIGUSR2 handler"):
-			Log.logMsg(4, "Attempting to join() %s" % th.getName())
+		# Skip known long-running threads:
+		# - "listener": the request listener server thread
+		# - "MainThread": the main program thread
+		# - "Thread-N": request handler threads created by ThreadingMixIn
+		# - "SIGUSR2 handler": signal handler thread
+		thread_name = th.getName()
+		if (thread_name != "listener" and thread_name != "MainThread" and not thread_name.startswith("Thread") and thread_name != "SIGUSR2 handler"):
+			Log.logMsg(4, "Attempting to join() %s" % thread_name)
 			th.join(5);
 			if (th.isAlive()):
-				Log.logMsg(1, "join() %s FAILED" % th.getName())
+				Log.logMsg(1, "join() %s FAILED" % thread_name)
 				Log.logMsg(1, "Hung threads detected (%d total), exiting" % threading.activeCount());
 				sys.exit(1)
 	
