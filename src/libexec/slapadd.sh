@@ -85,6 +85,15 @@ if [ $CONFIG = "yes" ]; then
     $computil "$SRC" | /opt/zextras/common/sbin/slapadd -q -F /opt/zextras/data/ldap/config -n 0
     RETVAL=$?
   fi
+
+  # Fix for CO-1599: Rename zimbra.ldif to carbonio.ldif if it exists
+  # The backup contains DN cn={4}zimbra but the file should be named carbonio.ldif
+  # to match the expected schema filename used by zmldapschema
+  if [ $RETVAL -eq 0 ] && [ -f "/opt/zextras/data/ldap/config/cn=config/cn=schema/cn={4}zimbra.ldif" ]; then
+    mv "/opt/zextras/data/ldap/config/cn=config/cn=schema/cn={4}zimbra.ldif" \
+      "/opt/zextras/data/ldap/config/cn=config/cn=schema/cn={4}carbonio.ldif"
+    RETVAL=$?
+  fi
 elif [ $ALOG = "yes" ]; then
   if [ $comp = "0" ]; then
     /opt/zextras/common/sbin/slapadd -q -F /opt/zextras/data/ldap/config -b "cn=accesslog" -l "$SRC"
