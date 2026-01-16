@@ -227,10 +227,11 @@ if ( defined($cmd) ) {
             systemdPrint();
         }
         if ( $cmd eq 'stop' ) {
-            if ( isSystemd() ) {
-                systemdPrint();
-            }
+            stopRestart();
             exit(0);
+        }
+        if ( $cmd eq 'restart' ) {
+            stopRestart();
         }
     }
     if ( $cmd eq 'stop-systemd' || $cmd eq 'restart-systemd' ) {
@@ -257,6 +258,7 @@ if ( defined($cmd) ) {
             exit(1);
         }
         my $numDeadProcs = 0;
+        my $numRunningProcs = 0;
         foreach my $pidFile (@pids) {
             my $pid = readPidFile($pidFile);
             if ($pid) {
@@ -267,10 +269,13 @@ if ( defined($cmd) ) {
                 else {
                     $pidFile =~ m#/.*/(.*?)\.pid#;
                     print STDERR "Running: $1\n";
+                    $numRunningProcs++;
                 }
             }
         }
-        exit( $numDeadProcs > 0 ? 1 : 0 );
+        # Exit with 0 if at least one process is running
+        # Exit with 1 only if all processes are dead or none are running
+        exit( $numRunningProcs > 0 ? 0 : 1 );
     }
     elsif ( $cmd eq 'rotate' ) {
         my @pids = getPidFiles();
