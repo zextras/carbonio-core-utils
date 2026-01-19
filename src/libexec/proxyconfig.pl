@@ -200,7 +200,6 @@ if ($options{f}) {
   print ZMPROV "mcf zimbraReverseProxyDomainNameQuery $zimbraReverseProxyDomainNameQuery\n";
   print ZMPROV "mcf zimbraReverseProxyMailHostQuery $zimbraReverseProxyMailHostQuery\n";
   print ZMPROV "mcf zimbraReverseProxyPortQuery $zimbraReverseProxyPortQuery\n";
-  print ZMPROV "mcf zimbraMemcachedBindPort 11211\n";
   print ZMPROV "mcf zimbraReverseProxyMailHostAttribute zimbraMailHost\n";
   print ZMPROV "mcf zimbraReverseProxyPop3PortAttribute zimbraPop3BindPort\n";
   print ZMPROV "mcf zimbraReverseProxyPop3SSLPortAttribute zimbraPop3SSLBindPort\n";
