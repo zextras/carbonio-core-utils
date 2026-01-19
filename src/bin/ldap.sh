@@ -69,7 +69,7 @@ start() {
   /opt/zextras/libexec/zmslapd -l LOCAL0 \
     -h "${bind_url} ldapi:///" -F /opt/zextras/data/ldap/config
 
-  for ((i = 0; i < 10; i++)); do
+  for ((i = 0; i < 30; i++)); do
     check_running
     check_listening
     if [ $running = 1 ] && [ $listening = 1 ]; then
@@ -95,7 +95,7 @@ stop() {
   else
     kill "$pid" 2>/dev/null
     rc=$?
-    for ((i = 0; i < 10; i++)); do
+    for ((i = 0; i < 30; i++)); do
       check_running
       if [ $running = 0 ]; then
         break
