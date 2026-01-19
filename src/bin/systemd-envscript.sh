@@ -34,18 +34,7 @@ url="${first_url#*//}"
 ldap_domain="${url%:*}"
 
 # memcached
-addr=$(/opt/zextras/bin/zmprov \
-  -l gs "${zimbra_server_hostname}" zimbraMemcachedBindAddress |
-  awk '/^zimbraMemcachedBindAddress:/{ print $2 }' || true)
-addr="${addr//$'\n'/,}"
-port=$(/opt/zextras/bin/zmprov -l \
-  gs "${zimbra_server_hostname}" zimbraMemcachedBindPort |
-  awk '/^zimbraMemcachedBindPort:/{ print $2 }' || true)
-if [[ "${addr}" = "" ]]; then
-  memcached_flags="-U 0 -l 127.0.1.1,127.0.0.1 -p ${port:-11211}"
-else
-  memcached_flags="-U 0 -l ${addr} -p ${port:-11211}"
-fi
+memcached_flags="-U 0 -l 127.0.1.1,127.0.0.1 -p 11211"
 
 # mailboxdmgr
 # Memory for use by JVM.
