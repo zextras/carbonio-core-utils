@@ -1,18 +1,21 @@
 #!/bin/bash
 # shellcheck disable=SC2154
+# Read configuration from localconfig.xml using xmllint (faster than Java CLI)
 
-eval "$(/opt/zextras/common/bin/java \
-  -client \
-  -cp '/opt/zextras/mailbox/jars/*' \
-  -Djava.library.path=/opt/zextras/lib \
-  -Dzimbra.home=/opt/zextras \
-  com.zimbra.cs.localconfig.LocalConfigCLI -q -m shell || true)"
+LOCALCONFIG="/opt/zextras/conf/localconfig.xml"
 
-# java
+# Helper function to get value from localconfig.xml
+get_lc() {
+  /opt/zextras/common/bin/xmllint --xpath "string(//key[@name='$1']/value)" "$LOCALCONFIG" 2>/dev/null
+}
 
-if [[ "${zimbra_zmjava_java_library_path}" = "" ]]; then
-  zimbra_zmjava_java_library_path=/opt/zextras/lib
-fi
+# Read required values from localconfig.xml
+ldap_url=$(get_lc "ldap_url")
+ldap_bind_url=$(get_lc "ldap_bind_url")
+ldap_port=$(get_lc "ldap_port")
+antispam_enable_restarts=$(get_lc "antispam_enable_restarts")
+antispam_enable_rule_compilation=$(get_lc "antispam_enable_rule_compilation")
+antispam_enable_rule_updates=$(get_lc "antispam_enable_rule_updates")
 
 # openldap
 # Check for ldap_bind_url first (can contain multiple URLs), then fall back to ldap_url
@@ -28,56 +31,16 @@ else
   bind_url="$first_url"
 fi
 
-# Remove the protocol
+# Remove the protocol and retrieve the hostname
 url="${first_url#*//}"
-# Retrieve the hostname
 ldap_domain="${url%:*}"
 
-# mailboxdmgr
-# Memory for use by JVM.
-#
-javaXmx=${mailboxd_java_heap_size:=512}
-javaXms=${javaXmx}
-mailboxd_java_heap_new_size_percent=${mailboxd_java_heap_new_size_percent:=25}
-
-# mailboxd
-if [[ -d ${mailboxd_directory} ]]; then
-  if [[ ! -d ${mailboxd_directory}/work/service/jsp ]]; then
-    mkdir -p "${mailboxd_directory}/work/service/jsp"
-  fi
-fi
-
-mailboxd_thread_stack_size=${mailboxd_thread_stack_size:=256k}
-if ! echo "${mailboxd_java_options}" | grep 'Xss'; then
-  mailboxd_java_options="${mailboxd_java_options} -Xss${mailboxd_thread_stack_size}"
-fi
-
-networkaddress_cache_ttl=${networkaddress_cache_ttl:=60}
-if ! echo "${mailboxd_java_options}" | grep -q 'sun.net.inetaddr.ttl'; then
-  mailboxd_java_options="${mailboxd_java_options} -Dsun.net.inetaddr.ttl=${networkaddress_cache_ttl}"
-fi
-
-if ! echo "${mailboxd_java_options}" | grep -q 'log4j'; then
-  mailboxd_java_options="${mailboxd_java_options} -Dlog4j.configurationFile=${zimbra_log4j_properties}"
-fi
-
+# Write environment file (quote values with spaces for systemd compatibility)
 {
   echo "antispam_enable_restarts=${antispam_enable_restarts}"
   echo "antispam_enable_rule_compilation=${antispam_enable_rule_compilation}"
   echo "antispam_enable_rule_updates=${antispam_enable_rule_updates}"
   echo "bind_url=${bind_url}"
-  echo "configd_listen_port=${zmconfigd_listen_port}"
-  echo "configd_rewrite_timeout=${zimbra_configrewrite_timeout}"
-  echo "java_library_path=${zimbra_zmjava_java_library_path}"
-  echo "java_options=${zimbra_zmjava_options}"
-  echo "java_xms=${javaXms}"
-  echo "java_xmx=${javaXmx}"
   echo "ldap_domain=${ldap_domain}"
   echo "ldap_port=${ldap_port}"
-  echo "log_directory=${zimbra_log_directory}"
-  echo "mailboxd_directory=${mailboxd_directory}"
-  echo "mailboxd_java_heap_new_size_percent=${mailboxd_java_heap_new_size_percent}"
-  echo "mailboxd_java_options=${mailboxd_java_options}"
-  echo "mysql_errlogfile=${mysql_errlogfile}"
-  echo "mysql_mycnf=${mysql_mycnf}"
 } >/opt/zextras/data/systemd.env
