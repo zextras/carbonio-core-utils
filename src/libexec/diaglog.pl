@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 
-# SPDX-FileCopyrightText: 2022 Synacor, Inc.
-# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+# SPDX-FileCopyrightText: 2026 Zextras <https://www.zextras.com>
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
@@ -548,8 +547,7 @@ sub run() {
         "/opt/zextras/conf/localconfig.xml",
         "/opt/zextras/conf/my.cnf",
         "/opt/zextras/common/conf/main.cf",
-        "/opt/zextras/common/conf/master.cf",
-        "/opt/zextras/conf/zmconfigd.cf"
+        "/opt/zextras/common/conf/master.cf"
     );
     cp $_, "$destination/confs" for @conf_files;
 
@@ -594,7 +592,6 @@ sub run() {
         "/opt/zextras/log/mailbox.log",
         "/opt/zextras/log/sync.log",
         "/opt/zextras/log/$t_today.trace.log",
-        "/opt/zextras/log/zmconfigd.log",
         "/opt/zextras/log/zmmailboxd.out",
         "/var/log/carbonio.log",
         glob("/opt/zextras/db/data/*.err"),

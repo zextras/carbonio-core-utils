@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 
-# SPDX-FileCopyrightText: 2022 Synacor, Inc.
-# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+# SPDX-FileCopyrightText: 2026 Zextras <https://www.zextras.com>
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
@@ -52,7 +51,7 @@ if ( !$rule_updates_enabled ) {
 
 my $sa =
 "/opt/zextras/common/bin/sa-update -v --reallyallowplugins --refreshmirrors >/dev/null 2>&1";
-my $restart = "/opt/zextras/bin/zmamavisdctl restart norewrite >/dev/null 2>&1";
+my $restart = "/opt/zextras/bin/configd service restart amavis >/dev/null 2>&1";
 my $compile = "/opt/zextras/libexec/zmsacompile >/dev/null 2>&1";
 
 my $restart_enabled = getLocalConfig("antispam_enable_restarts");
