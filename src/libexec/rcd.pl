@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 
-# SPDX-FileCopyrightText: 2022 Synacor, Inc.
-# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+# SPDX-FileCopyrightText: 2026 Zextras <https://www.zextras.com>
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
@@ -13,20 +12,20 @@ use strict;
 # is allowed - specially beware of any shell special characters.
 #
 my %SIMPLE_COMMANDS = (
-   "start amavis"       => "/opt/zextras/bin/zmamavisdctl start",
-   "start freshclam"    => "/opt/zextras/bin/zmfreshclamctl start",
-   "start mailbox"    => "/opt/zextras/bin/zmstorectl start",
+   "start amavis"       => "/opt/zextras/bin/configd service start amavis",
+   "start freshclam"    => "/opt/zextras/bin/configd service start freshclam",
+   "start mailbox"    => "/opt/zextras/bin/configd service start mailbox",
    "start ldap"       => "/opt/zextras/bin/ldap start",
-   "start mta"        => "/opt/zextras/bin/zmmtactl start",
-   "start antispam"   => "/opt/zextras/bin/zmantispamctl start",
-   "start antivirus"  => "/opt/zextras/bin/zmantivirusctl start",
-   "stop amavis"      => "/opt/zextras/bin/zmamavisdctl stop",
-   "stop freshclam"   => "/opt/zextras/bin/zmfreshclamctl stop",
-   "stop mailbox"     => "/opt/zextras/bin/zmstorectl stop",
+   "start mta"        => "/opt/zextras/bin/configd service start mta",
+   "start antispam"   => "/opt/zextras/bin/configd service start antispam",
+   "start antivirus"  => "/opt/zextras/bin/configd service start antivirus",
+   "stop amavis"      => "/opt/zextras/bin/configd service stop amavis",
+   "stop freshclam"   => "/opt/zextras/bin/configd service stop freshclam",
+   "stop mailbox"     => "/opt/zextras/bin/configd service stop mailbox",
    "stop ldap"        => "/opt/zextras/bin/ldap stop",
-   "stop mta"         => "/opt/zextras/bin/zmmtactl stop",
-   "stop antispam"    => "/opt/zextras/bin/zmantispamctl stop",
-   "stop antivirus"   => "/opt/zextras/bin/zmantivirusctl stop",
+   "stop mta"         => "/opt/zextras/bin/configd service stop mta",
+   "stop antispam"    => "/opt/zextras/bin/configd service stop antispam",
+   "stop antivirus"   => "/opt/zextras/bin/configd service stop antivirus",
    "status"           => "/opt/zextras/bin/zmcontrol status",
    "startup"          => "/opt/zextras/bin/zmcontrol startup",
    "shutdown"         => "/opt/zextras/bin/zmcontrol shutdown",
@@ -44,8 +43,7 @@ my %SIMPLE_COMMANDS = (
    "zmqstat corrupt"  => "sudo /opt/zextras/libexec/zmqstat corrupt",
    "zmcollectconfigfiles" => "tar cv /opt/zextras/conf | gzip -cf",
    "zmcollectldapzimbra" => "/opt/zextras/common/sbin/slapcat -F /opt/zextras/data/ldap/config -b '' -s cn=zimbra | gzip -cf",
-   "zmproxyconfgen"     => "/opt/zextras/bin/zmproxyconfgen",
-   "zmproxyctl reload"  => "/opt/zextras/bin/zmproxyctl reload",
+   "zmproxyctl reload"  => "/opt/zextras/bin/configd service reload proxy",
    "zmaltermimeconfig"  => "/opt/zextras/libexec/zmaltermimeconfig",
    "downloadcsr"      => "cat /opt/zextras/ssl/carbonio/commercial/commercial.csr"
 );

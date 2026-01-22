@@ -1,23 +1,30 @@
 #!/bin/bash
-#
-# SPDX-FileCopyrightText: 2022 Synacor, Inc.
-# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+# SPDX-FileCopyrightText: 2026 Zextras <https://www.zextras.com>
 #
 # SPDX-License-Identifier: GPL-2.0-only
-#
-#
-# We cannot rely on any config parameters when running zmlocalconfig for obvious
-# chicken and egg reasons. So we just make assumptions about install layout.
-#
 
-ROOT=/opt/zextras
+# Compatibility wrapper — translates zmlocalconfig invocations to configd localconfig.
+# Drop-in replacement for the Java LocalConfigCLI.
 
-umask 0027
+CONFIGD=/opt/zextras/bin/configd
 
-java="${ROOT}/common/bin/java"
+if [ ! -x "$CONFIGD" ]; then
+  echo "Error: configd binary not found at $CONFIGD" >&2
+  exit 1
+fi
 
-CP="${ROOT}/mailbox/jars/*"
+# Handle flags that are not ported
+for arg in "$@"; do
+  case "$arg" in
+    -l | --reload)
+      echo "Warning: -l (reload) is deprecated and not supported by configd" >&2
+      exit 1
+      ;;
+    -i | --info | --all)
+      echo "Warning: $arg (info/docs) is not supported by configd" >&2
+      exit 1
+      ;;
+  esac
+done
 
-exec ${java} -client -cp "$CP" \
-  -Dzimbra.home="${ROOT}" \
-  com.zimbra.cs.localconfig.LocalConfigCLI "$@"
+exec "$CONFIGD" localconfig "$@"

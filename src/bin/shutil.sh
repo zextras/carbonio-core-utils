@@ -1,6 +1,5 @@
 #!/bin/bash
-# SPDX-FileCopyrightText: 2022 Synacor, Inc.
-# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+# SPDX-FileCopyrightText: 2026 Zextras <https://www.zextras.com>
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
@@ -25,14 +24,24 @@ zmsetvars() {
     fi
   fi
 
+  # Prefer configd localconfig when available, fallback to zmlocalconfig
+  configd="/opt/zextras/bin/configd"
   zmlocalconfig="/opt/zextras/bin/zmlocalconfig"
-  if [ ! -x "${zmlocalconfig}" ]; then
-    echo Error: can not find zmlocalconfig program
-    exit 1
-  fi
 
-  if ! eval "$(${zmlocalconfig} -q -m export)"; then
-    echo Error: executing: ${zmlocalconfig} -q -m export
+  if [ -x "${configd}" ]; then
+    # Use configd localconfig directly for better performance
+    if ! eval "$(${configd} localconfig -q -s -m export)"; then
+      echo Error: executing: ${configd} localconfig -q -s -m export
+      exit 1
+    fi
+  elif [ -x "${zmlocalconfig}" ]; then
+    # Fallback to legacy zmlocalconfig
+    if ! eval "$(${zmlocalconfig} -q -m export)"; then
+      echo Error: executing: ${zmlocalconfig} -q -m export
+      exit 1
+    fi
+  else
+    echo Error: can not find configd or zmlocalconfig program
     exit 1
   fi
 

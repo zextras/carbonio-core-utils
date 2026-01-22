@@ -6,7 +6,7 @@
     dateext
     postrotate
       systemctl kill -s HUP rsyslog.service >/dev/null 2>&1 || true
-      su - zextras -c "/opt/zextras/bin/zmconfigdctl restart" > /dev/null 2>&1 || true
+      su - zextras -c "/opt/zextras/bin/configd restart" > /dev/null 2>&1 || true
     endscript
     compress
     rotate 30
@@ -20,7 +20,7 @@
     dateext
     postrotate
       systemctl kill -s HUP rsyslog.service >/dev/null 2>&1 || true
-      su - zextras -c "/opt/zextras/bin/zmconfigdctl restart" > /dev/null 2>&1 || true
+      su - zextras -c "/opt/zextras/bin/configd restart" > /dev/null 2>&1 || true
     endscript
     rotate 0
 }
@@ -67,7 +67,7 @@
     size 1000k
     rotate 7
     #su zextras zextras
-}   
+}
 
 /opt/zextras/log/nginx.log /opt/zextras/log/nginx.access.log /opt/zextras/log/nginx_clamav_signature_provider_access.log {
     daily
@@ -106,7 +106,7 @@
     dateext
     compress
     #su zextras zextras
-}   
+}
 
 /opt/zextras/log/spamtrain.log {
     daily
