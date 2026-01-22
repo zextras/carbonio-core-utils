@@ -1,7 +1,6 @@
 #!/usr/bin/perl -w
 
-# SPDX-FileCopyrightText: 2022 Synacor, Inc.
-# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
+# SPDX-FileCopyrightText: 2026 Zextras <https://www.zextras.com>
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
@@ -55,11 +54,21 @@ sub get_pid_tree() {
             }
             close(STATUS);
 
+			# Check for Go configd binary (native process)
+			if ($cmd eq 'configd') {
+				if (open(CMDLINE, "<$PROCFS/$pid/cmdline")) {
+					while (my $line = <CMDLINE>) {
+						my @args = split('\0',$line);
+						$cmd = 'zmconfigd' if ($args[0] =~ /\/opt\/zextras\/bin\/configd/);
+					}
+					close(CMDLINE);
+				}
+			}
+
 			if ($cmd =~ /java/) {
 				if (open(CMDLINE, "<$PROCFS/$pid/cmdline")) { # else pid has gone away
 					while (my $line = <CMDLINE>) {
 						my @args = split('\0',$line);
-						$cmd = 'zmconfigd' if ($args[$#args] =~ /\/opt\/zextras\/libexec\/zmconfigd/);
 						$cmd = 'zmmailboxd' if ($args[$#args] =~ /\/opt\/zextras\/mailboxd\/etc\/jetty.xml/);
 					}
 				}
