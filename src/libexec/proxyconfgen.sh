@@ -1,9 +1,7 @@
 #!/bin/bash
-#
-# SPDX-FileCopyrightText: 2022 Synacor, Inc.
-# SPDX-FileCopyrightText: 2022 Zextras <https://www.zextras.com>
-#
+# SPDX-FileCopyrightText: 2026 Zextras <https://www.zextras.com>
 # SPDX-License-Identifier: GPL-2.0-only
 #
-
-exec /opt/zextras/bin/zmjava -classpath "/opt/zextras/lib/jars/proxyconfgen.jar" com.zimbra.cs.util.proxyconfgen.ProxyConfGen "$@"
+# Compatibility wrapper — Go replacement for the legacy zmproxyconfgen Java wrapper.
+# Generates nginx proxy configuration files via the running configd daemon.
+exec /opt/zextras/bin/configd proxy gen "$@"
