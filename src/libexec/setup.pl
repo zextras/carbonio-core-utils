@@ -305,6 +305,54 @@ sub moveLogToZextras {
     $logFileMoved = 1;
 }
 
+# Helper to ask for LDAP password - consolidates 6 nearly identical functions
+sub askLdapPasswordHelper {
+    my ( $prompt, $configKey, $changedFlagRef, $checkLdapAvailable ) = @_;
+    while (1) {
+        my $new = askPassword( "Password for $prompt (min 6 characters):", $config{$configKey} );
+        if ( length($new) >= 6 ) {
+            if ( $config{$configKey} ne $new ) {
+                $config{$configKey} = $new;
+                $$changedFlagRef = 1;
+            }
+            ldapIsAvailable() if ( $checkLdapAvailable && $config{HOSTNAME} ne $config{LDAPHOST} );
+            return;
+        }
+        print "Minimum length of 6 characters!\n";
+    }
+}
+
+# Helper to set proxy port - consolidates 6 nearly identical functions
+sub setProxyPortHelper {
+    my ( $prompt, $proxyKey, $backendKey, $proxyTypeKey ) = @_;
+    $config{$proxyKey} = askNum( "Please enter the $prompt:", $config{$proxyKey} );
+    if ( $config{$proxyTypeKey} eq "TRUE" || $config{zimbraMailProxy} eq "TRUE" ) {
+        $config{$backendKey} = "UNSET" if ( $config{$proxyKey} == $config{$backendKey} );
+    }
+}
+
+# Helper to ask for domain-validated user account - consolidates 4 nearly identical functions
+sub askDomainUserHelper {
+    my ( $prompt, $configKey ) = @_;
+    while (1) {
+        my $new = ask( $prompt, $config{$configKey} );
+        my ( $u, $d ) = split( '@', $new );
+        my ( $adminUser, $adminDomain ) = split( '@', $config{CREATEADMIN} );
+        if ( $d ne $config{CREATEDOMAIN} && $d ne $adminDomain ) {
+            if ( $config{CREATEDOMAIN} eq $adminDomain ) {
+                progress("You must create the user under the domain $config{CREATEDOMAIN}\n");
+            }
+            else {
+                progress("You must create the user under the domain $config{CREATEDOMAIN} or $adminDomain\n");
+            }
+        }
+        else {
+            $config{$configKey} = $new;
+            last;
+        }
+    }
+}
+
 sub defineInstallWebapps {
     if ( !defined $config{INSTALL_WEBAPPS} ) {
         if ( $config{SERVICEWEBAPP} eq "yes" ) {
@@ -2123,85 +2171,19 @@ sub setLdapBaseDN {
 }
 
 sub setNotebookAccount {
-    while (1) {
-        my $new = ask( "Global Documents account:", $config{NOTEBOOKACCOUNT} );
-        my ( $u,         $d )           = split( '@', $new );
-        my ( $adminUser, $adminDomain ) = split( '@', $config{CREATEADMIN} );
-        if ( $d ne $config{CREATEDOMAIN} && $d ne $adminDomain ) {
-            if ( $config{CREATEDOMAIN} eq $adminDomain ) {
-                progress("You must create the user under the domain $config{CREATEDOMAIN}\n");
-            }
-            else {
-                progress("You must create the user under the domain $config{CREATEDOMAIN} or $adminDomain\n");
-            }
-        }
-        else {
-            $config{NOTEBOOKACCOUNT} = $new;
-            last;
-        }
-    }
+    askDomainUserHelper( "Global Documents account:", "NOTEBOOKACCOUNT" );
 }
 
 sub setTrainSASpam {
-    while (1) {
-
-        my $new = ask( "Spam training user:", $config{TRAINSASPAM} );
-
-        my ( $u,         $d )           = split( '@', $new );
-        my ( $adminUser, $adminDomain ) = split( '@', $config{CREATEADMIN} );
-        if ( $d ne $config{CREATEDOMAIN} && $d ne $adminDomain ) {
-            if ( $config{CREATEDOMAIN} eq $adminDomain ) {
-                progress("You must create the user under the domain $config{CREATEDOMAIN}\n");
-            }
-            else {
-                progress("You must create the user under the domain $config{CREATEDOMAIN} or $adminDomain\n");
-            }
-        }
-        else {
-            $config{TRAINSASPAM} = $new;
-            last;
-        }
-    }
+    askDomainUserHelper( "Spam training user:", "TRAINSASPAM" );
 }
 
 sub setTrainSAHam {
-    while (1) {
-        my $new = ask( "Ham training user:", $config{TRAINSAHAM} );
-        my ( $u,         $d )           = split( '@', $new );
-        my ( $adminUser, $adminDomain ) = split( '@', $config{CREATEADMIN} );
-        if ( $d ne $config{CREATEDOMAIN} && $d ne $adminDomain ) {
-            if ( $config{CREATEDOMAIN} eq $adminDomain ) {
-                progress("You must create the user under the domain $config{CREATEDOMAIN}\n");
-            }
-            else {
-                progress("You must create the user under the domain $config{CREATEDOMAIN} or $adminDomain\n");
-            }
-        }
-        else {
-            $config{TRAINSAHAM} = $new;
-            last;
-        }
-    }
+    askDomainUserHelper( "Ham training user:", "TRAINSAHAM" );
 }
 
 sub setAmavisVirusQuarantine {
-    while (1) {
-        my $new = ask( "Anti-virus quarantine user:", $config{VIRUSQUARANTINE} );
-        my ( $u,         $d )           = split( '@', $new );
-        my ( $adminUser, $adminDomain ) = split( '@', $config{CREATEADMIN} );
-        if ( $d ne $config{CREATEDOMAIN} && $d ne $adminDomain ) {
-            if ( $config{CREATEDOMAIN} eq $adminDomain ) {
-                progress("You must create the user under the domain $config{CREATEDOMAIN}\n");
-            }
-            else {
-                progress("You must create the user under the domain $config{CREATEDOMAIN} or $adminDomain\n");
-            }
-        }
-        else {
-            $config{VIRUSQUARANTINE} = $new;
-            last;
-        }
-    }
+    askDomainUserHelper( "Anti-virus quarantine user:", "VIRUSQUARANTINE" );
 }
 
 sub setCreateAdmin {
@@ -2272,104 +2254,27 @@ sub validIPAddress {
 }
 
 sub setLdapRootPass {
-    while (1) {
-        my $new = askPassword( "Password for ldap root user (min 6 characters):", $config{LDAPROOTPASS} );
-        if ( length($new) >= 6 ) {
-            if ( $config{LDAPROOTPASS} ne $new ) {
-                $config{LDAPROOTPASS} = $new;
-                $ldapRootPassChanged = 1;
-            }
-            return;
-        }
-        else {
-            print "Minimum length of 6 characters!\n";
-        }
-    }
+    askLdapPasswordHelper( "ldap root user", "LDAPROOTPASS", \$ldapRootPassChanged, 0 );
 }
 
 sub setLdapAdminPass {
-    while (1) {
-        my $new = askPassword( "Password for ldap admin user (min 6 characters):", $config{LDAPADMINPASS} );
-        if ( length($new) >= 6 ) {
-            if ( $config{LDAPADMINPASS} ne $new ) {
-                $config{LDAPADMINPASS} = $new;
-                $ldapAdminPassChanged = 1;
-            }
-            ldapIsAvailable() if ( $config{HOSTNAME} ne $config{LDAPHOST} );
-            return;
-        }
-        else {
-            print "Minimum length of 6 characters!\n";
-        }
-    }
+    askLdapPasswordHelper( "ldap admin user", "LDAPADMINPASS", \$ldapAdminPassChanged, 1 );
 }
 
 sub setLdapRepPass {
-    while (1) {
-        my $new = askPassword( "Password for ldap replication user (min 6 characters):", $config{LDAPREPPASS} );
-        if ( length($new) >= 6 ) {
-            if ( $config{LDAPREPPASS} ne $new ) {
-                $config{LDAPREPPASS} = $new;
-                $ldapRepChanged = 1;
-            }
-            ldapIsAvailable() if ( $config{HOSTNAME} ne $config{LDAPHOST} );
-            return;
-        }
-        else {
-            print "Minimum length of 6 characters!\n";
-        }
-    }
+    askLdapPasswordHelper( "ldap replication user", "LDAPREPPASS", \$ldapRepChanged, 1 );
 }
 
 sub setLdapPostPass {
-    while (1) {
-        my $new = askPassword( "Password for ldap Postfix user (min 6 characters):", $config{LDAPPOSTPASS} );
-        if ( length($new) >= 6 ) {
-            if ( $config{LDAPPOSTPASS} ne $new ) {
-                $config{LDAPPOSTPASS} = $new;
-                $ldapPostChanged = 1;
-            }
-            ldapIsAvailable() if ( $config{HOSTNAME} ne $config{LDAPHOST} );
-            return;
-        }
-        else {
-            print "Minimum length of 6 characters!\n";
-        }
-    }
+    askLdapPasswordHelper( "ldap Postfix user", "LDAPPOSTPASS", \$ldapPostChanged, 1 );
 }
 
 sub setLdapAmavisPass {
-    while (1) {
-        my $new = askPassword( "Password for ldap Amavis user (min 6 characters):", $config{LDAPAMAVISPASS} );
-        if ( length($new) >= 6 ) {
-            if ( $config{LDAPAMAVISPASS} ne $new ) {
-                $config{LDAPAMAVISPASS} = $new;
-                $ldapAmavisChanged = 1;
-            }
-            ldapIsAvailable() if ( $config{HOSTNAME} ne $config{LDAPHOST} );
-            return;
-        }
-        else {
-            print "Minimum length of 6 characters!\n";
-        }
-    }
+    askLdapPasswordHelper( "ldap Amavis user", "LDAPAMAVISPASS", \$ldapAmavisChanged, 1 );
 }
 
 sub setLdapNginxPass {
-    while (1) {
-        my $new = askPassword( "Password for ldap Nginx user (min 6 characters):", $config{ldap_nginx_password} );
-        if ( length($new) >= 6 ) {
-            if ( $config{ldap_nginx_password} ne $new ) {
-                $config{ldap_nginx_password} = $new;
-                $ldapNginxChanged = 1;
-            }
-            ldapIsAvailable() if ( $config{HOSTNAME} ne $config{LDAPHOST} );
-            return;
-        }
-        else {
-            print "Minimum length of 6 characters!\n";
-        }
-    }
+    askLdapPasswordHelper( "ldap Nginx user", "ldap_nginx_password", \$ldapNginxChanged, 1 );
 }
 
 sub setSmtpSource {
@@ -2846,43 +2751,19 @@ sub setLdapReplicationType {
 }
 
 sub setImapProxyPort {
-    $config{IMAPPROXYPORT} = askNum( "Please enter the IMAP Proxy server port:", $config{IMAPPROXYPORT} );
-
-    if ( $config{MAILPROXY} eq "TRUE" || $config{zimbraMailProxy} eq "TRUE" ) {
-        if ( $config{IMAPPROXYPORT} == $config{IMAPPORT} ) {
-            $config{IMAPPORT} = "UNSET";
-        }
-    }
+    setProxyPortHelper( "IMAP Proxy server port", "IMAPPROXYPORT", "IMAPPORT", "MAILPROXY" );
 }
 
 sub setImapSSLProxyPort {
-    $config{IMAPSSLPROXYPORT} = askNum( "Please enter the IMAP SSL Proxy server port:", $config{IMAPSSLPROXYPORT} );
-
-    if ( $config{MAILPROXY} eq "TRUE" || $config{zimbraMailProxy} eq "TRUE" ) {
-        if ( $config{IMAPSSLPROXYPORT} == $config{IMAPSSLPORT} ) {
-            $config{IMAPSSLPORT} = "UNSET";
-        }
-    }
+    setProxyPortHelper( "IMAP SSL Proxy server port", "IMAPSSLPROXYPORT", "IMAPSSLPORT", "MAILPROXY" );
 }
 
 sub setPopProxyPort {
-    $config{POPPROXYPORT} = askNum( "Please enter the POP Proxy server port:", $config{POPPROXYPORT} );
-
-    if ( $config{MAILPROXY} eq "TRUE" || $config{zimbraMailProxy} eq "TRUE" ) {
-        if ( $config{POPPROXYPORT} == $config{POPPORT} ) {
-            $config{POPPORT} = "UNSET";
-        }
-    }
+    setProxyPortHelper( "POP Proxy server port", "POPPROXYPORT", "POPPORT", "MAILPROXY" );
 }
 
 sub setPopSSLProxyPort {
-    $config{POPSSLPROXYPORT} = askNum( "Please enter the POP SSL Proxyserver port:", $config{POPSSLPROXYPORT} );
-
-    if ( $config{MAILPROXY} eq "TRUE" || $config{zimbraMailProxy} eq "TRUE" ) {
-        if ( $config{POPSSLPROXYPORT} == $config{POPSSLPORT} ) {
-            $config{POPSSLPORT} = "UNSET";
-        }
-    }
+    setProxyPortHelper( "POP SSL Proxyserver port", "POPSSLPROXYPORT", "POPSSLPORT", "MAILPROXY" );
 }
 
 sub setPublicServiceHostname {
@@ -2907,23 +2788,11 @@ sub setPublicServiceHostname {
 }
 
 sub setHttpProxyPort {
-    $config{HTTPPROXYPORT} = askNum( "Please enter the HTTP Proxyserver port:", $config{HTTPPROXYPORT} );
-
-    if ( $config{HTTPPROXY} eq "TRUE" || $config{zimbraMailProxy} eq "TRUE" ) {
-        if ( $config{HTTPPROXYPORT} == $config{HTTPPORT} ) {
-            $config{HTTPPORT} = "UNSET";
-        }
-    }
+    setProxyPortHelper( "HTTP Proxyserver port", "HTTPPROXYPORT", "HTTPPORT", "HTTPPROXY" );
 }
 
 sub setHttpsProxyPort {
-    $config{HTTPSPROXYPORT} = askNum( "Please enter the HTTPS Proxyserver port:", $config{HTTPSPROXYPORT} );
-
-    if ( $config{HTTPPROXY} eq "TRUE" || $config{zimbraMailProxy} eq "TRUE" ) {
-        if ( $config{HTTPSPROXYPORT} == $config{HTTPSPORT} ) {
-            $config{HTTPSPORT} = "UNSET";
-        }
-    }
+    setProxyPortHelper( "HTTPS Proxyserver port", "HTTPSPROXYPORT", "HTTPSPORT", "HTTPPROXY" );
 }
 
 sub setTimeZone {
