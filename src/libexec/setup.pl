@@ -270,7 +270,7 @@ sub progressResult {
 }
 
 # Helper function to set LDAP passwords - consolidates repeated pattern
-# $name: display name (e.g., "replication", "Postfix")
+# $name: display name (e.g., "replication", "postfix")
 # $flag: zmldappasswd flag (e.g., "-l", "-p", "-a", "-n")
 # $configKey: config hash key for the password
 # $localConfigKey: localconfig key for remote LDAP case
@@ -598,7 +598,7 @@ sub saveConfig {
         progress("done.\n");
     }
     else {
-        progress("Can't open $fname: $!\n");
+        progress("Cannot open $fname: $!\n");
     }
 }
 
@@ -1475,7 +1475,7 @@ sub setDefaults {
                 }
                 if ( !$good ) {
                     progress("\n\nDNS ERROR - none of the \"MX\" records for $config{CREATEDOMAIN}\n");
-                    progress("resolve to this host\n");
+                    progress("resolve to this host.\n");
                     if ( askYN( "Change domain name?", "Yes" ) eq "yes" ) {
                         setCreateDomain();
                     }
@@ -2022,7 +2022,7 @@ sub setLdapRepPass {
 }
 
 sub setLdapPostPass {
-    askLdapPasswordHelper( "ldap Postfix user", "LDAPPOSTPASS", \$ldapPostChanged, 1 );
+    askLdapPasswordHelper( "ldap postfix user", "LDAPPOSTPASS", \$ldapPostChanged, 1 );
 }
 
 sub setLdapAmavisPass {
@@ -2298,7 +2298,7 @@ sub setHostName {
         $config{HOSTNAME} = askNonBlank( "Please enter the logical hostname for this host", $config{HOSTNAME} );
         if ( lookupHostName( $config{HOSTNAME}, 'A' ) ) {
             progress("\n\nDNS ERROR - resolving $config{HOSTNAME}\n");
-            progress("It is recommended that the hostname be resolvable via DNS and the resolved IP address not point to a loopback device\n");
+            progress("It is recommended that the hostname be resolvable via DNS and the resolved IP address not point to a loopback device.\n");
             if ( askYN( "Re-Enter hostname", "Yes" ) eq "no" ) {
                 last;
             }
@@ -2420,7 +2420,7 @@ sub setTimeZone {
             detail("Determining system locale.\n");
             my $localtzname = qx(/bin/date '+%Z');
             chomp($localtzname);
-            detail("DEBUG: Local tz name $localtzname\n");
+            detail("DEBUG: Local timezone name: $localtzname.\n");
             $ltzref = $tz->gettzbyname($localtzname);
         }
 
@@ -3308,7 +3308,7 @@ sub runAsZextrasWithOutput {
     logRunCommand( $cmd, "zextras" );
     system("$SU \"$cmd\"");
     my $exit_value = $? >> 8;
-    detail("DEBUG: exit status from cmd was $exit_value") if $debug;
+    detail("DEBUG: Exit status from command was $exit_value.") if $debug;
     return $exit_value;
 }
 
@@ -3321,7 +3321,7 @@ sub getLocalConfig {
     detail("Getting local config $key...");
     my $val = qx(/opt/zextras/bin/zmlocalconfig -x -s -m nokey ${key} 2> /dev/null);
     chomp $val;
-    detail("DEBUG: LC Loaded $key=$val") if $debug;
+    detail("DEBUG: Local config loaded $key=$val.") if $debug;
     $main::loaded{lc}{$key} = $val;
     return $val;
 }
@@ -3335,7 +3335,7 @@ sub getLocalConfigRaw {
     detail("Getting local config $key...");
     my $val = qx(/opt/zextras/bin/zmlocalconfig -s -m nokey ${key} 2> /dev/null);
     chomp $val;
-    detail("DEBUG: LC Loaded $key=$val") if $debug;
+    detail("DEBUG: Local config loaded $key=$val.") if $debug;
     $main::loaded{lc}{$key} = $val;
     return $val;
 }
@@ -3422,7 +3422,7 @@ sub updateKeyValue {
 sub ifKeyValueEquate {
     my ( $sec, $key, $val, $sub ) = @_;
     $key = $1 if ( $key =~ /^[+|-](.*)/ );
-    detail("Checking to see if $key=$val has changed for $sec $sub\n") if $debug;
+    detail("Checking to see if $key=$val has changed for $sec $sub.\n") if $debug;
     if ( exists $main::saved{$sec}{$sub}{$key} && $main::saved{$sec}{$sub}{$key} eq $val ) {
 
         #detail("DEBUG: \"$main::saved{$sec}{$sub}{$key}\" eq \"$val\"\n") if $debug;
@@ -3591,7 +3591,7 @@ sub updatePasswordsInLocalConfig {
         # On new install where we're the LDAP host and LDAP isn't configured yet,
         # skip password setting here - it will be done after LDAP is started in configSetupLdap
         if ( $newinstall && !$ldapConfigured && ( $config{LDAPHOST} eq $config{HOSTNAME} ) ) {
-            detail("Skipping password update - LDAP not yet started, will be set after initialization\n");
+            detail("Skipping password update - LDAP not yet started, will be set after initialization.\n");
             return;
         }
 
@@ -3605,7 +3605,7 @@ sub updatePasswordsInLocalConfig {
             }
             setLdapPasswordHelper( "LDAP admin", "", "LDAPADMINPASS", "zimbra_ldap_password" )         if $ldapAdminPassChanged;
             setLdapPasswordHelper( "replication", "-l", "LDAPREPPASS", "ldap_replication_password" )  if $ldapRepChanged;
-            setLdapPasswordHelper( "Postfix", "-p", "LDAPPOSTPASS", "ldap_postfix_password" )         if $ldapPostChanged;
+            setLdapPasswordHelper( "postfix", "-p", "LDAPPOSTPASS", "ldap_postfix_password" )         if $ldapPostChanged;
             setLdapPasswordHelper( "amavis", "-a", "LDAPAMAVISPASS", "ldap_amavis_password" )         if $ldapAmavisChanged;
             setLdapPasswordHelper( "nginx", "-n", "ldap_nginx_password", "ldap_nginx_password" )     if $ldapNginxChanged;
         }
@@ -3665,7 +3665,7 @@ sub configSetupLdap {
             progress("done.\n");
             # Set passwords after LDAP init (use quoted passwords for shell safety)
             setLdapPasswordHelper( "replication", "-l", "LDAPREPPASS", "ldap_replication_password", 1 ) if $ldapRepChanged;
-            setLdapPasswordHelper( "Postfix", "-p", "LDAPPOSTPASS", "ldap_postfix_password", 1 )        if $ldapPostChanged;
+            setLdapPasswordHelper( "postfix", "-p", "LDAPPOSTPASS", "ldap_postfix_password", 1 )        if $ldapPostChanged;
             setLdapPasswordHelper( "amavis", "-a", "LDAPAMAVISPASS", "ldap_amavis_password", 1 )        if $ldapAmavisChanged;
             setLdapPasswordHelper( "nginx", "-n", "ldap_nginx_password", "ldap_nginx_password", 1 )    if $ldapNginxChanged;
         }
@@ -3694,7 +3694,7 @@ sub configSetupLdap {
                 ldap_replication_password => $config{LDAPREPPASS}
             );
             if ( $newinstall && $config{LDAPREPLICATIONTYPE} eq "mmr" ) {
-                setLdapPasswordHelper( "Postfix", "-p", "LDAPPOSTPASS", "ldap_postfix_password", 1 )     if $ldapPostChanged;
+                setLdapPasswordHelper( "postfix", "-p", "LDAPPOSTPASS", "ldap_postfix_password", 1 )     if $ldapPostChanged;
                 setLdapPasswordHelper( "amavis", "-a", "LDAPAMAVISPASS", "ldap_amavis_password", 1 )     if $ldapAmavisChanged;
                 setLdapPasswordHelper( "nginx", "-n", "ldap_nginx_password", "ldap_nginx_password", 1 ) if $ldapNginxChanged;
             }
@@ -4057,13 +4057,13 @@ sub configSetStoreDefaults {
         if ( $config{zimbraMailProxy} eq "TRUE" ) {
             my $rc = runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -m -e -o " . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} " . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}" );
             if ( $rc != 0 ) {
-                progress("WARNING: zmproxyconfig for mail proxy returned non-zero exit code: $rc\n");
+                progress("WARNING: zmproxyconfig for mail proxy returned non-zero exit code: $rc.\n");
             }
         }
         if ( $config{zimbraWebProxy} eq "TRUE" ) {
             my $rc = runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -w -e -o " . "-x $config{PROXYMODE} " . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}" );
             if ( $rc != 0 ) {
-                progress("WARNING: zmproxyconfig for web proxy returned non-zero exit code: $rc\n");
+                progress("WARNING: zmproxyconfig for web proxy returned non-zero exit code: $rc.\n");
             }
         }
     }
@@ -4230,7 +4230,7 @@ sub configSetProxyPrefs {
             chomp( @memcachetargets = <ZMPROV> );
             close(ZMPROV);
             if ( $memcachetargets[0] !~ /:11211/ ) {
-                progress("WARNING: There are currently no memcached servers for the proxy.  Proxy will start once one becomes available.\n");
+                progress("WARNING: There are currently no memcached servers for the proxy. Proxy will start once one becomes available.\n");
             }
         }
         if ( ( !( $config{PUBLICSERVICEHOSTNAME} eq "" ) ) && ( !($publicServiceHostnameAlreadySet) ) ) {
