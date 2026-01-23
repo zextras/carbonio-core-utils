@@ -369,6 +369,29 @@ sub resolvePortOffsetCollision {
     }
 }
 
+# Helper to update password display status for menu (UNSET, set, or Not Verified)
+sub updatePasswordDisplayStatus {
+    my ( $passKey, $passSetKey ) = @_;
+    if ( $config{$passKey} eq "" ) {
+        $config{$passSetKey} = "UNSET";
+    }
+    else {
+        $config{$passSetKey} = "set" unless ( $config{$passSetKey} eq "Not Verified" );
+    }
+}
+
+# Helper to add a menu item - reduces boilerplate
+sub addMenuItem {
+    my ( $lm, $i_ref, $prompt, $varKey, $callback, $arg ) = @_;
+    $$lm{menuitems}{$$i_ref} = {
+        "prompt"   => $prompt,
+        "var"      => \$config{$varKey},
+        "callback" => $callback,
+    };
+    $$lm{menuitems}{$$i_ref}{"arg"} = $arg if defined $arg;
+    $$i_ref++;
+}
+
 # Helper to ask for domain-validated user account - consolidates 4 nearly identical functions
 sub askDomainUserHelper {
     my ( $prompt, $configKey ) = @_;
@@ -2581,56 +2604,20 @@ sub createCommonMenu {
     $$lm{createarg} = $package;
 
     my $i = 1;
-    $$lm{menuitems}{$i} = {
-        "prompt"   => "Hostname:",
-        "var"      => \$config{HOSTNAME},
-        "callback" => \&setHostName
-    };
-    $i++;
-    $$lm{menuitems}{$i} = {
-        "prompt"   => "Ldap master host:",
-        "var"      => \$config{LDAPHOST},
-        "callback" => \&setLdapHost
-    };
-    $i++;
-    $$lm{menuitems}{$i} = {
-        "prompt"   => "Ldap port:",
-        "var"      => \$config{LDAPPORT},
-        "callback" => \&setLdapPort
-    };
-    $i++;
+    addMenuItem( $lm, \$i, "Hostname:",         'HOSTNAME', \&setHostName );
+    addMenuItem( $lm, \$i, "Ldap master host:", 'LDAPHOST', \&setLdapHost );
+    addMenuItem( $lm, \$i, "Ldap port:",        'LDAPPORT', \&setLdapPort );
 
-    if ( $config{LDAPADMINPASS} eq "" ) {
-        $config{LDAPADMINPASSSET} = "UNSET";
-    }
-    else {
-        $config{LDAPADMINPASSSET} = "set" unless ( $config{LDAPADMINPASSSET} eq "Not Verified" );
-    }
-    $$lm{menuitems}{$i} = {
-        "prompt"   => "Ldap Admin password:",
-        "var"      => \$config{LDAPADMINPASSSET},
-        "callback" => \&setLdapAdminPass
-    };
-    $i++;
+    updatePasswordDisplayStatus( 'LDAPADMINPASS', 'LDAPADMINPASSSET' );
+    addMenuItem( $lm, \$i, "Ldap Admin password:", 'LDAPADMINPASSSET', \&setLdapAdminPass );
 
     # ldap users
     if ( !defined( $installedPackages{"carbonio-directory-server"} ) ) {
-        $$lm{menuitems}{$i} = {
-            "prompt"   => "LDAP Base DN:",
-            "var"      => \$config{ldap_dit_base_dn_config},
-            "callback" => \&setLdapBaseDN,
-        };
-        $i++;
+        addMenuItem( $lm, \$i, "LDAP Base DN:", 'ldap_dit_base_dn_config', \&setLdapBaseDN );
     }
 
     # interprocess security
-    $$lm{menuitems}{$i} = {
-        "prompt"   => "Secure interprocess communications:",
-        "var"      => \$config{ZIMBRA_REQ_SECURITY},
-        "callback" => \&toggleYN,
-        "arg"      => "ZIMBRA_REQ_SECURITY",
-    };
-    $i++;
+    addMenuItem( $lm, \$i, "Secure interprocess communications:", 'ZIMBRA_REQ_SECURITY', \&toggleYN, "ZIMBRA_REQ_SECURITY" );
     if ( $config{ZIMBRA_REQ_SECURITY} eq "yes" ) {
         $config{zimbra_require_interprocess_security} = 1;
     }
@@ -2638,24 +2625,9 @@ sub createCommonMenu {
         $config{zimbra_require_interprocess_security} = 0;
         $starttls = 0;
     }
-    $$lm{menuitems}{$i} = {
-        "prompt"   => "TimeZone:",
-        "var"      => \$config{zimbraPrefTimeZoneId},
-        "callback" => \&setTimeZone
-    };
-    $i++;
-    $$lm{menuitems}{$i} = {
-        "prompt"   => "IP Mode:",
-        "var"      => \$config{zimbraIPMode},
-        "callback" => \&setIPMode
-    };
-    $i++;
-    $$lm{menuitems}{$i} = {
-        "prompt"   => "Default SSL digest:",
-        "var"      => \$config{ssl_default_digest},
-        "callback" => \&setSSLDefaultDigest
-    };
-    $i++;
+    addMenuItem( $lm, \$i, "TimeZone:",           'zimbraPrefTimeZoneId', \&setTimeZone );
+    addMenuItem( $lm, \$i, "IP Mode:",            'zimbraIPMode',         \&setIPMode );
+    addMenuItem( $lm, \$i, "Default SSL digest:", 'ssl_default_digest',   \&setSSLDefaultDigest );
     return $lm;
 }
 
@@ -2670,101 +2642,40 @@ sub createLdapMenu {
 
     my $i = 2;
     if ( isEnabled($package) ) {
-        $$lm{menuitems}{$i} = {
-            "prompt"   => "Create Domain:",
-            "var"      => \$config{DOCREATEDOMAIN},
-            "callback" => \&toggleYN,
-            "arg"      => "DOCREATEDOMAIN",
-        };
-        $i++;
+        addMenuItem( $lm, \$i, "Create Domain:", 'DOCREATEDOMAIN', \&toggleYN, "DOCREATEDOMAIN" );
         if ( $config{DOCREATEDOMAIN} eq "yes" ) {
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "Domain to create:",
-                "var"      => \$config{CREATEDOMAIN},
-                "callback" => \&setCreateDomain,
-            };
-            $i++;
+            addMenuItem( $lm, \$i, "Domain to create:", 'CREATEDOMAIN', \&setCreateDomain );
         }
 
         if ( $config{LDAPREPLICATIONTYPE} ne "master" ) {
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "Ldap replication type:",
-                "var"      => \$config{LDAPREPLICATIONTYPE},
-                "callback" => \&setLdapReplicationType
-            };
-            $i++;
+            addMenuItem( $lm, \$i, "Ldap replication type:", 'LDAPREPLICATIONTYPE', \&setLdapReplicationType );
         }
         if ( $config{LDAPREPLICATIONTYPE} eq "mmr" ) {
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "Ldap Server ID:",
-                "var"      => \$config{LDAPSERVERID},
-                "callback" => \&setLdapServerID
-            };
-            $i++;
+            addMenuItem( $lm, \$i, "Ldap Server ID:", 'LDAPSERVERID', \&setLdapServerID );
         }
+
+        # LDAPROOTPASS has inverted logic: "Not Verified" preserved when empty
         if ( $config{LDAPROOTPASS} ne "" ) {
             $config{LDAPROOTPASSSET} = "set";
         }
         else {
             $config{LDAPROOTPASSSET} = "UNSET" unless ( $config{LDAPROOTPASSSET} eq "Not Verified" );
         }
-        $$lm{menuitems}{$i} = {
-            "prompt"   => "Ldap root password:",
-            "var"      => \$config{LDAPROOTPASSSET},
-            "callback" => \&setLdapRootPass
-        };
-        $i++;
-        if ( $config{LDAPREPPASS} eq "" ) {
-            $config{LDAPREPPASSSET} = "UNSET";
-        }
-        else {
-            $config{LDAPREPPASSSET} = "set" unless ( $config{LDAPREPPASSSET} eq "Not Verified" );
-        }
-        $$lm{menuitems}{$i} = {
-            "prompt"   => "Ldap replication password:",
-            "var"      => \$config{LDAPREPPASSSET},
-            "callback" => \&setLdapRepPass
-        };
-        $i++;
+        addMenuItem( $lm, \$i, "Ldap root password:", 'LDAPROOTPASSSET', \&setLdapRootPass );
+
+        updatePasswordDisplayStatus( 'LDAPREPPASS', 'LDAPREPPASSSET' );
+        addMenuItem( $lm, \$i, "Ldap replication password:", 'LDAPREPPASSSET', \&setLdapRepPass );
+
         if ( $config{HOSTNAME} eq $config{LDAPHOST} || $config{LDAPREPLICATIONTYPE} ne "replica" || isEnabled("carbonio-mta") ) {
-            if ( $config{LDAPPOSTPASS} eq "" ) {
-                $config{LDAPPOSTPASSSET} = "UNSET";
-            }
-            else {
-                $config{LDAPPOSTPASSSET} = "set" unless ( $config{LDAPPOSTPASSSET} eq "Not Verified" );
-            }
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "Ldap postfix password:",
-                "var"      => \$config{LDAPPOSTPASSSET},
-                "callback" => \&setLdapPostPass
-            };
-            $i++;
-            if ( $config{LDAPAMAVISPASS} eq "" ) {
-                $config{LDAPAMAVISPASSSET} = "UNSET";
-            }
-            else {
-                $config{LDAPAMAVISPASSSET} = "set" unless ( $config{LDAPAMAVISPASSSET} eq "Not Verified" );
-            }
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "Ldap amavis password:",
-                "var"      => \$config{LDAPAMAVISPASSSET},
-                "callback" => \&setLdapAmavisPass
-            };
-            $i++;
+            updatePasswordDisplayStatus( 'LDAPPOSTPASS', 'LDAPPOSTPASSSET' );
+            addMenuItem( $lm, \$i, "Ldap postfix password:", 'LDAPPOSTPASSSET', \&setLdapPostPass );
+
+            updatePasswordDisplayStatus( 'LDAPAMAVISPASS', 'LDAPAMAVISPASSSET' );
+            addMenuItem( $lm, \$i, "Ldap amavis password:", 'LDAPAMAVISPASSSET', \&setLdapAmavisPass );
         }
         if ( $config{HOSTNAME} eq $config{LDAPHOST} || $config{LDAPREPLICATIONTYPE} ne "replica" || isEnabled("carbonio-proxy") ) {
-            if ( $config{ldap_nginx_password} eq "" ) {
-                $config{LDAPNGINXPASSSET} = "UNSET";
-            }
-            else {
-                $config{LDAPNGINXPASSSET} = "set" unless ( $config{LDAPNGINXPASSSET} eq "Not Verified" );
-            }
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "Ldap nginx password:",
-                "var"      => \$config{LDAPNGINXPASSSET},
-                "callback" => \&setLdapNginxPass
-            };
-            $i++;
+            updatePasswordDisplayStatus( 'ldap_nginx_password', 'LDAPNGINXPASSSET' );
+            addMenuItem( $lm, \$i, "Ldap nginx password:", 'LDAPNGINXPASSSET', \&setLdapNginxPass );
         }
     }
     return $lm;
@@ -2794,50 +2705,15 @@ sub createMtaMenu {
 
     my $i = 2;
     if ( isEnabled($package) ) {
-        $$lm{menuitems}{$i} = {
-            "prompt"   => "Enable Spamassassin:",
-            "var"      => \$config{RUNSA},
-            "callback" => \&toggleYN,
-            "arg"      => "RUNSA",
-        };
-        $i++;
-        $$lm{menuitems}{$i} = {
-            "prompt"   => "Enable OpenDKIM:",
-            "var"      => \$config{RUNDKIM},
-            "callback" => \&toggleYN,
-            "arg"      => "RUNDKIM",
-        };
-        $i++;
-        $$lm{menuitems}{$i} = {
-            "prompt"   => "Notification address for AV alerts:",
-            "var"      => \$config{AVUSER},
-            "callback" => \&setAvUser,
-        };
-        $i++;
-        if ( $config{LDAPPOSTPASS} eq "" ) {
-            $config{LDAPPOSTPASSSET} = "UNSET";
-        }
-        else {
-            $config{LDAPPOSTPASSSET} = "set" unless ( $config{LDAPPOSTPASSSET} eq "Not Verified" );
-        }
-        $$lm{menuitems}{$i} = {
-            "prompt"   => "Bind password for postfix ldap user:",
-            "var"      => \$config{LDAPPOSTPASSSET},
-            "callback" => \&setLdapPostPass
-        };
-        $i++;
-        if ( $config{LDAPAMAVISPASS} eq "" ) {
-            $config{LDAPAMAVISPASSSET} = "UNSET";
-        }
-        else {
-            $config{LDAPAMAVISPASSSET} = "set" unless ( $config{LDAPAMAVISPASSSET} eq "Not Verified" );
-        }
-        $$lm{menuitems}{$i} = {
-            "prompt"   => "Bind password for amavis ldap user:",
-            "var"      => \$config{LDAPAMAVISPASSSET},
-            "callback" => \&setLdapAmavisPass
-        };
-        $i++;
+        addMenuItem( $lm, \$i, "Enable Spamassassin:",              'RUNSA',   \&toggleYN, "RUNSA" );
+        addMenuItem( $lm, \$i, "Enable OpenDKIM:",                  'RUNDKIM', \&toggleYN, "RUNDKIM" );
+        addMenuItem( $lm, \$i, "Notification address for AV alerts:", 'AVUSER', \&setAvUser );
+
+        updatePasswordDisplayStatus( 'LDAPPOSTPASS', 'LDAPPOSTPASSSET' );
+        addMenuItem( $lm, \$i, "Bind password for postfix ldap user:", 'LDAPPOSTPASSSET', \&setLdapPostPass );
+
+        updatePasswordDisplayStatus( 'LDAPAMAVISPASS', 'LDAPAMAVISPASSSET' );
+        addMenuItem( $lm, \$i, "Bind password for amavis ldap user:", 'LDAPAMAVISPASSSET', \&setLdapAmavisPass );
     }
     return $lm;
 }
@@ -2853,92 +2729,26 @@ sub createProxyMenu {
 
     my $i = 2;
     if ( isInstalled($package) ) {
-        $$lm{menuitems}{$i} = {
-            "prompt"   => "Public Service Hostname:",
-            "var"      => \$config{PUBLICSERVICEHOSTNAME},
-            "callback" => \&setPublicServiceHostname,
-        };
-        $i++;
-        $$lm{menuitems}{$i} = {
-            "prompt"   => "Enable POP/IMAP Proxy:",
-            "var"      => \$config{MAILPROXY},
-            "callback" => \&toggleTF,
-            "arg"      => "MAILPROXY",
-        };
-        $i++;
-        $$lm{menuitems}{$i} = {
-            "prompt"   => "Enable strict server name enforcement?",
-            "var"      => \$config{STRICTSERVERNAMEENABLED},
-            "callback" => \&toggleYN,
-            "arg"      => "STRICTSERVERNAMEENABLED",
-        };
-        $i++;
+        addMenuItem( $lm, \$i, "Public Service Hostname:",               'PUBLICSERVICEHOSTNAME',   \&setPublicServiceHostname );
+        addMenuItem( $lm, \$i, "Enable POP/IMAP Proxy:",                 'MAILPROXY',               \&toggleTF, "MAILPROXY" );
+        addMenuItem( $lm, \$i, "Enable strict server name enforcement?", 'STRICTSERVERNAMEENABLED', \&toggleYN, "STRICTSERVERNAMEENABLED" );
+
         if ( $config{MAILPROXY} eq "TRUE" ) {
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "IMAP proxy port:",
-                "var"      => \$config{IMAPPROXYPORT},
-                "callback" => \&setImapProxyPort,
-            };
-            $i++;
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "IMAP SSL proxy port:",
-                "var"      => \$config{IMAPSSLPROXYPORT},
-                "callback" => \&setImapSSLProxyPort,
-            };
-            $i++;
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "POP proxy port:",
-                "var"      => \$config{POPPROXYPORT},
-                "callback" => \&setPopProxyPort,
-            };
-            $i++;
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "POP SSL proxy port:",
-                "var"      => \$config{POPSSLPROXYPORT},
-                "callback" => \&setPopSSLProxyPort,
-            };
-            $i++;
+            addMenuItem( $lm, \$i, "IMAP proxy port:",     'IMAPPROXYPORT',    \&setImapProxyPort );
+            addMenuItem( $lm, \$i, "IMAP SSL proxy port:", 'IMAPSSLPROXYPORT', \&setImapSSLProxyPort );
+            addMenuItem( $lm, \$i, "POP proxy port:",      'POPPROXYPORT',     \&setPopProxyPort );
+            addMenuItem( $lm, \$i, "POP SSL proxy port:",  'POPSSLPROXYPORT',  \&setPopSSLProxyPort );
         }
         if ( $config{HTTPPROXY} eq "TRUE" || $config{MAILPROXY} eq "TRUE" ) {
-            if ( $config{ldap_nginx_password} eq "" ) {
-                $config{LDAPNGINXPASSSET} = "UNSET";
-            }
-            else {
-                $config{LDAPNGINXPASSSET} = "set" unless ( $config{LDAPNGINXPASSSET} eq "Not Verified" );
-            }
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "Bind password for nginx ldap user:",
-                "var"      => \$config{LDAPNGINXPASSSET},
-                "callback" => \&setLdapNginxPass
-            };
-            $i++;
+            updatePasswordDisplayStatus( 'ldap_nginx_password', 'LDAPNGINXPASSSET' );
+            addMenuItem( $lm, \$i, "Bind password for nginx ldap user:", 'LDAPNGINXPASSSET', \&setLdapNginxPass );
         }
-        $$lm{menuitems}{$i} = {
-            "prompt"   => "Enable HTTP[S] Proxy:",
-            "var"      => \$config{HTTPPROXY},
-            "callback" => \&toggleTF,
-            "arg"      => "HTTPPROXY",
-        };
-        $i++;
+        addMenuItem( $lm, \$i, "Enable HTTP[S] Proxy:", 'HTTPPROXY', \&toggleTF, "HTTPPROXY" );
+
         if ( $config{HTTPPROXY} eq "TRUE" ) {
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "HTTP proxy port:",
-                "var"      => \$config{HTTPPROXYPORT},
-                "callback" => \&setHttpProxyPort,
-            };
-            $i++;
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "HTTPS proxy port:",
-                "var"      => \$config{HTTPSPROXYPORT},
-                "callback" => \&setHttpsProxyPort,
-            };
-            $i++;
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "Proxy server mode:",
-                "var"      => \$config{PROXYMODE},
-                "callback" => \&setProxyMode,
-            };
-            $i++;
+            addMenuItem( $lm, \$i, "HTTP proxy port:",   'HTTPPROXYPORT',  \&setHttpProxyPort );
+            addMenuItem( $lm, \$i, "HTTPS proxy port:",  'HTTPSPROXYPORT', \&setHttpsProxyPort );
+            addMenuItem( $lm, \$i, "Proxy server mode:", 'PROXYMODE',      \&setProxyMode );
         }
     }
     return $lm;
@@ -2955,47 +2765,26 @@ sub createStoreMenu {
 
     my $i = 2;
     if ( isEnabled($package) ) {
-        $$lm{menuitems}{$i} = {
-            "prompt"   => "Create Admin User:",
-            "var"      => \$config{DOCREATEADMIN},
-            "callback" => \&toggleYN,
-            "arg"      => "DOCREATEADMIN",
-        };
-        $i++;
+        addMenuItem( $lm, \$i, "Create Admin User:", 'DOCREATEADMIN', \&toggleYN, "DOCREATEADMIN" );
+
         my $ldap_virusquarantine = getLdapConfigValue("zimbraAmavisQuarantineAccount")
           if ( ldapIsAvailable() );
 
         if ( $ldap_virusquarantine eq "" ) {
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "Anti-virus quarantine user:",
-                "var"      => \$config{VIRUSQUARANTINE},
-                "callback" => \&setAmavisVirusQuarantine
-            };
-            $i++;
+            addMenuItem( $lm, \$i, "Anti-virus quarantine user:", 'VIRUSQUARANTINE', \&setAmavisVirusQuarantine );
         }
         else {
             $config{VIRUSQUARANTINE} = $ldap_virusquarantine;
         }
 
-        $$lm{menuitems}{$i} = {
-            "prompt"   => "Enable automated spam training:",
-            "var"      => \$config{DOTRAINSA},
-            "callback" => \&toggleYN,
-            "arg"      => "DOTRAINSA",
-        };
-        $i++;
-        if ( $config{DOTRAINSA} eq "yes" ) {
+        addMenuItem( $lm, \$i, "Enable automated spam training:", 'DOTRAINSA', \&toggleYN, "DOTRAINSA" );
 
+        if ( $config{DOTRAINSA} eq "yes" ) {
             my $ldap_trainsaspam = getLdapConfigValue("zimbraSpamIsSpamAccount")
               if ( ldapIsAvailable() );
 
             if ( $ldap_trainsaspam eq "" ) {
-                $$lm{menuitems}{$i} = {
-                    "prompt"   => "Spam training user:",
-                    "var"      => \$config{TRAINSASPAM},
-                    "callback" => \&setTrainSASpam
-                };
-                $i++;
+                addMenuItem( $lm, \$i, "Spam training user:", 'TRAINSASPAM', \&setTrainSASpam );
             }
             else {
                 $config{TRAINSASPAM} = $ldap_trainsaspam;
@@ -3005,72 +2794,27 @@ sub createStoreMenu {
               if ( ldapIsAvailable() );
 
             if ( $ldap_trainsaham eq "" ) {
-                $$lm{menuitems}{$i} = {
-                    "prompt"   => "Non-spam(Ham) training user:",
-                    "var"      => \$config{TRAINSAHAM},
-                    "callback" => \&setTrainSAHam
-                };
-                $i++;
+                addMenuItem( $lm, \$i, "Non-spam(Ham) training user:", 'TRAINSAHAM', \&setTrainSAHam );
             }
             else {
                 $config{TRAINSAHAM} = $ldap_trainsaham;
             }
         }
 
-        $$lm{menuitems}{$i} = {
-            "prompt"   => "SMTP host:",
-            "var"      => \$config{SMTPHOST},
-            "callback" => \&setSmtpHost,
-        };
-        $i++;
+        addMenuItem( $lm, \$i, "SMTP host:", 'SMTPHOST', \&setSmtpHost );
+
         if ( !isEnabled("carbonio-proxy") && $config{zimbraWebProxy} eq "TRUE" ) {
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "HTTP proxy port:",
-                "var"      => \$config{HTTPPROXYPORT},
-                "callback" => \&setHttpProxyPort,
-            };
-            $i++;
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "HTTPS proxy port:",
-                "var"      => \$config{HTTPSPROXYPORT},
-                "callback" => \&setHttpsProxyPort,
-            };
-            $i++;
-        }
-        $$lm{menuitems}{$i} = {
-            "prompt"   => "Web server mode:",
-            "var"      => \$config{MODE},
-            "callback" => \&setStoreMode,
-        };
-        $i++;
-        if ( !isEnabled("carbonio-proxy") && $config{zimbraMailProxy} eq "TRUE" ) {
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "IMAP proxy port:",
-                "var"      => \$config{IMAPPROXYPORT},
-                "callback" => \&setImapProxyPort,
-            };
-            $i++;
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "IMAP SSL proxy port:",
-                "var"      => \$config{IMAPSSLPROXYPORT},
-                "callback" => \&setImapSSLProxyPort,
-            };
-            $i++;
+            addMenuItem( $lm, \$i, "HTTP proxy port:",  'HTTPPROXYPORT',  \&setHttpProxyPort );
+            addMenuItem( $lm, \$i, "HTTPS proxy port:", 'HTTPSPROXYPORT', \&setHttpsProxyPort );
         }
 
+        addMenuItem( $lm, \$i, "Web server mode:", 'MODE', \&setStoreMode );
+
         if ( !isEnabled("carbonio-proxy") && $config{zimbraMailProxy} eq "TRUE" ) {
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "POP proxy port:",
-                "var"      => \$config{POPPROXYPORT},
-                "callback" => \&setPopProxyPort,
-            };
-            $i++;
-            $$lm{menuitems}{$i} = {
-                "prompt"   => "POP SSL proxy port:",
-                "var"      => \$config{POPSSLPROXYPORT},
-                "callback" => \&setPopSSLProxyPort,
-            };
-            $i++;
+            addMenuItem( $lm, \$i, "IMAP proxy port:",     'IMAPPROXYPORT',    \&setImapProxyPort );
+            addMenuItem( $lm, \$i, "IMAP SSL proxy port:", 'IMAPSSLPROXYPORT', \&setImapSSLProxyPort );
+            addMenuItem( $lm, \$i, "POP proxy port:",      'POPPROXYPORT',     \&setPopProxyPort );
+            addMenuItem( $lm, \$i, "POP SSL proxy port:",  'POPSSLPROXYPORT',  \&setPopSSLProxyPort );
         }
     }
     return $lm;
