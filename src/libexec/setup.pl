@@ -4019,13 +4019,13 @@ sub configSetStoreDefaults {
     # for mailstore split, set zimbraReverseProxyAvailableLookupTargets on service-only nodes
     if ( $newinstall && isStoreServiceNode() ) {
         my $adding = 0;
-        progress("Checking current setting of ReverseProxyAvailableLookupTargets\n");
+        progress("Checking current setting of ReverseProxyAvailableLookupTargets...\n");
         my $zrpALT = getLdapConfigValue("zimbraReverseProxyAvailableLookupTargets");
         if ( $zrpALT ne "" ) {
             $adding = 1;
         }
         else {
-            progress("Querying LDAP for other mailstores\n");
+            progress("Querying LDAP for other mailstores...\n");
 
             # query LDAP to see if there are other mailstores.  If there are none, add this
             # new service node to zimbraReverseProxyAvailableLookupTargets.  Otherwise do not
@@ -4035,7 +4035,7 @@ sub configSetStoreDefaults {
             }
         }
         if ($adding) {
-            progress("Adding $config{HOSTNAME} to ReverseProxyAvailableLookupTargets\n");
+            progress("Adding $config{HOSTNAME} to ReverseProxyAvailableLookupTargets...\n");
             setLdapGlobalConfig( "+zimbraReverseProxyAvailableLookupTargets", $config{HOSTNAME} );
         }
     }
@@ -4804,42 +4804,42 @@ sub setupSyslog {
 
 sub setupCrontab {
     progress("Setting up zextras crontab...");
-    detail("crontab: Taking a copy of zextras user crontab file.");
+    detail("Crontab: Taking a copy of zextras user crontab file.");
     qx(crontab -u zextras -l > /tmp/crontab.zextras.orig 2> /dev/null);
-    detail("crontab: Looking for ZEXTRAS-START in existing crontab entry.");
+    detail("Crontab: Looking for ZEXTRAS-START in existing crontab entry.");
     my $rc = 0xffff & system("grep ZEXTRAS-START /tmp/crontab.zextras.orig > /dev/null 2>&1");
     if ($rc) {
-        detail("crontab: ZEXTRAS-START not found truncating zextras crontab and starting fresh.");
+        detail("Crontab: ZEXTRAS-START not found, starting fresh.");
         qx(cp -f /dev/null /tmp/crontab.zextras.orig 2>> $logfile);
     }
-    detail("crontab: Looking for ZEXTRAS-END in existing crontab entry.");
+    detail("Crontab: Looking for ZEXTRAS-END in existing crontab entry.");
     $rc = 0xffff & system("grep ZEXTRAS-END /tmp/crontab.zextras.orig > /dev/null 2>&1");
     if ($rc) {
-        detail("crontab: ZEXTRAS-END not found truncating zextras crontab and starting fresh.");
+        detail("Crontab: ZEXTRAS-END not found, starting fresh.");
         qx(cp -f /dev/null /tmp/crontab.zextras.orig);
     }
     qx(cat /tmp/crontab.zextras.orig | sed -e '/# ZEXTRAS-START/,/# ZEXTRAS-END/d' > /tmp/crontab.zextras.proc);
-    detail("crontab: Adding carbonio-core specific crontab entries");
+    detail("Crontab: Adding carbonio-core specific entries.");
     qx(cp -f /opt/zextras/conf/crontabs/crontab /tmp/crontab.zextras);
 
     if ( isEnabled("carbonio-directory-server") ) {
-        detail("crontab: Adding carbonio-directory-server specific crontab entries");
+        detail("Crontab: Adding carbonio-directory-server specific entries.");
         qx(cat /opt/zextras/conf/crontabs/crontab.ldap >> /tmp/crontab.zextras 2>> $logfile);
     }
 
     if ( isEnabled("carbonio-appserver") ) {
-        detail("crontab: Adding carbonio-appserver specific crontab entries");
+        detail("Crontab: Adding carbonio-appserver specific entries.");
         qx(cat /opt/zextras/conf/crontabs/crontab.store >> /tmp/crontab.zextras 2>> $logfile);
     }
 
     if ( isEnabled("carbonio-mta") ) {
-        detail("crontab: Adding carbonio-mta specific crontab entries");
+        detail("Crontab: Adding carbonio-mta specific entries.");
         qx(cat /opt/zextras/conf/crontabs/crontab.mta >> /tmp/crontab.zextras 2>> $logfile);
     }
 
     qx(echo "# ZEXTRAS-END -- DO NOT EDIT ANYTHING BETWEEN THIS LINE AND ZEXTRAS-START" >> /tmp/crontab.zextras);
     qx(cat /tmp/crontab.zextras.proc >> /tmp/crontab.zextras);
-    detail("crontab: installing new crontab");
+    detail("Crontab: Installing new crontab.");
     qx(crontab -u zextras /tmp/crontab.zextras 2> /dev/null);
     progress("done.\n");
     configLog("setupCrontab");
