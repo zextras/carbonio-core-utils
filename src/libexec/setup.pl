@@ -2690,7 +2690,7 @@ sub createMtaMenu {
     my $package = shift;
     my $lm      = genPackageMenu($package);
 
-    $$lm{title} = "Mta configuration";
+    $$lm{title} = "MTA configuration";
 
     $$lm{createsub} = \&createMtaMenu;
     $$lm{createarg} = $package;
@@ -4430,7 +4430,7 @@ sub configInitMta {
     }
 
     if ( isEnabled("carbonio-mta") ) {
-        progress("Initializing mta config...");
+        progress("Initializing MTA config...");
 
         setLocalConfigBatch(
             postfix_mail_owner   => $config{postfix_mail_owner},
