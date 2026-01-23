@@ -468,7 +468,7 @@ sub getLdapValueHelper {
     my ( $val, $err );
     if ( exists $main::loaded{$sec}{$sub}{$attrib} ) {
         $val = $main::loaded{$sec}{$sub}{$attrib};
-        detail("Returning cached $detailType config attribute for $sub: $attrib=$val");
+        detail("Returning cached $detailType config attribute for $sub: $attrib=$val.");
         return $val;
     }
     my ( $rfh, $wfh, $efh, $rc );
@@ -519,7 +519,7 @@ sub getLdapValueHelper {
     close $efh;
     $main::loaded{$sec}{$sub}{zmsetuploaded} = 1;
     $val = $main::loaded{$sec}{$sub}{$attrib};
-    detail("Returning retrieved $detailType config attribute for $sub: $attrib=$val");
+    detail("Returning retrieved $detailType config attribute for $sub: $attrib=$val.");
     return $val;
 }
 
@@ -534,7 +534,7 @@ sub setLdapConfigHelper {
             detail("Skipping update of unchanged value for $key=$val.");
         }
         else {
-            detail("Updating cached config attribute for $detailType $entity: $key=$val");
+            detail("Updating cached config attribute for $detailType $entity: $key=$val.");
             updateKeyValue( $sec, $key, $val, $entity );
             $zmprov_arg_str .= " $key \'$val\'";
         }
@@ -979,7 +979,7 @@ sub getSystemStatus {
 sub getAllServers {
     my ($service) = @_;
     my @servers;
-    detail("Running $ZMPROV gas $service");
+    detail("Running $ZMPROV gas $service...");
     open( ZMPROV, "$ZMPROV gas $service 2>/dev/null|" );
     chomp( @servers = <ZMPROV> );
     close(ZMPROV);
@@ -3106,7 +3106,7 @@ sub ldapIsAvailable {
     }
 
     if ( checkLdapBind( $config{zimbra_ldap_userdn}, $config{LDAPADMINPASS} ) ) {
-        detail("Couldn't bind to $config{LDAPHOST} as $config{zimbra_ldap_userdn}\n");
+        detail("Could not bind to $config{LDAPHOST} as $config{zimbra_ldap_userdn}.\n");
         $config{LDAPADMINPASSSET} = "Not Verified";
         $failedcheck++;
     }
@@ -3120,12 +3120,12 @@ sub ldapIsAvailable {
     # check nginx user binding to the master
     if ( isInstalled("carbonio-proxy") ) {
         if ( $config{ldap_nginx_password} eq "" ) {
-            detail("nginx configuration not complete\n");
+            detail("Nginx configuration not complete.\n");
             $failedcheck++;
         }
         my $binduser = "uid=zmnginx,cn=appaccts,$config{ldap_dit_base_dn_config}";
         if ( checkLdapBind( $binduser, $config{ldap_nginx_password} ) ) {
-            detail("Couldn't bind to $config{LDAPHOST} as $binduser\n");
+            detail("Could not bind to $config{LDAPHOST} as $binduser.\n");
             $config{LDAPNGINXPASSSET} = "Not Verified";
             $failedcheck++;
         }
@@ -3138,12 +3138,12 @@ sub ldapIsAvailable {
     # check postfix and amavis user binding to the master
     if ( isInstalled("carbonio-mta") ) {
         if ( $config{LDAPPOSTPASS} eq "" || $config{LDAPAMAVISPASS} eq "" ) {
-            detail("mta configuration not complete\n");
+            detail("MTA configuration not complete.\n");
             $failedcheck++;
         }
         my $binduser = "uid=zmpostfix,cn=appaccts,$config{ldap_dit_base_dn_config}";
         if ( checkLdapBind( $binduser, $config{LDAPPOSTPASS} ) ) {
-            detail("Couldn't bind to $config{LDAPHOST} as $binduser\n");
+            detail("Could not bind to $config{LDAPHOST} as $binduser.\n");
             $config{LDAPPOSTPASSSET} = "Not Verified";
             detail("Setting LDAPPOSTPASSSET to $config{LDAPPOSTPASSSET}") if $debug;
             $failedcheck++;
@@ -3154,7 +3154,7 @@ sub ldapIsAvailable {
         }
         my $binduser = "uid=zmamavis,cn=appaccts,$config{ldap_dit_base_dn_config}";
         if ( checkLdapBind( $binduser, $config{LDAPAMAVISPASS} ) ) {
-            detail("Couldn't bind to $config{LDAPHOST} as $binduser\n");
+            detail("Could not bind to $config{LDAPHOST} as $binduser.\n");
             $config{LDAPAMAVISPASSSET} = "Not Verified";
             detail("Setting LDAPAMAVISPASSSET to $config{LDAPAMAVISPASSSET}") if $debug;
             $failedcheck++;
@@ -3173,7 +3173,7 @@ sub ldapIsAvailable {
         }
         my $binduser = "uid=zmreplica,cn=admins,$config{ldap_dit_base_dn_config}";
         if ( checkLdapBind( $binduser, $config{LDAPREPPASS} ) ) {
-            detail("Couldn't bind to $config{LDAPHOST} as $binduser\n");
+            detail("Could not bind to $config{LDAPHOST} as $binduser.\n");
             $config{LDAPREPPASSSET} = "Not Verified";
             detail("Setting LDAPREPPASSSET to $config{LDAPREPPASSSET}") if $debug;
             $failedcheck++;
@@ -4142,7 +4142,7 @@ sub configSetTimeZonePref {
 }
 
 sub setProxyBits {
-    detail("Setting Proxy pieces\n");
+    detail("Setting proxy configuration...\n");
     my $ReverseProxyMailHostQuery   = "\(\|\(zimbraMailDeliveryAddress=\${USER}\)\(zimbraMailAlias=\${USER}\)\(zimbraId=\${USER}\)\)";
     my $ReverseProxyDomainNameQuery = '\(\&\(zimbraVirtualIPAddress=\${IPADDR}\)\(objectClass=zimbraDomain\)\)';
     my $ReverseProxyPortQuery       = '\(\&\(zimbraServiceHostname=\${MAILHOST}\)\(objectClass=zimbraServer\)\)';
@@ -4215,7 +4215,7 @@ sub configSetProxyPrefs {
         }
         if ( !( isEnabled("carbonio-appserver") ) ) {
             my @storetargets;
-            detail("Running $ZMPROV garpu");
+            detail("Running $ZMPROV garpu...");
             open( ZMPROV, "$ZMPROV garpu 2>/dev/null|" );
             chomp( @storetargets = <ZMPROV> );
             close(ZMPROV);
@@ -4225,7 +4225,7 @@ sub configSetProxyPrefs {
         }
         if ( !( isEnabled("carbonio-memcached") ) ) {
             my @memcachetargets;
-            detail("Running $ZMPROV gamcs");
+            detail("Running $ZMPROV gamcs...");
             open( ZMPROV, "$ZMPROV gamcs 2>/dev/null|" );
             chomp( @memcachetargets = <ZMPROV> );
             close(ZMPROV);
@@ -4889,7 +4889,7 @@ sub addServerToHostPool {
     my $hp = getLdapCOSValue("zimbraMailHostPool");
 
     if ( $id eq "" ) {
-        progress("failed. Couldn't find a server entry for $config{HOSTNAME}\n");
+        progress("failed. Could not find a server entry for $config{HOSTNAME}.\n");
         return undef;
     }
     $hp .= ( ( $hp eq "" ) ? "$id" : "\n$id" );
