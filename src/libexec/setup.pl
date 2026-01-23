@@ -353,6 +353,88 @@ sub askDomainUserHelper {
     }
 }
 
+# Helper to get LDAP values - consolidates 6 nearly identical functions
+sub getLdapValueHelper {
+    my ( $attrib, $sub, $sec, $cmd, $detailType ) = @_;
+    my ( $val, $err );
+    if ( exists $main::loaded{$sec}{$sub}{$attrib} ) {
+        $val = $main::loaded{$sec}{$sub}{$attrib};
+        detail("Returning cached $detailType config attribute for $sub: $attrib=$val");
+        return $val;
+    }
+    my ( $rfh, $wfh, $efh, $rc );
+    $rfh = new FileHandle;
+    $wfh = new FileHandle;
+    $efh = new FileHandle;
+    my $pid = open3( $wfh, $rfh, $efh, $cmd );
+    unless ( defined($pid) ) {
+        return undef;
+    }
+    close $wfh;
+    my @d = <$rfh>;
+    while ( scalar(@d) > 0 ) {
+        chomp( my $line = shift(@d) );
+        my ( $k, $v ) = $line =~ m/^(\w+):\s(.*)/;
+        while ( $d[0] !~ m/^\w+:\s.*/ && scalar(@d) > 0 ) {
+            chomp( $v .= shift(@d) );
+        }
+        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded} || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) ) {
+            if ( exists $main::loaded{$sec}{$sub}{$k} ) {
+                $main::loaded{$sec}{$sub}{$k} = "$main::loaded{$sec}{$sub}{$k}\n$v";
+            }
+            else {
+                $main::loaded{$sec}{$sub}{$k} = "$v";
+            }
+        }
+    }
+    chomp( $err = join "", <$efh> );
+    detail("$err") if ( length($err) > 0 );
+    waitpid( $pid, 0 );
+    if ( $? == -1 ) {
+        close $rfh;
+        close $efh;
+        return undef;
+    }
+    elsif ( $? & 127 ) {
+        close $rfh;
+        close $efh;
+        return undef;
+    }
+    else {
+        $rc = $? >> 8;
+        close $rfh;
+        close $efh;
+        return undef if ( $rc != 0 );
+    }
+    close $rfh;
+    close $efh;
+    $main::loaded{$sec}{$sub}{zmsetuploaded} = 1;
+    $val = $main::loaded{$sec}{$sub}{$attrib};
+    detail("Returning retrieved $detailType config attribute for $sub: $attrib=$val");
+    return $val;
+}
+
+# Helper to set LDAP config values - consolidates 5 nearly identical functions
+sub setLdapConfigHelper {
+    my ( $sec, $entity, $zmprovCmd, $detailType, @args ) = @_;
+    my $zmprov_arg_str;
+    while (@args) {
+        my $key = shift @args;
+        my $val = shift @args;
+        if ( ifKeyValueEquate( $sec, $key, $val, $entity ) ) {
+            detail("Skipping update of unchanged value for $key=$val.");
+        }
+        else {
+            detail("Updating cached config attribute for $detailType $entity: $key=$val");
+            updateKeyValue( $sec, $key, $val, $entity );
+            $zmprov_arg_str .= " $key \'$val\'";
+        }
+    }
+    if ($zmprov_arg_str) {
+        return runAsZextras("$zmprovCmd $zmprov_arg_str");
+    }
+}
+
 sub defineInstallWebapps {
     if ( !defined $config{INSTALL_WEBAPPS} ) {
         if ( $config{SERVICEWEBAPP} eq "yes" ) {
@@ -776,403 +858,37 @@ sub getAllServers {
 
 sub getLdapAccountValue($$) {
     my ( $attrib, $sub ) = @_;
-    my ( $val, $err );
-    my $sec = "acct";
-    if ( exists $main::loaded{$sec}{$sub}{$attrib} ) {
-        $val = $main::loaded{$sec}{$sub}{$attrib};
-        detail("Returning cached config attribute for Account $sub: $attrib=$val");
-        return $val;
-    }
-    my ( $rfh, $wfh, $efh, $cmd, $rc );
-    $rfh = new FileHandle;
-    $wfh = new FileHandle;
-    $efh = new FileHandle;
-    $cmd = "$ZMPROV ga $sub";
-    my $pid = open3( $wfh, $rfh, $efh, $cmd );
-    unless ( defined($pid) ) {
-        return undef;
-    }
-    close $wfh;
-    my @d = <$rfh>;
-    while ( scalar(@d) > 0 ) {
-        chomp( my $line = shift(@d) );
-        my ( $k, $v ) = $line =~ m/^(\w+):\s(.*)/;
-        while ( $d[0] !~ m/^\w+:\s.*/ && scalar(@d) > 0 ) {
-            chomp( $v .= shift(@d) );
-        }
-        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded} || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) ) {
-            if ( exists $main::loaded{$sec}{$sub}{$k} ) {
-                $main::loaded{$sec}{$sub}{$k} = "$main::loaded{$sec}{$sub}{$k}\n$v";
-            }
-            else {
-                $main::loaded{$sec}{$sub}{$k} = "$v";
-            }
-        }
-    }
-    chomp( $err = join "", <$efh> );
-    detail("$err") if ( length($err) > 0 );
-    waitpid( $pid, 0 );
-    if ( $? == -1 ) {
-
-        # failed to execute
-        return undef;
-    }
-    elsif ( $? & 127 ) {
-
-        # died with signal
-        return undef;
-    }
-    else {
-        $rc = $? >> 8;
-        return undef if ( $rc != 0 );
-    }
-    $val = $main::loaded{$sec}{$sub}{$attrib};
-    $main::loaded{$sec}{$sub}{zmsetuploaded} = 1;
-    detail("Returning retrieved account config attribute for $sub: $attrib=$val");
-    return $val;
+    return getLdapValueHelper( $attrib, $sub, "acct", "$ZMPROV ga $sub", "account" );
 }
 
 sub getLdapCOSValue {
     my ( $attrib, $sub ) = @_;
-
     $sub = "default" if ( $sub eq "" );
-    my $sec = "gc";
-    my ( $val, $err );
-    if ( exists $main::loaded{$sec}{$sub}{$attrib} ) {
-        $val = $main::loaded{$sec}{$sub}{$attrib};
-        detail("Returning cached cos config attribute for $sub: $attrib=$val");
-        return $val;
-    }
-
-    my ( $rfh, $wfh, $efh, $cmd, $rc );
-    $rfh = new FileHandle;
-    $wfh = new FileHandle;
-    $efh = new FileHandle;
-    $cmd = "$ZMPROV gc $sub";
-    my $pid = open3( $wfh, $rfh, $efh, $cmd );
-    unless ( defined($pid) ) {
-        return undef;
-    }
-    close $wfh;
-    my @d = <$rfh>;
-    while ( scalar(@d) > 0 ) {
-        chomp( my $line = shift(@d) );
-        my ( $k, $v ) = $line =~ m/^(\w+):\s(.*)/;
-        while ( $d[0] !~ m/^\w+:\s.*/ && scalar(@d) > 0 ) {
-            chomp( $v .= shift(@d) );
-        }
-        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded} || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) ) {
-            if ( exists $main::loaded{$sec}{$sub}{$k} ) {
-                $main::loaded{$sec}{$sub}{$k} = "$main::loaded{$sec}{$sub}{$k}\n$v";
-            }
-            else {
-                $main::loaded{$sec}{$sub}{$k} = "$v";
-            }
-        }
-    }
-    chomp( $err = join "", <$efh> );
-    detail("$err") if ( length($err) > 0 );
-    waitpid( $pid, 0 );
-    if ( $? == -1 ) {
-
-        # failed to execute
-        close $rfh;
-        close $efh;
-        return undef;
-    }
-    elsif ( $? & 127 ) {
-
-        # died with signal
-        close $rfh;
-        close $efh;
-        return undef;
-    }
-    else {
-        $rc = $? >> 8;
-        close $rfh;
-        close $efh;
-        return undef if ( $rc != 0 );
-    }
-    close $rfh;
-    close $efh;
-    $val = $main::loaded{$sec}{$sub}{$attrib};
-    $main::loaded{$sec}{$sub}{zmsetuploaded} = 1;
-    detail("Returning retrieved cos config attribute for $sub: $attrib=$val");
-    return $val;
+    return getLdapValueHelper( $attrib, $sub, "gc", "$ZMPROV gc $sub", "cos" );
 }
 
 sub getLdapConfigValue {
     my $attrib = shift;
-    my ( $val, $err );
-    my $sec = "gcf";
-    my $sub = $sec;
-    if ( exists $main::loaded{$sec}{$sub}{$attrib} ) {
-        $val = $main::loaded{$sec}{$sub}{$attrib};
-        detail("Returning cached global config attribute: $attrib=$val");
-        return $val;
-    }
-    my ( $rfh, $wfh, $efh, $cmd, $rc );
-    $rfh = new FileHandle;
-    $wfh = new FileHandle;
-    $efh = new FileHandle;
-    $cmd = "$ZMPROV gacf";
-    my $pid = open3( $wfh, $rfh, $efh, $cmd );
-    unless ( defined($pid) ) {
-        return undef;
-    }
-    close $wfh;
-    my @d = <$rfh>;
-    while ( scalar(@d) > 0 ) {
-        chomp( my $line = shift(@d) );
-        my ( $k, $v ) = $line =~ m/^(\w+):\s(.*)/;
-        while ( $d[0] !~ m/^\w+:\s.*/ && scalar(@d) > 0 ) {
-            chomp( $v .= shift(@d) );
-        }
-        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded} || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) ) {
-            if ( exists $main::loaded{$sec}{$sub}{$k} ) {
-                $main::loaded{$sec}{$sub}{$k} = "$main::loaded{$sec}{$sub}{$k}\n$v";
-            }
-            else {
-                $main::loaded{$sec}{$sub}{$k} = "$v";
-            }
-        }
-    }
-    chomp( $err = join "", <$efh> );
-    detail("$err") if ( length($err) > 0 );
-    waitpid( $pid, 0 );
-    if ( $? == -1 ) {
-
-        # failed to execute
-        close $rfh;
-        close $efh;
-        return undef;
-    }
-    elsif ( $? & 127 ) {
-
-        # died with signal
-        close $rfh;
-        close $efh;
-        return undef;
-    }
-    else {
-        $rc = $? >> 8;
-        close $rfh;
-        close $efh;
-        return undef if ( $rc != 0 );
-    }
-    close $rfh;
-    close $efh;
-    $val = $main::loaded{$sec}{$sub}{$attrib};
-    $main::loaded{$sec}{$sub}{zmsetuploaded} = 1;
-    detail("Returning retrieved global config attribute $attrib=$val");
-    return $val;
+    return getLdapValueHelper( $attrib, "gcf", "gcf", "$ZMPROV gacf", "global" );
 }
 
 sub getLdapDomainValue {
     my ( $attrib, $sub ) = @_;
-
-    $sub = $config{zimbraDefaultDomainName}
-      if ( $sub eq "" );
-
+    $sub = $config{zimbraDefaultDomainName} if ( $sub eq "" );
     return undef if ( $sub eq "" );
-    my $sec = "domain";
-
-    my ( $val, $err );
-    if ( exists $main::loaded{$sec}{$sub}{$attrib} ) {
-        $val = $main::loaded{$sec}{$sub}{$attrib};
-        detail("Returning cached domain config attribute for $sub: $attrib=$val");
-        return $val;
-    }
-
-    my ( $rfh, $wfh, $efh, $cmd, $rc );
-    $rfh = new FileHandle;
-    $wfh = new FileHandle;
-    $efh = new FileHandle;
-    $cmd = "$ZMPROV gd $sub";
-    my $pid = open3( $wfh, $rfh, $efh, $cmd );
-    unless ( defined($pid) ) {
-        return undef;
-    }
-    close $wfh;
-    my @d = <$rfh>;
-    while ( scalar(@d) > 0 ) {
-        chomp( my $line = shift(@d) );
-        my ( $k, $v ) = $line =~ m/^(\w+):\s(.*)/;
-        while ( $d[0] !~ m/^\w+:\s.*/ && scalar(@d) > 0 ) {
-            chomp( $v .= shift(@d) );
-        }
-        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded} || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) ) {
-            if ( exists $main::loaded{$sec}{$sub}{$k} ) {
-                $main::loaded{$sec}{$sub}{$k} = "$main::loaded{$sec}{$sub}{$k}\n$v";
-            }
-            else {
-                $main::loaded{$sec}{$sub}{$k} = "$v";
-            }
-        }
-    }
-    chomp( $err = join "", <$efh> );
-    detail("$err") if ( length($err) > 0 );
-    waitpid( $pid, 0 );
-    if ( $? == -1 ) {
-
-        # failed to execute
-        close $rfh;
-        close $efh;
-        return undef;
-    }
-    elsif ( $? & 127 ) {
-
-        # died with signal
-        close $rfh;
-        close $efh;
-        return undef;
-    }
-    else {
-        $rc = $? >> 8;
-        close $rfh;
-        close $efh;
-        return undef if ( $rc != 0 );
-    }
-    close $rfh;
-    close $efh;
-    $main::loaded{$sec}{$sub}{zmsetuploaded} = 1;
-    $val = $main::loaded{$sec}{$sub}{$attrib};
-    detail("Returning retrieved domain config attribute for $sub: $attrib=$val");
-    return $val;
+    return getLdapValueHelper( $attrib, $sub, "domain", "$ZMPROV gd $sub", "domain" );
 }
 
 sub getLdapServerValue {
     my ( $attrib, $sub ) = @_;
     $sub = $main::config{HOSTNAME} if ( $sub eq "" );
-    my $sec = "gs";
-    my ( $val, $err );
-    if ( exists $main::loaded{$sec}{$sub}{$attrib} ) {
-        $val = $main::loaded{$sec}{$sub}{$attrib};
-        detail("Returning cached server config attribute for $sub: $attrib=$val");
-        return $val;
-    }
-    my ( $rfh, $wfh, $efh, $cmd, $rc );
-    $rfh = new FileHandle;
-    $wfh = new FileHandle;
-    $efh = new FileHandle;
-    $cmd = "$ZMPROV gs $sub";
-    my $pid = open3( $wfh, $rfh, $efh, $cmd );
-    unless ( defined($pid) ) {
-        return undef;
-    }
-    close $wfh;
-    my @d = <$rfh>;
-    while ( scalar(@d) > 0 ) {
-        chomp( my $line = shift(@d) );
-        my ( $k, $v ) = $line =~ m/^(\w+):\s(.*)/;
-        while ( $d[0] !~ m/^\w+:\s.*/ && scalar(@d) > 0 ) {
-            chomp( $v .= shift(@d) );
-        }
-        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded} || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) ) {
-            if ( exists $main::loaded{$sec}{$sub}{$k} ) {
-                $main::loaded{$sec}{$sub}{$k} = "$main::loaded{$sec}{$sub}{$k}\n$v";
-            }
-            else {
-                $main::loaded{$sec}{$sub}{$k} = "$v";
-            }
-        }
-    }
-    chomp( $err = join "", <$efh> );
-    detail("$err") if ( length($err) > 0 );
-    waitpid( $pid, 0 );
-    if ( $? == -1 ) {
-
-        # failed to execute
-        close $rfh;
-        close $efh;
-        return undef;
-    }
-    elsif ( $? & 127 ) {
-
-        # died with signal
-        close $rfh;
-        close $efh;
-        return undef;
-    }
-    else {
-        $rc = $? >> 8;
-        close $rfh;
-        close $efh;
-        return undef if ( $rc != 0 );
-    }
-    close $rfh;
-    close $efh;
-    $main::loaded{$sec}{$sub}{zmsetuploaded} = 1;
-    $val = $main::loaded{$sec}{$sub}{$attrib};
-    detail("Returning retrieved server config attribute for $sub: $attrib=$val");
-    return $val;
+    return getLdapValueHelper( $attrib, $sub, "gs", "$ZMPROV gs $sub", "server" );
 }
 
 sub getRealLdapServerValue {
     my ( $attrib, $sub ) = @_;
     $sub = $main::config{HOSTNAME} if ( $sub eq "" );
-    my $sec = "gsreal";
-    my ( $val, $err );
-    if ( exists $main::loaded{$sec}{$sub}{$attrib} ) {
-        $val = $main::loaded{$sec}{$sub}{$attrib};
-        detail("Returning cached server config attribute for $sub: $attrib=$val");
-        return $val;
-    }
-    my ( $rfh, $wfh, $efh, $cmd, $rc );
-    $rfh = new FileHandle;
-    $wfh = new FileHandle;
-    $efh = new FileHandle;
-    $cmd = "$ZMPROV gs -e $sub";
-    my $pid = open3( $wfh, $rfh, $efh, $cmd );
-    unless ( defined($pid) ) {
-        return undef;
-    }
-    close $wfh;
-    my @d = <$rfh>;
-    while ( scalar(@d) > 0 ) {
-        chomp( my $line = shift(@d) );
-        my ( $k, $v ) = $line =~ m/^(\w+):\s(.*)/;
-        while ( $d[0] !~ m/^\w+:\s.*/ && scalar(@d) > 0 ) {
-            chomp( $v .= shift(@d) );
-        }
-        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded} || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) ) {
-            if ( exists $main::loaded{$sec}{$sub}{$k} ) {
-                $main::loaded{$sec}{$sub}{$k} = "$main::loaded{$sec}{$sub}{$k}\n$v";
-            }
-            else {
-                $main::loaded{$sec}{$sub}{$k} = "$v";
-            }
-        }
-    }
-    chomp( $err = join "", <$efh> );
-    detail("$err") if ( length($err) > 0 );
-    waitpid( $pid, 0 );
-    if ( $? == -1 ) {
-
-        # failed to execute
-        close $rfh;
-        close $efh;
-        return undef;
-    }
-    elsif ( $? & 127 ) {
-
-        # died with signal
-        close $rfh;
-        close $efh;
-        return undef;
-    }
-    else {
-        $rc = $? >> 8;
-        close $rfh;
-        close $efh;
-        return undef if ( $rc != 0 );
-    }
-    close $rfh;
-    close $efh;
-    $main::loaded{$sec}{$sub}{zmsetuploaded} = 1;
-    $val = $main::loaded{$sec}{$sub}{$attrib};
-    detail("Returning retrieved server config attribute for $sub: $attrib=$val");
-    return $val;
+    return getLdapValueHelper( $attrib, $sub, "gsreal", "$ZMPROV gs -e $sub", "server" );
 }
 
 sub setLdapDefaults {
@@ -4137,160 +3853,30 @@ sub ifKeyValueEquate {
 #  setLdapGlobalConfig(key, val [, key, val ...])
 #
 sub setLdapGlobalConfig {
-    my $zmprov_arg_str;
-    my $sec = "gcf";
-    while (@_) {
-        my $key = shift;
-        my $val = shift;
-        detail("entering function: $sec $key=$val\n");
-        if ( ifKeyValueEquate( $sec, $key, $val, $sec ) ) {
-            detail("Skipping update of unchanged value for $key=$val.");
-        }
-        else {
-            detail("Updating cached global config attribute $key=$val");
-            updateKeyValue( $sec, $key, $val, $sec );
-            $zmprov_arg_str .= " $key \'$val\'";
-        }
-    }
-    if ($zmprov_arg_str) {
-        my $rc = runAsZextras("$ZMPROV mcf $zmprov_arg_str");
-        return $rc;
-    }
+    return setLdapConfigHelper( "gcf", "gcf", "$ZMPROV mcf", "Global", @_ );
 }
 
-#
-# setLdapServerConfig([server,] key, val [, key, val ...])
-#
 sub setLdapServerConfig {
-    my $zmprov_arg_str;
-    my $sec = "gs";
-    my $server;
-
-    if ( ( $#_ % 2 ) == 0 ) {
-        $server = shift;
-    }
-    else {
-        $server = $config{HOSTNAME};
-    }
+    my $server = ( $#_ % 2 ) == 0 ? shift : $config{HOSTNAME};
     return undef if ( $server eq "" );
-    while (@_) {
-        my $key = shift;
-        my $val = shift;
-
-        if ( ifKeyValueEquate( $sec, $key, $val, $server ) ) {
-            detail("Skipping update of unchanged value for $key=$val.");
-        }
-        else {
-            detail("Updating cached config attribute for Server $server: $key=$val");
-            updateKeyValue( $sec, $key, $val, $server );
-            $zmprov_arg_str .= " $key \'$val\'";
-        }
-    }
-
-    if ($zmprov_arg_str) {
-        my $rc = runAsZextras("$ZMPROV ms $server $zmprov_arg_str");
-        return $rc;
-    }
+    return setLdapConfigHelper( "gs", $server, "$ZMPROV ms $server", "Server", @_ );
 }
 
-#
-# setLdapDomainConfig([domain,] key, val [, key, val ...])
-#
 sub setLdapDomainConfig {
-    my $zmprov_arg_str;
-    my $domain;
-
-    if ( ( $#_ % 2 ) == 0 ) {
-        $domain = shift;
-    }
-    else {
-        $domain = getLdapConfigValue("zimbraDefaultDomainName");
-    }
+    my $domain = ( $#_ % 2 ) == 0 ? shift : getLdapConfigValue("zimbraDefaultDomainName");
     return undef if ( $domain eq "" );
-
-    my $sec = "domain";
-    while (@_) {
-        my $key = shift;
-        my $val = shift;
-        if ( ifKeyValueEquate( $sec, $key, $val, $domain ) ) {
-            detail("Skipping update of unchanged value for $key=$val.");
-        }
-        else {
-            detail("Updating cached config attribute for Domain $domain: $key=$val");
-            updateKeyValue( $sec, $key, $val, $domain );
-            $zmprov_arg_str .= " $key \'$val\'";
-        }
-    }
-
-    if ($zmprov_arg_str) {
-        my $rc = runAsZextras("$ZMPROV md $domain $zmprov_arg_str");
-        return $rc;
-    }
+    return setLdapConfigHelper( "domain", $domain, "$ZMPROV md $domain", "Domain", @_ );
 }
 
-#
-# setLdapCOSConfig([cos,] key, val [, key, val ...])
-#
 sub setLdapCOSConfig {
-    my $zmprov_arg_str;
-    my $cos;
-
-    if ( ( $#_ % 2 ) == 0 ) {
-        $cos = shift;
-    }
-    else {
-        $cos = 'default';
-    }
-
-    my $sec = "gc";
-    while (@_) {
-        my $key = shift;
-        my $val = shift;
-        if ( ifKeyValueEquate( $sec, $key, $val, $cos ) ) {
-            detail("Skipping update of unchanged value for $key=$val.");
-        }
-        else {
-            detail("Updating cached config attribute for COS $cos: $key=$val");
-            updateKeyValue( $sec, $key, $val, $cos );
-            $zmprov_arg_str .= " $key \'$val\'";
-        }
-    }
-
-    if ($zmprov_arg_str) {
-        my $rc = runAsZextras("$ZMPROV mc $cos $zmprov_arg_str");
-        return $rc;
-    }
+    my $cos = ( $#_ % 2 ) == 0 ? shift : 'default';
+    return setLdapConfigHelper( "gc", $cos, "$ZMPROV mc $cos", "COS", @_ );
 }
 
-#
-# setLdapAccountConfig(acct, key, val [, key, val ...])
-#
 sub setLdapAccountConfig {
-    my $zmprov_arg_str;
-    my $acct;
-    if ( ( $#_ % 2 ) == 0 ) {
-        $acct = shift;
-    }
+    my $acct = ( $#_ % 2 ) == 0 ? shift : "";
     return undef if ( $acct eq "" );
-
-    my $sec = "acct";
-    while (@_) {
-        my $key = shift;
-        my $val = shift;
-        if ( ifKeyValueEquate( $sec, $key, $val, $acct ) ) {
-            detail("Skipping update of unchanged value for $key=$val.");
-        }
-        else {
-            detail("Updating cached config attribute for Account $acct: $key=$val");
-            updateKeyValue( $sec, $key, $val, $acct );
-            $zmprov_arg_str .= " $key \'$val\'";
-        }
-    }
-
-    if ($zmprov_arg_str) {
-        my $rc = runAsZextras("$ZMPROV ma $acct $zmprov_arg_str");
-        return $rc;
-    }
+    return setLdapConfigHelper( "acct", $acct, "$ZMPROV ma $acct", "Account", @_ );
 }
 
 sub configLCValues {
