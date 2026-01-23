@@ -369,6 +369,38 @@ sub resolvePortOffsetCollision {
     }
 }
 
+# Helper to resolve all mail port pair collisions (IMAP, IMAPSSL, POP, POPSSL)
+sub resolveMailPortPairCollisions {
+    my ($proxyEnabled) = @_;
+    resolvePortPairCollision( 'IMAPPORT',    'IMAPPROXYPORT',    143, 7143, $proxyEnabled );
+    resolvePortPairCollision( 'IMAPSSLPORT', 'IMAPSSLPROXYPORT', 993, 7993, $proxyEnabled );
+    resolvePortPairCollision( 'POPPORT',     'POPPROXYPORT',     110, 7110, $proxyEnabled );
+    resolvePortPairCollision( 'POPSSLPORT',  'POPSSLPROXYPORT',  995, 7995, $proxyEnabled );
+}
+
+# Helper to resolve HTTP port pair collisions
+sub resolveHttpPortPairCollisions {
+    my ($proxyEnabled) = @_;
+    resolvePortPairCollision( 'HTTPPORT',  'HTTPPROXYPORT',  80,  8080, $proxyEnabled );
+    resolvePortPairCollision( 'HTTPSPORT', 'HTTPSPROXYPORT', 443, 8443, $proxyEnabled );
+}
+
+# Helper to resolve all mail port offset collisions (IMAP, IMAPSSL, POP, POPSSL)
+sub resolveMailPortOffsetCollisions {
+    my ($proxyEnabled) = @_;
+    resolvePortOffsetCollision( 'IMAPPORT',    'IMAPPROXYPORT',    7000, $proxyEnabled );
+    resolvePortOffsetCollision( 'IMAPSSLPORT', 'IMAPSSLPROXYPORT', 7000, $proxyEnabled );
+    resolvePortOffsetCollision( 'POPPORT',     'POPPROXYPORT',     7000, $proxyEnabled );
+    resolvePortOffsetCollision( 'POPSSLPORT',  'POPSSLPROXYPORT',  7000, $proxyEnabled );
+}
+
+# Helper to resolve HTTP port offset collisions
+sub resolveHttpPortOffsetCollisions {
+    my ($proxyEnabled) = @_;
+    resolvePortOffsetCollision( 'HTTPPORT',  'HTTPPROXYPORT',  8000, $proxyEnabled );
+    resolvePortOffsetCollision( 'HTTPSPORT', 'HTTPSPROXYPORT', 8000, $proxyEnabled );
+}
+
 # Helper to update password display status for menu (UNSET, set, or Not Verified)
 sub updatePasswordDisplayStatus {
     my ( $passKey, $passSetKey ) = @_;
@@ -412,6 +444,22 @@ sub askDomainUserHelper {
             last;
         }
     }
+}
+
+# Helper to update email address domain - used when domain changes
+sub updateEmailDomain {
+    my ( $configKey, $newDomain, $oldDomain ) = @_;
+    my ( $user, $domain ) = split( '@', $config{$configKey} );
+    return if !defined $oldDomain;    # unconditional update
+    return if $domain ne $oldDomain;  # conditional: only if old domain matches
+    $config{$configKey} = $user . '@' . $newDomain;
+}
+
+# Helper to unconditionally update email domain
+sub setEmailDomain {
+    my ( $configKey, $newDomain ) = @_;
+    my ( $user, $domain ) = split( '@', $config{$configKey} );
+    $config{$configKey} = $user . '@' . $newDomain;
 }
 
 # Helper to get LDAP values - consolidates 6 nearly identical functions
@@ -985,29 +1033,32 @@ sub setLdapDefaults {
     my $serverid = getLdapServerValue("zimbraId");
     if ( $serverid ne "" ) {
 
-        $config{zimbraIPMode}          = getLdapServerValue("zimbraIPMode");
-        $config{IMAPPORT}              = getLdapServerValue("zimbraImapBindPort");
-        $config{IMAPSSLPORT}           = getLdapServerValue("zimbraImapSSLBindPort");
-        $config{REMOTEIMAPBINDPORT}    = getLdapServerValue("zimbraRemoteImapBindPort");
-        $config{REMOTEIMAPSSLBINDPORT} = getLdapServerValue("zimbraRemoteImapSSLBindPort");
-        $config{POPPORT}               = getLdapServerValue("zimbraPop3BindPort");
-        $config{POPSSLPORT}            = getLdapServerValue("zimbraPop3SSLBindPort");
-
-        $config{IMAPPROXYPORT}    = getLdapServerValue("zimbraImapProxyBindPort");
-        $config{IMAPSSLPROXYPORT} = getLdapServerValue("zimbraImapSSLProxyBindPort");
-        $config{POPPROXYPORT}     = getLdapServerValue("zimbraPop3ProxyBindPort");
-        $config{POPSSLPROXYPORT}  = getLdapServerValue("zimbraPop3SSLProxyBindPort");
-        $config{MAILPROXY}        = getLdapServerValue("zimbraReverseProxyMailEnabled");
-
-        $config{MODE}      = getLdapServerValue("zimbraMailMode");
-        $config{PROXYMODE} = getLdapServerValue("zimbraReverseProxyMailMode");
-        $config{HTTPPORT}  = getLdapServerValue("zimbraMailPort");
-        $config{HTTPSPORT} = getLdapServerValue("zimbraMailSSLPort");
-
-        $config{HTTPPROXYPORT}  = getLdapServerValue("zimbraMailProxyPort");
-        $config{HTTPSPROXYPORT} = getLdapServerValue("zimbraMailSSLProxyPort");
-        $config{HTTPPROXY}      = getLdapServerValue("zimbraReverseProxyHttpEnabled");
-        $config{SMTPHOST}       = getLdapServerValue("zimbraSmtpHostname");
+        # Load server attributes in bulk using data-driven mapping
+        my %ldapServerAttribs = (
+            'zimbraIPMode'                 => 'zimbraIPMode',
+            'IMAPPORT'                     => 'zimbraImapBindPort',
+            'IMAPSSLPORT'                  => 'zimbraImapSSLBindPort',
+            'REMOTEIMAPBINDPORT'           => 'zimbraRemoteImapBindPort',
+            'REMOTEIMAPSSLBINDPORT'        => 'zimbraRemoteImapSSLBindPort',
+            'POPPORT'                      => 'zimbraPop3BindPort',
+            'POPSSLPORT'                   => 'zimbraPop3SSLBindPort',
+            'IMAPPROXYPORT'                => 'zimbraImapProxyBindPort',
+            'IMAPSSLPROXYPORT'             => 'zimbraImapSSLProxyBindPort',
+            'POPPROXYPORT'                 => 'zimbraPop3ProxyBindPort',
+            'POPSSLPROXYPORT'              => 'zimbraPop3SSLProxyBindPort',
+            'MAILPROXY'                    => 'zimbraReverseProxyMailEnabled',
+            'MODE'                         => 'zimbraMailMode',
+            'PROXYMODE'                    => 'zimbraReverseProxyMailMode',
+            'HTTPPORT'                     => 'zimbraMailPort',
+            'HTTPSPORT'                    => 'zimbraMailSSLPort',
+            'HTTPPROXYPORT'                => 'zimbraMailProxyPort',
+            'HTTPSPROXYPORT'               => 'zimbraMailSSLProxyPort',
+            'HTTPPROXY'                    => 'zimbraReverseProxyHttpEnabled',
+            'SMTPHOST'                     => 'zimbraSmtpHostname',
+        );
+        for my $key ( keys %ldapServerAttribs ) {
+            $config{$key} = getLdapServerValue( $ldapServerAttribs{$key} );
+        }
 
         $config{zimbraReverseProxyLookupTarget} = getLdapServerValue("zimbraReverseProxyLookupTarget")
           if ( $config{zimbraReverseProxyLookupTarget} eq "" );
@@ -1087,27 +1138,17 @@ sub setLdapDefaults {
     $config{REMOTEIMAPSSLBINDPORT} = 8993    if ( $config{REMOTEIMAPSSLBINDPORT} eq 0 );
 
     if ( isInstalled("carbonio-proxy") && isEnabled("carbonio-proxy") ) {
-        if ( $config{MAILPROXY} eq "TRUE" ) {
-            resolvePortPairCollision( 'IMAPPORT',    'IMAPPROXYPORT',    143,  7143, 1 );
-            resolvePortPairCollision( 'IMAPSSLPORT', 'IMAPSSLPROXYPORT', 993,  7993, 1 );
-            resolvePortPairCollision( 'POPPORT',     'POPPROXYPORT',     110,  7110, 1 );
-            resolvePortPairCollision( 'POPSSLPORT',  'POPSSLPROXYPORT',  995,  7995, 1 );
-        }
+        resolveMailPortPairCollisions(1) if ( $config{MAILPROXY} eq "TRUE" );
         if ( $config{HTTPPROXY} eq "TRUE" ) {
             # Add proxy component to a configured node
             $config{HTTPPROXYPORT}  = 80  if ( ( $config{HTTPPORT} == 80 || $config{HTTPPORT} == 0 ) && $config{HTTPPROXYPORT} == 0 );
             $config{HTTPSPROXYPORT} = 443 if ( ( $config{HTTPSPORT} == 443 || $config{HTTPSPORT} == 0 ) && $config{HTTPSPROXYPORT} == 0 );
-            resolvePortPairCollision( 'HTTPPORT',  'HTTPPROXYPORT',  80,   8080, 1 );
-            resolvePortPairCollision( 'HTTPSPORT', 'HTTPSPROXYPORT', 443,  8443, 1 );
+            resolveHttpPortPairCollisions(1);
         }
     }
     else {
-        resolvePortPairCollision( 'IMAPPORT',    'IMAPPROXYPORT',    143,  7143, 0 );
-        resolvePortPairCollision( 'IMAPSSLPORT', 'IMAPSSLPROXYPORT', 993,  7993, 0 );
-        resolvePortPairCollision( 'POPPORT',     'POPPROXYPORT',     110,  7110, 0 );
-        resolvePortPairCollision( 'POPSSLPORT',  'POPSSLPROXYPORT',  995,  7995, 0 );
-        resolvePortPairCollision( 'HTTPPORT',    'HTTPPROXYPORT',    80,   8080, 0 );
-        resolvePortPairCollision( 'HTTPSPORT',   'HTTPSPROXYPORT',   443,  8443, 0 );
+        resolveMailPortPairCollisions(0);
+        resolveHttpPortPairCollisions(0);
     }
 
     #
@@ -1860,34 +1901,17 @@ sub setCreateDomain {
         }
         last;
     }
-    my ( $u, $d ) = split( '@', $config{CREATEADMIN} );
-    my $old = $config{CREATEADMIN};
-    $config{CREATEADMIN} = $u . '@' . $config{CREATEDOMAIN};
+    my $oldAdmin = $config{CREATEADMIN};
+    setEmailDomain( 'CREATEADMIN', $config{CREATEDOMAIN} );
 
-    $config{AVUSER} = $config{CREATEADMIN}
-      if ( $old eq $config{AVUSER} );
+    $config{AVUSER}   = $config{CREATEADMIN} if ( $oldAdmin eq $config{AVUSER} );
+    $config{AVDOMAIN} = $config{CREATEDOMAIN} if ( $config{AVDOMAIN} eq $oldDomain );
+    $config{SMTPDEST}   = $config{CREATEADMIN} if ( $oldAdmin eq $config{SMTPDEST} );
+    $config{SMTPSOURCE} = $config{CREATEADMIN} if ( $oldAdmin eq $config{SMTPSOURCE} );
 
-    $config{AVDOMAIN} = $config{CREATEDOMAIN}
-      if ( $config{AVDOMAIN} eq $oldDomain );
-
-    if ( $old eq $config{SMTPDEST} ) {
-        $config{SMTPDEST} = $config{CREATEADMIN};
-    }
-    if ( $old eq $config{SMTPSOURCE} ) {
-        $config{SMTPSOURCE} = $config{CREATEADMIN};
-    }
-    my ( $spamUser, $spamDomain ) = split( '@', $config{TRAINSASPAM} );
-    $config{TRAINSASPAM} = $spamUser . '@' . $config{CREATEDOMAIN}
-      if ( $spamDomain eq $oldDomain );
-
-    my ( $hamUser, $hamDomain ) = split( '@', $config{TRAINSAHAM} );
-    $config{TRAINSAHAM} = $hamUser . '@' . $config{CREATEDOMAIN}
-      if ( $hamDomain eq $oldDomain );
-
-    my ( $virusUser, $virusDomain ) = split( '@', $config{VIRUSQUARANTINE} );
-    $config{VIRUSQUARANTINE} = $virusUser . '@' . $config{CREATEDOMAIN}
-      if ( $virusDomain eq $oldDomain );
-
+    updateEmailDomain( 'TRAINSASPAM',     $config{CREATEDOMAIN}, $oldDomain );
+    updateEmailDomain( 'TRAINSAHAM',      $config{CREATEDOMAIN}, $oldDomain );
+    updateEmailDomain( 'VIRUSQUARANTINE', $config{CREATEDOMAIN}, $oldDomain );
 }
 
 sub setLdapBaseDN {
@@ -2084,34 +2108,20 @@ sub toggleWebProxy() {
 sub setUseProxy {
     if ( isEnabled("carbonio-proxy") ) {
         my $mailProxyEnabled = ( $config{MAILPROXY} eq "TRUE" );
-        resolvePortOffsetCollision( 'IMAPPORT',    'IMAPPROXYPORT',    7000, $mailProxyEnabled );
-        resolvePortOffsetCollision( 'IMAPSSLPORT', 'IMAPSSLPROXYPORT', 7000, $mailProxyEnabled );
-        resolvePortOffsetCollision( 'POPPORT',     'POPPROXYPORT',     7000, $mailProxyEnabled );
-        resolvePortOffsetCollision( 'POPSSLPORT',  'POPSSLPROXYPORT',  7000, $mailProxyEnabled );
-
         my $httpProxyEnabled = ( $config{HTTPPROXY} eq "TRUE" );
-        resolvePortOffsetCollision( 'HTTPPORT',  'HTTPPROXYPORT',  8000, $httpProxyEnabled );
-        resolvePortOffsetCollision( 'HTTPSPORT', 'HTTPSPROXYPORT', 8000, $httpProxyEnabled );
+        resolveMailPortOffsetCollisions($mailProxyEnabled);
+        resolveHttpPortOffsetCollisions($httpProxyEnabled);
     }
     else {
         if ( !isInstalled("carbonio-appserver") ) {
-            resolvePortOffsetCollision( 'IMAPPORT',    'IMAPPROXYPORT',    7000, 0 );
-            resolvePortOffsetCollision( 'IMAPSSLPORT', 'IMAPSSLPROXYPORT', 7000, 0 );
-            resolvePortOffsetCollision( 'POPPORT',     'POPPROXYPORT',     7000, 0 );
-            resolvePortOffsetCollision( 'POPSSLPORT',  'POPSSLPROXYPORT',  7000, 0 );
-            resolvePortOffsetCollision( 'HTTPPORT',    'HTTPPROXYPORT',    8000, 0 );
-            resolvePortOffsetCollision( 'HTTPSPORT',   'HTTPSPROXYPORT',   8000, 0 );
+            resolveMailPortOffsetCollisions(0);
+            resolveHttpPortOffsetCollisions(0);
         }
         else {
             my $mailProxyEnabled = ( $config{zimbraMailProxy} eq "TRUE" );
-            resolvePortOffsetCollision( 'IMAPPORT',    'IMAPPROXYPORT',    7000, $mailProxyEnabled );
-            resolvePortOffsetCollision( 'IMAPSSLPORT', 'IMAPSSLPROXYPORT', 7000, $mailProxyEnabled );
-            resolvePortOffsetCollision( 'POPPORT',     'POPPROXYPORT',     7000, $mailProxyEnabled );
-            resolvePortOffsetCollision( 'POPSSLPORT',  'POPSSLPROXYPORT',  7000, $mailProxyEnabled );
-
             my $httpProxyEnabled = ( $config{zimbraWebProxy} eq "TRUE" );
-            resolvePortOffsetCollision( 'HTTPPORT',  'HTTPPROXYPORT',  8000, $httpProxyEnabled );
-            resolvePortOffsetCollision( 'HTTPSPORT', 'HTTPSPROXYPORT', 8000, $httpProxyEnabled );
+            resolveMailPortOffsetCollisions($mailProxyEnabled);
+            resolveHttpPortOffsetCollisions($httpProxyEnabled);
         }
     }
 }
@@ -2305,33 +2315,15 @@ sub setHostName {
     }
     if ( $config{CREATEDOMAIN} eq $old ) {
         $config{CREATEDOMAIN} = $config{HOSTNAME};
-
-        my ( $u, $d ) = split( '@', $config{CREATEADMIN} );
-        $config{CREATEADMIN} = $u . '@' . $config{CREATEDOMAIN};
-
-        my ( $u, $d ) = split( '@', $config{AVUSER} );
-        $config{AVUSER} = $u . '@' . $config{CREATEDOMAIN};
-
-        $config{AVDOMAIN} = $config{CREATEDOMAIN};
-
-        my ( $u, $d ) = split( '@', $config{TRAINSASPAM} );
-        $config{TRAINSASPAM} = $u . '@' . $config{CREATEDOMAIN};
-
-        my ( $u, $d ) = split( '@', $config{TRAINSAHAM} );
-        $config{TRAINSAHAM} = $u . '@' . $config{CREATEDOMAIN};
-
-        my ( $u, $d ) = split( '@', $config{VIRUSQUARANTINE} );
-        $config{VIRUSQUARANTINE} = $u . '@' . $config{CREATEDOMAIN};
-
+        $config{AVDOMAIN}     = $config{CREATEDOMAIN};
+        setEmailDomain( 'CREATEADMIN',     $config{CREATEDOMAIN} );
+        setEmailDomain( 'AVUSER',          $config{CREATEDOMAIN} );
+        setEmailDomain( 'TRAINSASPAM',     $config{CREATEDOMAIN} );
+        setEmailDomain( 'TRAINSAHAM',      $config{CREATEDOMAIN} );
+        setEmailDomain( 'VIRUSQUARANTINE', $config{CREATEDOMAIN} );
     }
-    my ( $suser, $sdomain ) = split( '@', $config{SMTPSOURCE}, 2 );
-    if ( $sdomain eq $old ) {
-        $config{SMTPSOURCE} = $suser . '@' . $config{CREATEDOMAIN};
-    }
-    ( $suser, $sdomain ) = split( '@', $config{SMTPDEST}, 2 );
-    if ( $sdomain eq $old ) {
-        $config{SMTPDEST} = $suser . '@' . $config{CREATEDOMAIN};
-    }
+    updateEmailDomain( 'SMTPSOURCE', $config{CREATEDOMAIN}, $old );
+    updateEmailDomain( 'SMTPDEST',   $config{CREATEDOMAIN}, $old );
 }
 
 sub setSmtpHost {
