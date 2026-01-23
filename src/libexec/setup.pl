@@ -667,7 +667,7 @@ sub checkPortConflicts {
 
 sub isComponentAvailable {
     my $component = shift;
-    detail("checking isComponentAvailable $component");
+    detail("Checking isComponentAvailable $component...");
 
     # if its already defined return;
     if ( exists $main::loaded{components}{$component} ) {
@@ -1347,13 +1347,13 @@ sub setDefaults {
     my $tzname = qx(/bin/date '+%Z');
     chomp($tzname);
 
-    detail("Local timezone detected as $tzname\n");
+    detail("Local timezone detected as $tzname.\n");
     my $tzdata = Zextras::Util::Timezone->parse;
     my $tz     = $tzdata->gettzbyname($tzname);
     $config{zimbraPrefTimeZoneId} = $tz->tzid if ( defined $tz );
     $config{zimbraPrefTimeZoneId} = 'America/Los_Angeles'
       if ( $config{zimbraPrefTimeZoneId} eq "" );
-    detail("Default Olson timezone name $config{zimbraPrefTimeZoneId}\n");
+    detail("Default Olson timezone name: $config{zimbraPrefTimeZoneId}.\n");
 
     #progress("tzname=$tzname tzid=$config{zimbraPrefTimeZoneId}");
 
@@ -2414,7 +2414,7 @@ sub setTimeZone {
         my %RTZID = reverse %TZID;
 
         # get a reference to the default value or attempt to lookup the system locale.
-        detail("Previous TimeZoneID $config{zimbraPrefTimeZoneId}\n");
+        detail("Previous TimeZoneID: $config{zimbraPrefTimeZoneId}.\n");
         my $ltzref = $tz->gettzbyid("$config{zimbraPrefTimeZoneId}");
         unless ( defined $ltzref ) {
             detail("Determining system locale.\n");
@@ -3145,7 +3145,7 @@ sub ldapIsAvailable {
         if ( checkLdapBind( $binduser, $config{LDAPPOSTPASS} ) ) {
             detail("Could not bind to $config{LDAPHOST} as $binduser.\n");
             $config{LDAPPOSTPASSSET} = "Not Verified";
-            detail("Setting LDAPPOSTPASSSET to $config{LDAPPOSTPASSSET}") if $debug;
+            detail("Setting LDAPPOSTPASSSET to $config{LDAPPOSTPASSSET}.") if $debug;
             $failedcheck++;
         }
         else {
@@ -3156,7 +3156,7 @@ sub ldapIsAvailable {
         if ( checkLdapBind( $binduser, $config{LDAPAMAVISPASS} ) ) {
             detail("Could not bind to $config{LDAPHOST} as $binduser.\n");
             $config{LDAPAMAVISPASSSET} = "Not Verified";
-            detail("Setting LDAPAMAVISPASSSET to $config{LDAPAMAVISPASSSET}") if $debug;
+            detail("Setting LDAPAMAVISPASSSET to $config{LDAPAMAVISPASSSET}.") if $debug;
             $failedcheck++;
         }
         else {
@@ -3175,7 +3175,7 @@ sub ldapIsAvailable {
         if ( checkLdapBind( $binduser, $config{LDAPREPPASS} ) ) {
             detail("Could not bind to $config{LDAPHOST} as $binduser.\n");
             $config{LDAPREPPASSSET} = "Not Verified";
-            detail("Setting LDAPREPPASSSET to $config{LDAPREPPASSSET}") if $debug;
+            detail("Setting LDAPREPPASSSET to $config{LDAPREPPASSSET}.") if $debug;
             $failedcheck++;
         }
         else {
@@ -3201,7 +3201,7 @@ sub checkLdapBind() {
     my $ldap_secure = ( ( $config{LDAPPORT} == "636" ) ? "s" : "" );
     my $ldap_url    = "ldap${ldap_secure}://$config{LDAPHOST}:$config{LDAPPORT}";
     unless ( $ldap = Net::LDAP->new($ldap_url) ) {
-        detail("failed: Unable to contact LDAP at $ldap_url: $!");
+        detail("Failed: Unable to contact LDAP at $ldap_url: $!");
         return 1;
     }
 
@@ -3221,7 +3221,7 @@ sub checkLdapBind() {
     }
     my $result = $ldap->bind( $binduser, password => $bindpass );
     if ( $result->code() ) {
-        detail("Unable to bind to $ldap_url with user $binduser: $!");
+        detail("Unable to bind to $ldap_url with user $binduser.");
         return 1;
     }
     else {
@@ -3247,7 +3247,7 @@ sub checkLdapReplicationEnabled() {
     my $ldap_secure = ( ( $config{LDAPPORT} == "636" ) ? "s" : "" );
     my $ldap_url    = "ldap${ldap_secure}://$config{LDAPHOST}:$config{LDAPPORT}";
     unless ( $ldap = Net::LDAP->new($ldap_url) ) {
-        detail("failed: Unable to contact LDAP at $ldap_url: $!");
+        detail("Failed: Unable to contact LDAP at $ldap_url: $!");
         return 1;
     }
     if ( $ldap_secure ne "s" && $starttls ) {
@@ -3262,7 +3262,7 @@ sub checkLdapReplicationEnabled() {
     }
     my $result = $ldap->bind( $binduser, password => $bindpass );
     if ( $result->code() ) {
-        detail("Unable to bind to $ldap_url with user $binduser: $!");
+        detail("Unable to bind to $ldap_url with user $binduser.");
         return 1;
     }
     else {
@@ -3318,7 +3318,7 @@ sub getLocalConfig {
     return $main::loaded{lc}{$key}
       if ( exists $main::loaded{lc}{$key} && !$force );
 
-    detail("Getting local config $key");
+    detail("Getting local config $key...");
     my $val = qx(/opt/zextras/bin/zmlocalconfig -x -s -m nokey ${key} 2> /dev/null);
     chomp $val;
     detail("DEBUG: LC Loaded $key=$val") if $debug;
@@ -3332,7 +3332,7 @@ sub getLocalConfigRaw {
     return $main::loaded{lc}{$key}
       if ( exists $main::loaded{lc}{$key} && !$force );
 
-    detail("Getting local config $key");
+    detail("Getting local config $key...");
     my $val = qx(/opt/zextras/bin/zmlocalconfig -s -m nokey ${key} 2> /dev/null);
     chomp $val;
     detail("DEBUG: LC Loaded $key=$val") if $debug;
@@ -3343,15 +3343,15 @@ sub getLocalConfigRaw {
 sub deleteLocalConfig {
     my $key = shift;
 
-    detail("Deleting local config $key");
+    detail("Deleting local config $key...");
     my $rc = runAsZextras("/opt/zextras/bin/zmlocalconfig -u ${key} 2> /dev/null");
     if ( $rc == 0 ) {
-        detail("DEBUG: deleted localconfig key $key") if $debug;
+        detail("DEBUG: Deleted local config key $key.") if $debug;
         delete( $main::loaded{lc}{$key} )             if ( exists $main::loaded{lc}{$key} );
         return 1;
     }
     else {
-        detail("DEBUG: failed to deleted localconfig key $key") if $debug;
+        detail("DEBUG: Failed to delete local config key $key.") if $debug;
         return undef;
     }
 }
@@ -3364,7 +3364,7 @@ sub setLocalConfig {
         detail("Skipping update of unchanged value for $key=$val.");
         return;
     }
-    detail("Setting local config $key to $val");
+    detail("Setting local config $key to $val.");
     $main::saved{lc}{$key}  = $val;
     $main::loaded{lc}{$key} = $val;
     $val =~ s/\$/\\\$/g;
@@ -3385,7 +3385,7 @@ sub setLocalConfigBatch {
             detail("Skipping update of unchanged value for $key=$val.");
             next;
         }
-        detail("Setting local config $key to $val");
+        detail("Setting local config $key to $val.");
         $main::saved{lc}{$key}  = $val;
         $main::loaded{lc}{$key} = $val;
         $val =~ s/\$/\\\$/g;
@@ -4254,7 +4254,7 @@ sub countReverseProxyLookupTargets {
     my $master_ref = \@masters;
 
     unless ( $ldap = Net::LDAP->new($master_ref) ) {
-        detail("Unable to contact $ldap_master_url: $!");
+        detail("Unable to contact $ldap_master_url.");
         return;
     }
     my $ldap_dn   = $config{zimbra_ldap_userdn};
@@ -4287,7 +4287,7 @@ sub countUsers {
     my @masters    = split( / /, $ldap_master_url );
     my $master_ref = \@masters;
     unless ( $ldap = Net::LDAP->new($master_ref) ) {
-        detail("Unable to contact $ldap_master_url: $!");
+        detail("Unable to contact $ldap_master_url.");
         return undef;
     }
     my $ldap_dn   = $config{zimbra_ldap_userdn};
