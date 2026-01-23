@@ -435,6 +435,28 @@ sub setLdapConfigHelper {
     }
 }
 
+# Helper to create a system account if it doesn't exist
+sub createSystemAccountIfMissing {
+    my ( $configKey, $description, $extraAttrs ) = @_;
+    $extraAttrs //= "";
+    $config{$configKey} = lc( $config{$configKey} );
+    progress("Creating user $config{$configKey}...");
+    my $acctId = getLdapAccountValue( "zimbraId", $config{$configKey} );
+    if ( $acctId ne "" ) {
+        progress("already exists.\n");
+        return 0;
+    }
+    my $pass = genRandomPass();
+    my $rc   = runAsZextras(
+        "$ZMPROV ca $config{$configKey} \'$pass\' "
+          . "amavisBypassSpamChecks TRUE zimbraAttachmentsIndexingEnabled FALSE "
+          . "zimbraIsSystemResource TRUE zimbraIsSystemAccount TRUE zimbraHideInGal TRUE "
+          . "zimbraMailQuota 0 $extraAttrs description \'$description\'"
+    );
+    progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+    return $rc;
+}
+
 sub defineInstallWebapps {
     if ( !defined $config{INSTALL_WEBAPPS} ) {
         if ( $config{SERVICEWEBAPP} eq "yes" ) {
@@ -3676,53 +3698,30 @@ sub checkLdapReplicationEnabled() {
     return 0;
 }
 
+# Helper to log command execution while suppressing sensitive data
+sub logRunCommand {
+    my ( $cmd, $user ) = @_;
+    my $logCmd = ( $cmd =~ /ldappass|init|zmprov -r -m -l ca/ ) ? ( split ' ', $cmd )[0] : $cmd;
+    detail("*** Running as $user user: $logCmd\n");
+}
+
 sub runAsRoot {
     my $cmd = shift;
-    if ( $cmd =~ /ldappass/ || $cmd =~ /init/ || $cmd =~ /zmprov -r -m -l ca/ ) {
-
-        # Suppress passwords in log file
-        my $c = ( split ' ', $cmd )[0];
-        detail("*** Running as root user: $c\n");
-    }
-    else {
-        detail("*** Running as root user: $cmd\n");
-    }
-    my $rc;
-    $rc = 0xffff & system("$cmd >> $logfile 2>&1");
-    return $rc;
+    logRunCommand( $cmd, "root" );
+    return 0xffff & system("$cmd >> $logfile 2>&1");
 }
 
 sub runAsZextras {
     my $cmd = shift;
-    if ( $cmd =~ /ldappass/ || $cmd =~ /init/ || $cmd =~ /zmprov -r -m -l ca/ ) {
-
-        # Suppress passwords in log file
-        my $c = ( split ' ', $cmd )[0];
-        detail("*** Running as zextras user: $c\n");
-    }
-    else {
-        detail("*** Running as zextras user: $cmd\n");
-    }
-    my $rc;
-    $rc = 0xffff & system("$SU \"$cmd\" >> $logfile 2>&1");
-    return $rc;
+    logRunCommand( $cmd, "zextras" );
+    return 0xffff & system("$SU \"$cmd\" >> $logfile 2>&1");
 }
 
 sub runAsZextrasWithOutput {
     my $cmd = shift;
-    if ( $cmd =~ /ldappass/ || $cmd =~ /init/ || $cmd =~ /zmprov -r -m -l ca/ ) {
-
-        # Suppress passwords in log file
-        my $c = ( split ' ', $cmd )[0];
-        detail("*** Running as zextras user: $c\n");
-    }
-    else {
-        detail("*** Running as zextras user: $cmd\n");
-    }
+    logRunCommand( $cmd, "zextras" );
     system("$SU \"$cmd\"");
-    my $exit_value  = $? >> 8;
-    my $signal_num  = $? & 127;
-    my $dumped_core = $? & 128;
+    my $exit_value = $? >> 8;
     detail("DEBUG: exit status from cmd was $exit_value") if $debug;
     return $exit_value;
 }
@@ -4562,75 +4561,37 @@ sub setProxyBits {
     my $ReverseProxyDomainNameQuery = '\(\&\(zimbraVirtualIPAddress=\${IPADDR}\)\(objectClass=zimbraDomain\)\)';
     my $ReverseProxyPortQuery       = '\(\&\(zimbraServiceHostname=\${MAILHOST}\)\(objectClass=zimbraServer\)\)';
 
+    my @proxy_defaults = (
+        [ 'zimbraReverseProxyMailHostQuery',          $ReverseProxyMailHostQuery ],
+        [ 'zimbraReverseProxyPortQuery',              $ReverseProxyPortQuery ],
+        [ 'zimbraReverseProxyDomainNameQuery',        $ReverseProxyDomainNameQuery ],
+        [ 'zimbraMemcachedBindPort',                  '11211' ],
+        [ 'zimbraMemcachedBindAddress',               '127.0.0.1' ],
+        [ 'zimbraReverseProxyMailHostAttribute',      'zimbraMailHost' ],
+        [ 'zimbraReverseProxyPop3PortAttribute',      'zimbraPop3BindPort' ],
+        [ 'zimbraReverseProxyPop3SSLPortAttribute',   'zimbraPop3SSLBindPort' ],
+        [ 'zimbraReverseProxyImapPortAttribute',      'zimbraImapBindPort' ],
+        [ 'zimbraReverseProxyImapSSLPortAttribute',   'zimbraImapSSLBindPort' ],
+        [ 'zimbraReverseProxyDomainNameAttribute',    'zimbraDomainName' ],
+        [ 'zimbraImapCleartextLoginEnabled',          'FALSE' ],
+        [ 'zimbraPop3CleartextLoginEnabled',          'FALSE' ],
+        [ 'zimbraReverseProxyAuthWaitInterval',       '10s' ],
+        [ 'zimbraReverseProxyIPLoginLimit',           '0' ],
+        [ 'zimbraReverseProxyIPLoginLimitTime',       '3600' ],
+        [ 'zimbraReverseProxyUserLoginLimit',         '0' ],
+        [ 'zimbraReverseProxyUserLoginLimitTime',     '3600' ],
+        [ 'zimbraMailProxyPort',                      '0' ],
+        [ 'zimbraMailSSLProxyPort',                   '0' ],
+        [ 'zimbraReverseProxyHttpEnabled',            'FALSE' ],
+        [ 'zimbraReverseProxyMailEnabled',            'TRUE' ],
+    );
+
     my @zmprov_args = ();
-    push( @zmprov_args, ( 'zimbraReverseProxyMailHostQuery', $ReverseProxyMailHostQuery ) )
-      if ( getLdapConfigValue("zimbraReverseProxyMailHostQuery") eq "" );
-
-    push( @zmprov_args, ( 'zimbraReverseProxyPortQuery', $ReverseProxyPortQuery ) )
-      if ( getLdapConfigValue("zimbraReverseProxyPortQuery") eq "" );
-
-    push( @zmprov_args, ( 'zimbraReverseProxyDomainNameQuery', $ReverseProxyDomainNameQuery ) )
-      if ( getLdapConfigValue("zimbraReverseProxyDomainNameQuery") eq "" );
-
-    push( @zmprov_args, ( 'zimbraMemcachedBindPort', '11211' ) )
-      if ( getLdapConfigValue("zimbraMemcachedBindPort") eq "" );
-
-    push( @zmprov_args, ( 'zimbraMemcachedBindAddress', '127.0.0.1' ) )
-      if ( getLdapConfigValue("zimbraMemcachedBindAddress") eq "" );
-
-    push( @zmprov_args, ( 'zimbraReverseProxyMailHostAttribute', 'zimbraMailHost' ) )
-      if ( getLdapConfigValue("zimbraReverseProxyMailHostAttribute") eq "" );
-
-    push( @zmprov_args, ( 'zimbraReverseProxyPop3PortAttribute', 'zimbraPop3BindPort' ) )
-      if ( getLdapConfigValue("zimbraReverseProxyPop3PortAttribute") eq "" );
-
-    push( @zmprov_args, ( 'zimbraReverseProxyPop3SSLPortAttribute', 'zimbraPop3SSLBindPort' ) )
-      if ( getLdapConfigValue("zimbraReverseProxyPop3SSLPortAttribute") eq "" );
-
-    push( @zmprov_args, ( 'zimbraReverseProxyImapPortAttribute', 'zimbraImapBindPort' ) )
-      if ( getLdapConfigValue("zimbraReverseProxyImapPortAttribute") eq "" );
-
-    push( @zmprov_args, ( 'zimbraReverseProxyImapSSLPortAttribute', 'zimbraImapSSLBindPort' ) )
-      if ( getLdapConfigValue("zimbraReverseProxyImapSSLPortAttribute") eq "" );
-
-    push( @zmprov_args, ( 'zimbraReverseProxyDomainNameAttribute', 'zimbraDomainName' ) )
-      if ( getLdapConfigValue("zimbraReverseProxyDomainNameAttribute") eq "" );
-
-    push( @zmprov_args, ( 'zimbraImapCleartextLoginEnabled', 'FALSE' ) )
-      if ( getLdapConfigValue("zimbraImapCleartextLoginEnabled") eq "" );
-
-    push( @zmprov_args, ( 'zimbraPop3CleartextLoginEnabled', 'FALSE' ) )
-      if ( getLdapConfigValue("zimbraPop3CleartextLoginEnabled") eq "" );
-
-    push( @zmprov_args, ( 'zimbraReverseProxyAuthWaitInterval', '10s' ) )
-      if ( getLdapConfigValue("zimbraReverseProxyAuthWaitInterval") eq "" );
-
-    push( @zmprov_args, ( 'zimbraReverseProxyIPLoginLimit', '0' ) )
-      if ( getLdapConfigValue("zimbraReverseProxyIPLoginLimit") eq "" );
-
-    push( @zmprov_args, ( 'zimbraReverseProxyIPLoginLimitTime', '3600' ) )
-      if ( getLdapConfigValue("zimbraReverseProxyIPLoginLimitTime") eq "" );
-
-    push( @zmprov_args, ( 'zimbraReverseProxyUserLoginLimit', '0' ) )
-      if ( getLdapConfigValue("zimbraReverseProxyUserLoginLimit") eq "" );
-
-    push( @zmprov_args, ( 'zimbraReverseProxyUserLoginLimitTime', '3600' ) )
-      if ( getLdapConfigValue("zimbraReverseProxyUserLoginLimitTime") eq "" );
-
-    push( @zmprov_args, ( 'zimbraMailProxyPort', '0' ) )
-      if ( getLdapConfigValue("zimbraMailProxyPort") eq "" );
-
-    push( @zmprov_args, ( 'zimbraMailSSLProxyPort', '0' ) )
-      if ( getLdapConfigValue("zimbraMailSSLProxyPort") eq "" );
-
-    push( @zmprov_args, ( 'zimbraReverseProxyHttpEnabled', 'FALSE' ) )
-      if ( getLdapConfigValue("zimbraReverseProxyHttpEnabled") eq "" );
-
-    push( @zmprov_args, ( 'zimbraReverseProxyMailEnabled', 'TRUE' ) )
-      if ( getLdapConfigValue("zimbraReverseProxyMailEnabled") eq "" );
-
+    for my $pair (@proxy_defaults) {
+        my ( $key, $val ) = @$pair;
+        push( @zmprov_args, ( $key, $val ) ) if ( getLdapConfigValue($key) eq "" );
+    }
     setLdapGlobalConfig(@zmprov_args);
-
 }
 
 sub configSetProxyPrefs {
@@ -4839,41 +4800,9 @@ sub configCreateDomain {
         }
 
         if ( $config{DOTRAINSA} eq "yes" ) {
-            $config{TRAINSASPAM} = lc( $config{TRAINSASPAM} );
-            progress("Creating user $config{TRAINSASPAM}...");
-            my $acctId = getLdapAccountValue( "zimbraId", $config{TRAINSASPAM} );
-            if ( $acctId ne "" ) {
-                progress("already exists.\n");
-            }
-            else {
-                my $pass = genRandomPass();
-                my $rc   = runAsZextras( "$ZMPROV ca " . "$config{TRAINSASPAM} \'$pass\' " . "amavisBypassSpamChecks TRUE " . "zimbraAttachmentsIndexingEnabled FALSE " . "zimbraIsSystemResource TRUE " . "zimbraIsSystemAccount TRUE " . "zimbraHideInGal TRUE " . "zimbraMailQuota 0 " . "description \'System account for spam training.\'" );
-                progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
-            }
-
-            $config{TRAINSAHAM} = lc( $config{TRAINSAHAM} );
-            progress("Creating user $config{TRAINSAHAM}...");
-            my $acctId = getLdapAccountValue( "zimbraId", $config{TRAINSAHAM} );
-            if ( $acctId ne "" ) {
-                progress("already exists.\n");
-            }
-            else {
-                my $pass = genRandomPass();
-                my $rc   = runAsZextras( "$ZMPROV ca " . "$config{TRAINSAHAM} \'$pass\' " . "amavisBypassSpamChecks TRUE " . "zimbraAttachmentsIndexingEnabled FALSE " . "zimbraIsSystemResource TRUE " . "zimbraIsSystemAccount TRUE " . "zimbraHideInGal TRUE " . "zimbraMailQuota 0 " . "description \'System account for Non-Spam (Ham) training.\'" );
-                progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
-            }
-
-            $config{VIRUSQUARANTINE} = lc( $config{VIRUSQUARANTINE} );
-            progress("Creating user $config{VIRUSQUARANTINE}...");
-            my $acctId = getLdapAccountValue( "zimbraId", $config{VIRUSQUARANTINE} );
-            if ( $acctId ne "" ) {
-                progress("already exists.\n");
-            }
-            else {
-                my $pass = genRandomPass();
-                my $rc   = runAsZextras( "$ZMPROV ca " . "$config{VIRUSQUARANTINE} \'$pass\' " . "amavisBypassSpamChecks TRUE " . "zimbraAttachmentsIndexingEnabled FALSE " . "zimbraIsSystemResource TRUE " . "zimbraIsSystemAccount TRUE " . "zimbraHideInGal TRUE " . "zimbraMailMessageLifetime 30d " . "zimbraMailQuota 0 " . "description \'System account for Anti-virus quarantine.\'" );
-                progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
-            }
+            createSystemAccountIfMissing( "TRAINSASPAM", "System account for spam training.", "" );
+            createSystemAccountIfMissing( "TRAINSAHAM", "System account for Non-Spam (Ham) training.", "" );
+            createSystemAccountIfMissing( "VIRUSQUARANTINE", "System account for Anti-virus quarantine.", "zimbraMailMessageLifetime 30d" );
 
             progress("Setting spam, training and anti-virus quarantine accounts...");
             my $rc = setLdapGlobalConfig( 'zimbraSpamIsSpamAccount', "$config{TRAINSASPAM}", 'zimbraSpamIsNotSpamAccount', "$config{TRAINSAHAM}", 'zimbraAmavisQuarantineAccount', "$config{VIRUSQUARANTINE}" );
