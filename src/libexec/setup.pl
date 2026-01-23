@@ -735,13 +735,13 @@ sub getInstalledPackages {
           if $options{d};
 
         if ( index( $config{ldap_url}, "/" . $config{zimbra_server_hostname} ) != -1 ) {
-            detail("zimbra_server_hostname contained in ldap_url checking ldap status");
+            detail("Server hostname found in ldap_url, checking LDAP status...");
             if ( startLdap() ) { return 1; }
         }
         else {
-            detail("zimbra_server_hostname not in ldap_url not starting slapd");
+            detail("Server hostname not in ldap_url, not starting slapd.");
         }
-        detail("Getting installed services from ldap");
+        detail("Getting installed services from LDAP...");
         open( ZMPROV, "$ZMPROV gs $config{zimbra_server_hostname}|" );
         while (<ZMPROV>) {
             chomp;
@@ -837,13 +837,13 @@ sub isEnabled {
           if $options{d};
 
         if ( index( $config{ldap_url}, "/" . $config{zimbra_server_hostname} ) != -1 ) {
-            detail("zimbra_server_hostname contained in ldap_url checking ldap status");
+            detail("Server hostname found in ldap_url, checking LDAP status...");
             if ( startLdap() ) { return 1; }
         }
         else {
-            detail("zimbra_server_hostname not in ldap_url not starting slapd");
+            detail("Server hostname not in ldap_url, not starting slapd.");
         }
-        detail("Getting enabled services from ldap");
+        detail("Getting enabled services from LDAP...");
         $enabledPackages{"carbonio-core"} = "Enabled"
           if ( isInstalled("carbonio-core") );
 
@@ -3095,13 +3095,13 @@ sub checkMenuConfig {
 sub ldapIsAvailable {
     my $failedcheck = 0;
     if ( ( $config{LDAPHOST} eq $config{HOSTNAME} ) && !$ldapConfigured ) {
-        detail("This is the ldap master and ldap hasn't been configured yet.");
+        detail("This is the LDAP master and LDAP has not been configured yet.");
         return 0;
     }
 
     # check zimbra ldap admin user binding to the master
     if ( $config{LDAPADMINPASS} eq "" || $config{LDAPPORT} eq "" || $config{LDAPHOST} eq "" ) {
-        detail("ldap configuration not complete\n");
+        detail("LDAP configuration not complete.\n");
         return 0;
     }
 
@@ -3168,7 +3168,7 @@ sub ldapIsAvailable {
     # check replication user binding to master
     if ( isInstalled("carbonio-directory-server") && $config{LDAPHOST} ne $config{HOSTNAME} ) {
         if ( $config{LDAPREPPASS} eq "" ) {
-            detail("ldap configuration not complete. Ldap Replication password is not set.\n");
+            detail("LDAP configuration not complete: replication password is not set.\n");
             $failedcheck++;
         }
         my $binduser = "uid=zmreplica,cn=admins,$config{ldap_dit_base_dn_config}";
@@ -3183,11 +3183,11 @@ sub ldapIsAvailable {
             $config{LDAPREPPASSSET} = "set";
         }
         if ( checkLdapReplicationEnabled( $config{zimbra_ldap_userdn}, $config{LDAPADMINPASS} ) ) {
-            detail("ldap configuration not complete. Unable to verify ldap replication is enabled on $config{LDAPHOST}\n");
+            detail("LDAP configuration not complete: unable to verify LDAP replication is enabled on $config{LDAPHOST}.\n");
             $failedcheck++;
         }
         else {
-            detail("ldap replication ability verified\n");
+            detail("LDAP replication ability verified.\n");
         }
     }
     return ( $failedcheck > 0 ) ? 0 : 1;
@@ -3196,12 +3196,12 @@ sub ldapIsAvailable {
 sub checkLdapBind() {
     my ( $binduser, $bindpass ) = @_;
 
-    detail("Checking ldap on $config{LDAPHOST}:$config{LDAPPORT}");
+    detail("Checking LDAP on $config{LDAPHOST}:$config{LDAPPORT}...");
     my $ldap;
     my $ldap_secure = ( ( $config{LDAPPORT} == "636" ) ? "s" : "" );
     my $ldap_url    = "ldap${ldap_secure}://$config{LDAPHOST}:$config{LDAPPORT}";
     unless ( $ldap = Net::LDAP->new($ldap_url) ) {
-        detail("failed: Unable to contact ldap at $ldap_url: $!");
+        detail("failed: Unable to contact LDAP at $ldap_url: $!");
         return 1;
     }
 
@@ -3226,7 +3226,7 @@ sub checkLdapBind() {
     }
     else {
         $ldap->unbind;
-        detail("Verified ldap running at $ldap_url\n");
+        detail("Verified LDAP running at $ldap_url.\n");
         if ($newinstall) {
             setLocalConfigBatch(
                 ldap_url                             => $ldap_url,
@@ -3242,12 +3242,12 @@ sub checkLdapBind() {
 
 sub checkLdapReplicationEnabled() {
     my ( $binduser, $bindpass ) = @_;
-    detail("Checking ldap replication is enabled on $config{LDAPHOST}:$config{LDAPPORT}");
+    detail("Checking LDAP replication is enabled on $config{LDAPHOST}:$config{LDAPPORT}...");
     my $ldap;
     my $ldap_secure = ( ( $config{LDAPPORT} == "636" ) ? "s" : "" );
     my $ldap_url    = "ldap${ldap_secure}://$config{LDAPHOST}:$config{LDAPPORT}";
     unless ( $ldap = Net::LDAP->new($ldap_url) ) {
-        detail("failed: Unable to contact ldap at $ldap_url: $!");
+        detail("failed: Unable to contact LDAP at $ldap_url: $!");
         return 1;
     }
     if ( $ldap_secure ne "s" && $starttls ) {
@@ -3641,7 +3641,7 @@ sub configSetupLdap {
 
     #Check if skipping configSetupLdap on existing install is distructive
     if ( $configStatus{configSetupLdap} eq "CONFIGURED" ) {
-        detail("ldap already configured bypassing configuration\n");
+        detail("LDAP already configured, bypassing configuration.\n");
         configLog("configSetupLdap");
         return 0;
     }
@@ -3758,7 +3758,7 @@ sub configSetupLdap {
         }
     }
     else {
-        detail("Updating ldap user passwords\n");
+        detail("Updating LDAP user passwords.\n");
         setLocalConfigBatch(
             ldap_root_password        => $config{LDAPROOTPASS},
             zimbra_ldap_password      => $config{LDAPADMINPASS},
@@ -4262,11 +4262,11 @@ sub countReverseProxyLookupTargets {
 
     my $result = $ldap->bind( $ldap_dn, password => $ldap_pass );
     if ( $result->code() ) {
-        detail("ldap bind failed for $ldap_dn");
+        detail("LDAP bind failed for $ldap_dn.");
         return;
     }
     else {
-        detail("ldap bind done for $ldap_dn");
+        detail("LDAP bind done for $ldap_dn.");
         progress("Searching LDAP for reverseProxyLookupTargets...");
         $result = $ldap->search( base => 'cn=zimbra', filter => '(zimbraReverseProxyLookupTarget=TRUE)', attrs => ['1.1'] );
 
@@ -4295,11 +4295,11 @@ sub countUsers {
 
     my $result = $ldap->bind( $ldap_dn, password => $ldap_pass );
     if ( $result->code() ) {
-        detail("ldap bind failed for $ldap_dn");
+        detail("LDAP bind failed for $ldap_dn.");
         return undef;
     }
     else {
-        detail("ldap bind done for $ldap_dn");
+        detail("LDAP bind done for $ldap_dn.");
         progress("Searching LDAP for zimbra accounts...");
         $result = $ldap->search(
             filter => "(objectclass=zimbraAccount)",
@@ -4915,7 +4915,7 @@ sub mainMenu {
 
 sub startLdap {
     my $rc;
-    detail("Checking LDAP status....");
+    detail("Checking LDAP status...");
     if ( isSystemd() ) {
         $rc = isSystemdActiveUnit("carbonio-openldap.service");
     }
@@ -4939,7 +4939,7 @@ sub startLdap {
 
 sub stopLdap {
     my $rc;
-    detail("Checking LDAP status....");
+    detail("Checking LDAP status...");
     if ( isSystemd() ) {
         $rc = isSystemdActiveUnit("carbonio-openldap.service");
     }
