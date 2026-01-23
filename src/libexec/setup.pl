@@ -1345,20 +1345,11 @@ sub installLdapConfig {
     my $config_dest = "/opt/zextras/data/ldap/config";
     if ( -d "/opt/zextras/data/ldap/config" ) {
         progress("Installing LDAP configuration database...");
+        # Copy config structure with single tar pipe (instead of 10 individual cp calls)
         qx(mkdir -p $config_dest/cn\=config/olcDatabase\=\{2\}mdb);
-        system("cp -f $config_src/cn\=config.ldif $config_dest/cn\=config.ldif");
-        system("cp -f $config_src/cn\=config/cn\=module\{0\}.ldif $config_dest/cn\=config/cn\=module\{0\}.ldif");
-        system("cp -f $config_src/cn\=config/cn\=schema.ldif $config_dest/cn\=config/cn\=schema.ldif");
-        system("cp -f $config_src/cn\=config/olcDatabase\=\{-1\}frontend.ldif $config_dest/cn\=config/olcDatabase\=\{-1\}frontend.ldif");
-        system("cp -f $config_src/cn\=config/olcDatabase\=\{0\}config.ldif $config_dest/cn\=config/olcDatabase\=\{0\}config.ldif");
-        system("cp -f $config_src/cn\=config/olcDatabase\=\{1\}monitor.ldif $config_dest/cn\=config/olcDatabase\=\{1\}monitor.ldif");
-        system("cp -f $config_src/cn\=config/olcDatabase\=\{2\}mdb.ldif $config_dest/cn\=config/olcDatabase\=\{2\}mdb.ldif");
-        system("cp -f $config_src/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{0\}dynlist.ldif $config_dest/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{0\}dynlist.ldif");
-        system("cp -f $config_src/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{1\}unique.ldif $config_dest/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{1\}unique.ldif");
-        system("cp -f $config_src/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{2\}noopsrch.ldif $config_dest/cn\=config/olcDatabase\=\{2\}mdb/olcOverlay\=\{2\}noopsrch.ldif");
-        qx(chmod 600 $config_dest/cn\=config.ldif);
-        qx(chmod 600 $config_dest/cn\=config/*.ldif);
-        qx(chown -R zextras:zextras $config_dest);
+        system("cd $config_src && tar cf - cn=config.ldif cn=config | tar xf - -C $config_dest");
+        # Set permissions: chown everything, chmod all ldif files to 600
+        qx(chown -R zextras:zextras $config_dest && find $config_dest -name '*.ldif' -exec chmod 600 {} +);
         progress("done.\n");
     }
 }
@@ -2262,7 +2253,6 @@ sub setCreateAdmin {
 
 sub removeUnusedWebapps {
     defineInstallWebapps();
-    getInstalledWebapps();
 }
 
 sub validEmailAddress {
@@ -4045,11 +4035,13 @@ sub checkLdapBind() {
         $ldap->unbind;
         detail("Verified ldap running at $ldap_url\n");
         if ($newinstall) {
-            setLocalConfig( "ldap_url",                             $ldap_url );
-            setLocalConfig( "ldap_starttls_supported",              $starttls );
-            setLocalConfig( "zimbra_require_interprocess_security", $config{zimbra_require_interprocess_security} );
+            setLocalConfigBatch(
+                ldap_url                             => $ldap_url,
+                ldap_starttls_supported              => $starttls,
+                zimbra_require_interprocess_security => $config{zimbra_require_interprocess_security},
+                ssl_allow_untrusted_certs            => "true"
+            );
         }
-        setLocalConfig( "ssl_allow_untrusted_certs", "true" ) if ($newinstall);
         return 0;
     }
 
@@ -4207,6 +4199,32 @@ sub setLocalConfig {
     $main::loaded{lc}{$key} = $val;
     $val =~ s/\$/\\\$/g;
     runAsZextras("/opt/zextras/bin/zmlocalconfig -f -e ${key}=\'${val}\' 2> /dev/null");
+}
+
+# Batch version of setLocalConfig - sets multiple values in a single call
+# Usage: setLocalConfigBatch( key1 => val1, key2 => val2, ... )
+sub setLocalConfigBatch {
+    my %configs = @_;
+    my @args;
+
+    foreach my $key ( keys %configs ) {
+        my $val = $configs{$key};
+        next unless defined $val;
+
+        if ( exists $main::saved{lc}{$key} && $main::saved{lc}{$key} eq $val ) {
+            detail("Skipping update of unchanged value for $key=$val.");
+            next;
+        }
+        detail("Setting local config $key to $val");
+        $main::saved{lc}{$key}  = $val;
+        $main::loaded{lc}{$key} = $val;
+        $val =~ s/\$/\\\$/g;
+        push @args, "${key}=\'${val}\'";
+    }
+
+    if (@args) {
+        runAsZextras( "/opt/zextras/bin/zmlocalconfig -f -e " . join( " ", @args ) . " 2> /dev/null" );
+    }
 }
 
 sub updateKeyValue {
@@ -4411,8 +4429,10 @@ sub configLCValues {
     # we want these two entries to have the default configuration values
     # rather than being loaded from previous installs.
     if ( isEnabled("carbonio-appserver") ) {
-        setLocalConfig( "mailboxd_keystore", $config{mailboxd_keystore} );
-        setLocalConfig( "mailboxd_server",   $config{mailboxd_server} );
+        setLocalConfigBatch(
+            mailboxd_keystore => $config{mailboxd_keystore},
+            mailboxd_server   => $config{mailboxd_server}
+        );
     }
 
     if ( $configStatus{configLCValues} eq "CONFIGURED" ) {
@@ -4421,84 +4441,62 @@ sub configLCValues {
     }
 
     progress("Setting local config values...");
-    setLocalConfig( "zimbra_server_hostname",               lc( $config{HOSTNAME} ) );
-    setLocalConfig( "zimbra_require_interprocess_security", $config{zimbra_require_interprocess_security} );
 
+    # Compute LDAP URL values
+    my ( $ldap_master_url, $ldap_url, $ldap_starttls );
     if ($newinstall) {
-        if ( $config{LDAPPORT} == 636 ) {
-            setLocalConfig( "ldap_master_url",         "ldaps://$config{LDAPHOST}:$config{LDAPPORT}" );
-            setLocalConfig( "ldap_url",                "ldaps://$config{LDAPHOST}:$config{LDAPPORT}" );
-            setLocalConfig( "ldap_starttls_supported", 0 );
-        }
-        else {
-            setLocalConfig( "ldap_master_url", "ldap://$config{LDAPHOST}:$config{LDAPPORT}" );
-            if ( $config{ldap_url} eq "" ) {
-                setLocalConfig( "ldap_url", "ldap://$config{LDAPHOST}:$config{LDAPPORT}" );
-                if ( $config{zimbra_require_interprocess_security} ) {
-                    setLocalConfig( "ldap_starttls_supported", 1 );
-                }
-                else {
-                    setLocalConfig( "ldap_starttls_supported", 0 );
-                }
-            }
-            else {
-                setLocalConfig( "ldap_url", "$config{ldap_url}" );
-                if ( $config{ldap_url} !~ /^ldaps/i && $config{zimbra_require_interprocess_security} ) {
-                    setLocalConfig( "ldap_starttls_supported", 1 );
-                }
-                else {
-                    setLocalConfig( "ldap_starttls_supported", 0 );
-                }
-            }
-        }
+        my $proto = ( $config{LDAPPORT} == 636 ) ? "ldaps" : "ldap";
+        $ldap_master_url = "$proto://$config{LDAPHOST}:$config{LDAPPORT}";
+        $ldap_url = ( $config{ldap_url} ne "" ) ? $config{ldap_url} : $ldap_master_url;
+        $ldap_starttls = ( $proto eq "ldaps" || $ldap_url =~ /^ldaps/i || !$config{zimbra_require_interprocess_security} ) ? 0 : 1;
     }
 
-    # set default zmprov behaviour
-    if ( isEnabled("carbonio-appserver") && isStoreServiceNode() ) {
-        setLocalConfig( "zimbra_zmprov_default_to_ldap", "false" );
-    }
-    else {
-        setLocalConfig( "zimbra_zmprov_default_to_ldap", "true" );
-    }
-
-    setLocalConfig( "ldap_port", "$config{LDAPPORT}" );
-    setLocalConfig( "ldap_host", "$config{LDAPHOST}" );
-
+    # Get uid/gid once
     my $uid = qx(id -u zextras);
     chomp $uid;
     my $gid = qx(id -g zextras);
     chomp $gid;
-    setLocalConfig( "zimbra_uid",  $uid );
-    setLocalConfig( "zimbra_gid",  $gid );
-    setLocalConfig( "zimbra_user", "zextras" );
 
-    if ( defined $config{AVUSER} ) {
-        setLocalConfig( "av_notify_user", $config{AVUSER} );
+    # Batch all config values in one call
+    my %lc_values = (
+        zimbra_server_hostname               => lc( $config{HOSTNAME} ),
+        zimbra_require_interprocess_security => $config{zimbra_require_interprocess_security},
+        zimbra_zmprov_default_to_ldap        => ( isEnabled("carbonio-appserver") && isStoreServiceNode() ) ? "false" : "true",
+        ldap_port                            => $config{LDAPPORT},
+        ldap_host                            => $config{LDAPHOST},
+        zimbra_uid                           => $uid,
+        zimbra_gid                           => $gid,
+        zimbra_user                          => "zextras",
+        ssl_default_digest                   => $config{ssl_default_digest},
+        mailboxd_java_heap_size              => $config{MAILBOXDMEMORY},
+        mailboxd_directory                   => $config{mailboxd_directory},
+        mailboxd_keystore                    => $config{mailboxd_keystore},
+        mailboxd_server                      => $config{mailboxd_server},
+        mailboxd_truststore                  => $config{mailboxd_truststore},
+        mailboxd_truststore_password         => $config{mailboxd_truststore_password},
+        mailboxd_keystore_password           => $config{mailboxd_keystore_password},
+        zimbra_ldap_userdn                   => $config{zimbra_ldap_userdn},
+    );
+
+    # Add LDAP URL values for new installs
+    if ($newinstall) {
+        $lc_values{ldap_master_url}           = $ldap_master_url;
+        $lc_values{ldap_url}                  = $ldap_url;
+        $lc_values{ldap_starttls_supported}   = $ldap_starttls;
+        $lc_values{ssl_allow_untrusted_certs} = "true";
+        $lc_values{ssl_allow_mismatched_certs} = "true";
     }
-    if ( defined $config{AVDOMAIN} ) {
-        setLocalConfig( "av_notify_domain", $config{AVDOMAIN} );
-    }
 
-    setLocalConfig( "ssl_allow_untrusted_certs",  "true" ) if ($newinstall);
-    setLocalConfig( "ssl_allow_mismatched_certs", "true" ) if ($newinstall);
-    setLocalConfig( "ssl_default_digest",         $config{ssl_default_digest} );
+    # Add optional values
+    $lc_values{av_notify_user}       = $config{AVUSER}   if defined $config{AVUSER};
+    $lc_values{av_notify_domain}     = $config{AVDOMAIN} if defined $config{AVDOMAIN};
+    $lc_values{ldap_dit_base_dn_config} = $config{ldap_dit_base_dn_config}
+        if $config{ldap_dit_base_dn_config} ne "cn=zimbra";
 
-    setLocalConfig( "mailboxd_java_heap_size",      $config{MAILBOXDMEMORY} );
-    setLocalConfig( "mailboxd_directory",           $config{mailboxd_directory} );
-    setLocalConfig( "mailboxd_keystore",            $config{mailboxd_keystore} );
-    setLocalConfig( "mailboxd_server",              $config{mailboxd_server} );
-    setLocalConfig( "mailboxd_truststore",          "$config{mailboxd_truststore}" );
-    setLocalConfig( "mailboxd_truststore_password", "$config{mailboxd_truststore_password}" );
-    setLocalConfig( "mailboxd_keystore_password",   "$config{mailboxd_keystore_password}" );
-
-    setLocalConfig( "zimbra_ldap_userdn",      "$config{zimbra_ldap_userdn}" );
-    setLocalConfig( "ldap_dit_base_dn_config", "$config{ldap_dit_base_dn_config}" )
-      if ( $config{ldap_dit_base_dn_config} ne "cn=zimbra" );
+    setLocalConfigBatch(%lc_values);
 
     configLog("configLCValues");
-
     progress("done.\n");
-
 }
 
 sub configCASetup {
@@ -4512,8 +4510,10 @@ sub configCASetup {
 
         # fetch it from ldap if ldap has been configed
         progress("Updating ldap_root_password and zimbra_ldap_password...");
-        setLocalConfig( "ldap_root_password",   $config{LDAPROOTPASS} );
-        setLocalConfig( "zimbra_ldap_password", $config{LDAPADMINPASS} );
+        setLocalConfigBatch(
+            ldap_root_password   => $config{LDAPROOTPASS},
+            zimbra_ldap_password => $config{LDAPADMINPASS}
+        );
         progress("done.\n");
     }
     progress("Setting up CA...");
@@ -4648,9 +4648,11 @@ sub configSetupLdap {
         # enable replica for both new and upgrade installs if we are adding ldap
         if ( $config{LDAPHOST} ne $config{HOSTNAME} || -f "/opt/zextras/.enable_replica" ) {
             progress("Updating ldap_root_password and zimbra_ldap_password...");
-            setLocalConfig( "ldap_root_password",        $config{LDAPROOTPASS} );
-            setLocalConfig( "zimbra_ldap_password",      $config{LDAPADMINPASS} );
-            setLocalConfig( "ldap_replication_password", "$config{LDAPREPPASS}" );
+            setLocalConfigBatch(
+                ldap_root_password        => $config{LDAPROOTPASS},
+                zimbra_ldap_password      => $config{LDAPADMINPASS},
+                ldap_replication_password => $config{LDAPREPPASS}
+            );
             if ( $newinstall && $config{LDAPREPLICATIONTYPE} eq "mmr" ) {
                 setLdapPasswordHelper( "Postfix", "-p", "LDAPPOSTPASS", "ldap_postfix_password", 1 )     if $ldapPostChanged;
                 setLdapPasswordHelper( "amavis", "-a", "LDAPAMAVISPASS", "ldap_amavis_password", 1 )     if $ldapAmavisChanged;
@@ -4660,16 +4662,13 @@ sub configSetupLdap {
             progress("Enabling ldap replication...");
             if ( !-f "/opt/zextras/.enable_replica" ) {
                 if ( $newinstall && $config{LDAPREPLICATIONTYPE} eq "mmr" ) {
-                    setLocalConfig( "ldap_is_master", "true" );
                     my $ldapMasterUrl = getLocalConfig("ldap_master_url");
-                    my $proto         = "ldap";
-                    if ( $config{LDAPPORT} == "636" ) {
-                        $proto = "ldaps";
-                    }
-                    setLocalConfig( "ldap_url", "$proto://$config{HOSTNAME}:$config{LDAPPORT} $ldapMasterUrl" );
-                    if ( $ldapMasterUrl !~ /\/$/ ) {
-                        $ldapMasterUrl = $ldapMasterUrl . "/";
-                    }
+                    my $proto = ( $config{LDAPPORT} == 636 ) ? "ldaps" : "ldap";
+                    setLocalConfigBatch(
+                        ldap_is_master => "true",
+                        ldap_url       => "$proto://$config{HOSTNAME}:$config{LDAPPORT} $ldapMasterUrl"
+                    );
+                    $ldapMasterUrl .= "/" unless $ldapMasterUrl =~ /\/$/;
                     if ( isSystemd() ) {
                         system("systemctl start carbonio-openldap.service");
                     }
@@ -4720,12 +4719,14 @@ sub configSetupLdap {
     }
     else {
         detail("Updating ldap user passwords\n");
-        setLocalConfig( "ldap_root_password",        $config{LDAPROOTPASS} );
-        setLocalConfig( "zimbra_ldap_password",      $config{LDAPADMINPASS} );
-        setLocalConfig( "ldap_replication_password", "$config{LDAPREPPASS}" );
-        setLocalConfig( "ldap_postfix_password",     "$config{LDAPPOSTPASS}" );
-        setLocalConfig( "ldap_amavis_password",      "$config{LDAPAMAVISPASS}" );
-        setLocalConfig( "ldap_nginx_password",       "$config{ldap_nginx_password}" );
+        setLocalConfigBatch(
+            ldap_root_password        => $config{LDAPROOTPASS},
+            zimbra_ldap_password      => $config{LDAPADMINPASS},
+            ldap_replication_password => $config{LDAPREPPASS},
+            ldap_postfix_password     => $config{LDAPPOSTPASS},
+            ldap_amavis_password      => $config{LDAPAMAVISPASS},
+            ldap_nginx_password       => $config{ldap_nginx_password}
+        );
     }
 
     configLog("configSetupLdap");
@@ -5461,8 +5462,10 @@ sub configInitMta {
     if ( isEnabled("carbonio-mta") ) {
         progress("Initializing mta config...");
 
-        setLocalConfig( "postfix_mail_owner",   $config{postfix_mail_owner} );
-        setLocalConfig( "postfix_setgid_group", $config{postfix_setgid_group} );
+        setLocalConfigBatch(
+            postfix_mail_owner   => $config{postfix_mail_owner},
+            postfix_setgid_group => $config{postfix_setgid_group}
+        );
 
         runAsZextras("/opt/zextras/libexec/zmmtainit $config{LDAPHOST} $config{LDAPPORT}");
         progress("done.\n");
