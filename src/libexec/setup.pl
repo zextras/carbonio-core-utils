@@ -508,24 +508,16 @@ sub isServiceEnabled {
 
 sub isEnabled {
     my $package = shift;
-    detail("checking isEnabled $package");
 
-    # if its already defined return;
+    # if its already defined return without logging (reduces log noise)
     if ( defined $enabledPackages{$package} ) {
-        if ( $enabledPackages{$package} eq "Enabled" ) {
-            detail("$package is enabled");
-            return 1;
-        }
-        else {
-            detail("$package is not enabled");
-            return undef;
-        }
+        return ( $enabledPackages{$package} eq "Enabled" ) ? 1 : undef;
     }
-    else {
-        detail("$package not in enabled cache");
-        my $packages = join( " ", keys %enabledPackages );
-        detail("enabled packages $packages");
-    }
+
+    # Only log on cache miss
+    detail("checking isEnabled $package (cache miss)");
+    my $packages = join( " ", keys %enabledPackages );
+    detail("enabled packages $packages");
 
     # lookup service in ldap
     if ( $newinstall == 0 ) {
@@ -4524,6 +4516,13 @@ sub updatePasswordsInLocalConfig {
 
     if ( isEnabled("carbonio-directory-server") ) {
 
+        # On new install where we're the LDAP host and LDAP isn't configured yet,
+        # skip password setting here - it will be done after LDAP is started in configSetupLdap
+        if ( $newinstall && !$ldapConfigured && ( $config{LDAPHOST} eq $config{HOSTNAME} ) ) {
+            detail("Skipping password update - LDAP not yet started, will be set after initialization\n");
+            return;
+        }
+
         # zmldappasswd starts ldap and re-applies the ldif
         if ( $ldapRootPassChanged || $ldapAdminPassChanged || $ldapRepChanged || $ldapPostChanged || $ldapAmavisChanged || $ldapNginxChanged ) {
 
@@ -4991,6 +4990,14 @@ sub configSaveCert {
 
 sub configInstallCert {
     my $rc;
+
+    # Determine which certificates need to be installed
+    my $needStoreInstall = 0;
+    my $needMtaInstall   = 0;
+    my $needLdapInstall  = 0;
+    my $needProxyInstall = 0;
+
+    # Check Store/Mailbox certificate
     if ( $configStatus{configInstallCertStore} eq "CONFIGURED" && $needNewCert eq "" ) {
         configLog("configInstallCertStore");
     }
@@ -5000,46 +5007,29 @@ sub configInstallCert {
               if ( !-f "$config{mailboxd_keystore}" );
             detail("$needNewCert was ne \"\".")
               if ( $needNewCert ne "" );
-            progress("Installing mailboxd SSL certificates...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deploycrt $ssl_cert_type");
-            if ( $rc != 0 ) {
-                progress("failed.\n");
-                exit 1;
-            }
-            else {
-                progress("done.\n");
-                configLog("configInstallCertStore");
-            }
+            $needStoreInstall = 1;
         }
         else {
             configLog("configInstallCertStore");
         }
     }
 
+    # Check MTA certificate
     if ( $configStatus{configInstallCertMTA} eq "CONFIGURED" && $needNewCert eq "" ) {
         configLog("configInstallCertMTA");
     }
     elsif ( isInstalled("carbonio-mta") ) {
-
         if ( !( -f "/opt/zextras/conf/smtpd.key" || -f "/opt/zextras/conf/smtpd.crt" )
             || $needNewCert ne "" )
         {
-            progress("Installing MTA SSL certificates...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deploycrt $ssl_cert_type");
-            if ( $rc != 0 ) {
-                progress("failed.\n");
-                exit 1;
-            }
-            else {
-                progress("done.\n");
-                configLog("configInstallCertMTA");
-            }
+            $needMtaInstall = 1;
         }
         else {
             configLog("configInstallCertMTA");
         }
     }
 
+    # Check LDAP certificate
     if ( $configStatus{configInstallCertLDAP} eq "CONFIGURED" && $needNewCert eq "" ) {
         configLog("configInstallCertLDAP");
     }
@@ -5047,24 +5037,14 @@ sub configInstallCert {
         if ( !( -f "/opt/zextras/conf/slapd.key" || -f "/opt/zextras/conf/slapd.crt" )
             || $needNewCert ne "" )
         {
-            progress("Installing LDAP SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deploycrt $ssl_cert_type");
-            if ( $rc != 0 ) {
-                progress("failed.\n");
-                exit 1;
-            }
-            else {
-                progress("done.\n");
-                stopLdap()  if ($ldapConfigured);
-                startLdap() if ($ldapConfigured);
-                configLog("configInstallCertLDAP");
-            }
+            $needLdapInstall = 1;
         }
         else {
             configLog("configInstallCertLDAP");
         }
     }
 
+    # Check Proxy certificate
     if ( $configStatus{configInstallCertProxy} eq "CONFIGURED" && $needNewCert eq "" ) {
         configLog("configInstallCertProxy");
     }
@@ -5072,19 +5052,37 @@ sub configInstallCert {
         if ( !( -f "/opt/zextras/conf/nginx.key" || -f "/opt/zextras/conf/nginx.crt" )
             || $needNewCert ne "" )
         {
-            progress("Installing Proxy SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deploycrt $ssl_cert_type");
-            if ( $rc != 0 ) {
-                progress("failed.\n");
-                exit 1;
-            }
-            else {
-                progress("done.\n");
-                configLog("configInstallCertProxy");
-            }
+            $needProxyInstall = 1;
         }
         else {
             configLog("configInstallCertProxy");
+        }
+    }
+
+    # Run deploycrt only once if any certificate needs to be installed
+    if ( $needStoreInstall || $needMtaInstall || $needLdapInstall || $needProxyInstall ) {
+        my @components;
+        push @components, "mailboxd" if $needStoreInstall;
+        push @components, "MTA"      if $needMtaInstall;
+        push @components, "LDAP"     if $needLdapInstall;
+        push @components, "Proxy"    if $needProxyInstall;
+        progress( "Installing SSL certificates for: " . join( ", ", @components ) . "..." );
+
+        $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deploycrt $ssl_cert_type");
+        if ( $rc != 0 ) {
+            progress("failed.\n");
+            exit 1;
+        }
+        else {
+            progress("done.\n");
+            configLog("configInstallCertStore") if $needStoreInstall;
+            configLog("configInstallCertMTA")   if $needMtaInstall;
+            if ($needLdapInstall) {
+                stopLdap()  if ($ldapConfigured);
+                startLdap() if ($ldapConfigured);
+                configLog("configInstallCertLDAP");
+            }
+            configLog("configInstallCertProxy") if $needProxyInstall;
         }
     }
 
@@ -5158,10 +5156,16 @@ sub configSetStoreDefaults {
     }
     if ( $newinstall && ( $config{zimbraWebProxy} eq "TRUE" || $config{zimbraMailProxy} eq "TRUE" ) ) {
         if ( $config{zimbraMailProxy} eq "TRUE" ) {
-            runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -m -e -o " . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} " . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}" );
+            my $rc = runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -m -e -o " . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} " . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}" );
+            if ( $rc != 0 ) {
+                progress("Warning: zmproxyconfig for mail proxy returned non-zero exit code: $rc\n");
+            }
         }
         if ( $config{zimbraWebProxy} eq "TRUE" ) {
-            runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -w -e -o " . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}" );
+            my $rc = runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -w -e -o " . "-x $config{PROXYMODE} " . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}" );
+            if ( $rc != 0 ) {
+                progress("Warning: zmproxyconfig for web proxy returned non-zero exit code: $rc\n");
+            }
         }
     }
 }
