@@ -219,12 +219,7 @@ else {
 }
 
 close LOGFILE;
-chmod 0600, $logfile;
-if ( -d "/opt/zextras/log" ) {
-    progress("Moving $logfile to /opt/zextras/log\n");
-    system("cp -f $logfile /opt/zextras/log/");
-    system("chown zextras:zextras /opt/zextras/log/$logFileName");
-}
+moveLogToZextras();
 
 ################################################################
 # End Main
@@ -259,6 +254,55 @@ sub detail {
     open( LOG, ">>$logfile" );
     print LOG "$date $msg\n";
     close(LOG);
+}
+
+# Helper function to print done/failed based on return code
+# Usage: progressResult($rc) or progressResult($rc, 1) to exit on failure
+sub progressResult {
+    my ( $rc, $exitOnFail ) = @_;
+    if ( $rc != 0 ) {
+        progress("failed.\n");
+        exit 1 if $exitOnFail;
+        return 0;
+    }
+    progress("done.\n");
+    return 1;
+}
+
+# Helper function to set LDAP passwords - consolidates repeated pattern
+# $name: display name (e.g., "replication", "Postfix")
+# $flag: zmldappasswd flag (e.g., "-l", "-p", "-a", "-n")
+# $configKey: config hash key for the password
+# $localConfigKey: localconfig key for remote LDAP case
+# $quotePassword: whether to quote the password (for post-LDAP-init calls)
+sub setLdapPasswordHelper {
+    my ( $name, $flag, $configKey, $localConfigKey, $quotePassword ) = @_;
+    progress("Setting $name password...");
+    if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
+        my $pass = $quotePassword ? "'$config{$configKey}'" : $config{$configKey};
+        runAsZextras("/opt/zextras/bin/zmldappasswd $flag $pass");
+    }
+    else {
+        setLocalConfig( $localConfigKey, "$config{$configKey}" );
+    }
+    progress("done.\n");
+}
+
+# Track if log has been moved to avoid duplication
+my $logFileMoved = 0;
+
+sub moveLogToZextras {
+    return if $logFileMoved;
+    chmod 0600, $logfile;
+    if ( -d "/opt/zextras/log" ) {
+        progress("Moving $logfile to /opt/zextras/log\n");
+        system("cp -f $logfile /opt/zextras/log/");
+        system("chown zextras:zextras /opt/zextras/log/$logFileName");
+    }
+    else {
+        progress("Operations logged to $logfile\n");
+    }
+    $logFileMoved = 1;
 }
 
 sub defineInstallWebapps {
@@ -4491,23 +4535,11 @@ sub configCASetup {
     $needNewCert = "-new" if ( !-d "/opt/zextras/ssl/carbonio/ca" );
 
     my $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createca $needNewCA");
-    if ( $rc != 0 ) {
-        progress("failed.\n");
-        exit 1;
-    }
-    else {
-        progress("done.\n");
-    }
+    progressResult( $rc, 1 );
 
     progress("Deploying CA to /opt/zextras/conf/ca ...");
-    my $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deployca -localonly");
-    if ( $rc != 0 ) {
-        progress("failed.\n");
-        exit 1;
-    }
-    else {
-        progress("done.\n");
-    }
+    $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deployca -localonly");
+    progressResult( $rc, 1 );
 
     configLog("configCASetup");
 }
@@ -4531,56 +4563,11 @@ sub updatePasswordsInLocalConfig {
                 runAsZextras("/opt/zextras/bin/zmldappasswd -r $config{LDAPROOTPASS}");
                 progress("done.\n");
             }
-            if ($ldapAdminPassChanged) {
-                progress("Setting ldap admin password...");
-                if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-                    runAsZextras("/opt/zextras/bin/zmldappasswd $config{LDAPADMINPASS}");
-                }
-                else {
-                    setLocalConfig( "zimbra_ldap_password", "$config{LDAPADMINPASS}" );
-                }
-                progress("done.\n");
-            }
-            if ( $ldapRepChanged == 1 ) {
-                progress("Setting replication password...");
-                if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -l $config{LDAPREPPASS}");
-                }
-                else {
-                    setLocalConfig( "ldap_replication_password", "$config{LDAPREPPASS}" );
-                }
-                progress("done.\n");
-            }
-            if ( $ldapPostChanged == 1 ) {
-                progress("Setting Postfix password...");
-                if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -p $config{LDAPPOSTPASS}");
-                }
-                else {
-                    setLocalConfig( "ldap_postfix_password", "$config{LDAPPOSTPASS}" );
-                }
-                progress("done.\n");
-            }
-            if ( $ldapAmavisChanged == 1 ) {
-                progress("Setting amavis password...");
-                if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -a $config{LDAPAMAVISPASS}");
-                }
-                else {
-                    setLocalConfig( "ldap_amavis_password", "$config{LDAPAMAVISPASS}" );
-                }
-                progress("done.\n");
-            }
-            if ( $ldapNginxChanged == 1 ) {
-                progress("Setting nginx password...");
-                if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -n $config{ldap_nginx_password}");
-                }
-                else {
-                    setLocalConfig( "ldap_nginx_password", "$config{ldap_nginx_password}" );
-                }
-                progress("done.\n");
-            }
+            setLdapPasswordHelper( "ldap admin", "", "LDAPADMINPASS", "zimbra_ldap_password" )         if $ldapAdminPassChanged;
+            setLdapPasswordHelper( "replication", "-l", "LDAPREPPASS", "ldap_replication_password" )  if $ldapRepChanged;
+            setLdapPasswordHelper( "Postfix", "-p", "LDAPPOSTPASS", "ldap_postfix_password" )         if $ldapPostChanged;
+            setLdapPasswordHelper( "amavis", "-a", "LDAPAMAVISPASS", "ldap_amavis_password" )         if $ldapAmavisChanged;
+            setLdapPasswordHelper( "nginx", "-n", "ldap_nginx_password", "ldap_nginx_password" )     if $ldapNginxChanged;
         }
         else {
             progress("Stopping ldap...");
@@ -4598,40 +4585,12 @@ sub updatePasswordsInLocalConfig {
         # this sets the password for each component if they are enabled, use full in case of multiserver
         # especially when we add components to existing configured node
         if ( isEnabled("carbonio-mta") && ( $ldapPostChanged || $ldapAmavisChanged ) ) {
-
-            if ( $ldapPostChanged == 1 ) {
-                progress("Setting postfix password...");
-                if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -p $config{LDAPPOSTPASS}");
-                }
-                else {
-                    setLocalConfig( "ldap_postfix_password", "$config{LDAPPOSTPASS}" );
-                }
-                progress("done.\n");
-            }
-            if ( $ldapAmavisChanged == 1 ) {
-                progress("Setting amavis password...");
-                if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -a $config{LDAPAMAVISPASS}");
-                }
-                else {
-                    setLocalConfig( "ldap_amavis_password", "$config{LDAPAMAVISPASS}" );
-                }
-                progress("done.\n");
-            }
+            setLdapPasswordHelper( "postfix", "-p", "LDAPPOSTPASS", "ldap_postfix_password" ) if $ldapPostChanged;
+            setLdapPasswordHelper( "amavis", "-a", "LDAPAMAVISPASS", "ldap_amavis_password" ) if $ldapAmavisChanged;
         }
 
-        if ( isEnabled("carbonio-proxy") && ($ldapNginxChanged) ) {
-            if ( $ldapNginxChanged == 1 ) {
-                progress("Setting nginx password...");
-                if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -n $config{ldap_nginx_password}");
-                }
-                else {
-                    setLocalConfig( "ldap_nginx_password", "$config{ldap_nginx_password}" );
-                }
-                progress("done.\n");
-            }
+        if ( isEnabled("carbonio-proxy") && $ldapNginxChanged ) {
+            setLdapPasswordHelper( "nginx", "-n", "ldap_nginx_password", "ldap_nginx_password" );
         }
     }
 }
@@ -4664,26 +4623,11 @@ sub configSetupLdap {
         }
         else {
             progress("done.\n");
-            if ( $ldapRepChanged == 1 ) {
-                progress("Setting replication password...");
-                runAsZextras("/opt/zextras/bin/zmldappasswd -l \'$config{LDAPREPPASS}\'");
-                progress("done.\n");
-            }
-            if ( $ldapPostChanged == 1 ) {
-                progress("Setting Postfix password...");
-                runAsZextras("/opt/zextras/bin/zmldappasswd -p \'$config{LDAPPOSTPASS}\'");
-                progress("done.\n");
-            }
-            if ( $ldapAmavisChanged == 1 ) {
-                progress("Setting amavis password...");
-                runAsZextras("/opt/zextras/bin/zmldappasswd -a \'$config{LDAPAMAVISPASS}\'");
-                progress("done.\n");
-            }
-            if ( $ldapNginxChanged == 1 ) {
-                progress("Setting nginx password...");
-                runAsZextras("/opt/zextras/bin/zmldappasswd -n \'$config{ldap_nginx_password}\'");
-                progress("done.\n");
-            }
+            # Set passwords after LDAP init (use quoted passwords for shell safety)
+            setLdapPasswordHelper( "replication", "-l", "LDAPREPPASS", "ldap_replication_password", 1 ) if $ldapRepChanged;
+            setLdapPasswordHelper( "Postfix", "-p", "LDAPPOSTPASS", "ldap_postfix_password", 1 )        if $ldapPostChanged;
+            setLdapPasswordHelper( "amavis", "-a", "LDAPAMAVISPASS", "ldap_amavis_password", 1 )        if $ldapAmavisChanged;
+            setLdapPasswordHelper( "nginx", "-n", "ldap_nginx_password", "ldap_nginx_password", 1 )    if $ldapNginxChanged;
         }
         if ( $config{FORCEREPLICATION} eq "yes" ) {
             my $rc   = system("/opt/zextras/libexec/zmldapenablereplica");
@@ -4708,21 +4652,9 @@ sub configSetupLdap {
             setLocalConfig( "zimbra_ldap_password",      $config{LDAPADMINPASS} );
             setLocalConfig( "ldap_replication_password", "$config{LDAPREPPASS}" );
             if ( $newinstall && $config{LDAPREPLICATIONTYPE} eq "mmr" ) {
-                if ( $ldapPostChanged == 1 ) {
-                    progress("Setting Postfix password...");
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -p \'$config{LDAPPOSTPASS}\'");
-                    progress("done.\n");
-                }
-                if ( $ldapAmavisChanged == 1 ) {
-                    progress("Setting amavis password...");
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -a \'$config{LDAPAMAVISPASS}\'");
-                    progress("done.\n");
-                }
-                if ( $ldapNginxChanged == 1 ) {
-                    progress("Setting nginx password...");
-                    runAsZextras("/opt/zextras/bin/zmldappasswd -n \'$config{ldap_nginx_password}\'");
-                    progress("done.\n");
-                }
+                setLdapPasswordHelper( "Postfix", "-p", "LDAPPOSTPASS", "ldap_postfix_password", 1 )     if $ldapPostChanged;
+                setLdapPasswordHelper( "amavis", "-a", "LDAPAMAVISPASS", "ldap_amavis_password", 1 )     if $ldapAmavisChanged;
+                setLdapPasswordHelper( "nginx", "-n", "ldap_nginx_password", "ldap_nginx_password", 1 ) if $ldapNginxChanged;
             }
             progress("done.\n");
             progress("Enabling ldap replication...");
@@ -4824,13 +4756,7 @@ sub configSaveCA {
     }
     progress("Saving CA in ldap...");
     my $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deployca");
-    if ( $rc != 0 ) {
-        progress("failed.\n");
-        exit 1;
-    }
-    else {
-        progress("done.\n");
-    }
+    progressResult( $rc, 1 );
     configLog("configSaveCA");
 }
 
@@ -4860,6 +4786,14 @@ sub configCreateCert {
 
     my $rc;
 
+    # Helper to create certificate for a component
+    my $createCertFor = sub {
+        my ($component, $msg) = @_;
+        progress("$msg...");
+        $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
+        progressResult( $rc, 1 );
+    };
+
     if ( isInstalled("carbonio-appserver") ) {
         if ( !-f "$config{mailboxd_keystore}" && !-f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
             if ( !-d "$config{mailboxd_directory}" ) {
@@ -4867,101 +4801,37 @@ sub configCreateCert {
                 qx(chown -R zextras:zextras $config{mailboxd_directory});
                 qx(chmod 744 $config{mailboxd_directory}/etc);
             }
-            progress("Creating SSL carbonio-appserver certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
-            if ( $rc != 0 ) {
-                progress("failed.\n");
-                exit 1;
-            }
-            else {
-                progress("done.\n");
-            }
+            $createCertFor->( "appserver", "Creating SSL carbonio-appserver certificate" );
         }
         elsif ( $needNewCert ne "" && $ssl_cert_type eq "self" ) {
-            progress("Creating new carbonio-appserver SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
-            if ( $rc != 0 ) {
-                progress("failed.\n");
-                exit 1;
-            }
-            else {
-                progress("done.\n");
-            }
+            $createCertFor->( "appserver", "Creating new carbonio-appserver SSL certificate" );
         }
     }
 
     if ( isInstalled("carbonio-directory-server") ) {
         if ( !-f "/opt/zextras/conf/slapd.crt" && !-f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
-            progress("Creating carbonio-directory-server SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
-            if ( $rc != 0 ) {
-                progress("failed.\n");
-                exit 1;
-            }
-            else {
-                progress("done.\n");
-            }
+            $createCertFor->( "ldap", "Creating carbonio-directory-server SSL certificate" );
         }
         elsif ( $needNewCert ne "" && $ssl_cert_type eq "self" ) {
-            progress("Creating new carbonio-directory-server SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
-            if ( $rc != 0 ) {
-                progress("failed.\n");
-                exit 1;
-            }
-            else {
-                progress("done.\n");
-            }
+            $createCertFor->( "ldap", "Creating new carbonio-directory-server SSL certificate" );
         }
     }
 
     if ( isInstalled("carbonio-mta") ) {
         if ( !-f "/opt/zextras/conf/smtpd.crt" && !-f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
-            progress("Creating carbonio-mta SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
-            if ( $rc != 0 ) {
-                progress("failed.\n");
-                exit 1;
-            }
-            else {
-                progress("done.\n");
-            }
+            $createCertFor->( "mta", "Creating carbonio-mta SSL certificate" );
         }
         elsif ( $needNewCert ne "" && $ssl_cert_type eq "self" ) {
-            progress("Creating new carbonio-mta SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
-            if ( $rc != 0 ) {
-                progress("failed.\n");
-                exit 1;
-            }
-            else {
-                progress("done.\n");
-            }
+            $createCertFor->( "mta", "Creating new carbonio-mta SSL certificate" );
         }
     }
 
     if ( isInstalled("carbonio-proxy") ) {
         if ( !-f "/opt/zextras/conf/nginx.crt" && !-f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
-            progress("Creating carbonio-proxy SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
-            if ( $rc != 0 ) {
-                progress("failed.\n");
-                exit 1;
-            }
-            else {
-                progress("done.\n");
-            }
+            $createCertFor->( "proxy", "Creating carbonio-proxy SSL certificate" );
         }
         elsif ( $needNewCert ne "" && $ssl_cert_type eq "self" ) {
-            progress("Creating new carbonio-proxy SSL certificate...");
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
-            if ( $rc != 0 ) {
-                progress("failed.\n");
-                exit 1;
-            }
-            else {
-                progress("done.\n");
-            }
+            $createCertFor->( "proxy", "Creating new carbonio-proxy SSL certificate" );
         }
     }
 
@@ -4977,13 +4847,7 @@ sub configSaveCert {
     if ( -f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
         progress("Saving SSL Certificate in ldap...");
         my $rc = runAsZextras("/opt/zextras/bin/zmcertmgr savecrt $ssl_cert_type");
-        if ( $rc != 0 ) {
-            progress("failed.\n");
-            exit 1;
-        }
-        else {
-            progress("done.\n");
-        }
+        progressResult( $rc, 1 );
         configLog("configSaveCert");
     }
 }
@@ -5069,21 +4933,15 @@ sub configInstallCert {
         progress( "Installing SSL certificates for: " . join( ", ", @components ) . "..." );
 
         $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deploycrt $ssl_cert_type");
-        if ( $rc != 0 ) {
-            progress("failed.\n");
-            exit 1;
+        progressResult( $rc, 1 );
+        configLog("configInstallCertStore") if $needStoreInstall;
+        configLog("configInstallCertMTA")   if $needMtaInstall;
+        if ($needLdapInstall) {
+            stopLdap()  if ($ldapConfigured);
+            startLdap() if ($ldapConfigured);
+            configLog("configInstallCertLDAP");
         }
-        else {
-            progress("done.\n");
-            configLog("configInstallCertStore") if $needStoreInstall;
-            configLog("configInstallCertMTA")   if $needMtaInstall;
-            if ($needLdapInstall) {
-                stopLdap()  if ($ldapConfigured);
-                startLdap() if ($ldapConfigured);
-                configLog("configInstallCertLDAP");
-            }
-            configLog("configInstallCertProxy") if $needProxyInstall;
-        }
+        configLog("configInstallCertProxy") if $needProxyInstall;
     }
 
 }
@@ -5745,7 +5603,6 @@ sub failConfig {
 sub applyConfig {
     defineInstallWebapps();
     saveConfig();
-    progress("Operations logged to $logfile\n");
 
     if ($newinstall) {
         open( H, ">>/opt/zextras/.install_history" );
@@ -5937,15 +5794,7 @@ sub applyConfig {
     getSystemStatus();
 
     progress("\n\n");
-    chmod 0600, $logfile;
-    if ( -d "/opt/zextras/log" ) {
-        progress("Moving $logfile to /opt/zextras/log\n");
-        system("cp -f $logfile /opt/zextras/log/");
-        system("chown zextras:zextras /opt/zextras/log/$logFileName");
-    }
-    else {
-        progress("Operations logged to $logfile\n");
-    }
+    moveLogToZextras();
     progress("\n\n");
     if ( !defined( $options{c} ) ) {
         ask( "Configuration complete - press return to exit", "" );
