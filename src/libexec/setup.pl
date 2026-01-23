@@ -331,6 +331,44 @@ sub setProxyPortHelper {
     }
 }
 
+# Helper to resolve port collision for a port/proxy pair
+# When proxyEnabled: port gets alternate at standard, proxy gets standard at alternate
+# When !proxyEnabled: proxy gets alternate at standard, port gets standard at alternate
+sub resolvePortPairCollision {
+    my ( $portKey, $proxyKey, $standardVal, $alternateVal, $proxyEnabled ) = @_;
+    return unless $config{$portKey} == $config{$proxyKey};
+    if ( $config{$portKey} == $standardVal ) {
+        if ($proxyEnabled) { $config{$portKey} = $alternateVal; }
+        else               { $config{$proxyKey} = $alternateVal; }
+    }
+    elsif ( $config{$portKey} == $alternateVal ) {
+        if ($proxyEnabled) { $config{$proxyKey} = $standardVal; }
+        else               { $config{$portKey} = $standardVal; }
+    }
+}
+
+# Helper to resolve port collision using offset-based logic for setUseProxy
+# When proxyEnabled=1: if ports equal, add offset to port; if port+offset==proxy, swap with subtract
+# When proxyEnabled=0: if proxy+offset==port, swap with add
+sub resolvePortOffsetCollision {
+    my ( $portKey, $proxyKey, $offset, $proxyEnabled ) = @_;
+    if ($proxyEnabled) {
+        if ( $config{$proxyKey} == $config{$portKey} ) {
+            $config{$portKey} = $offset + $config{$proxyKey};
+        }
+        if ( $config{$portKey} + $offset == $config{$proxyKey} ) {
+            $config{$portKey}  = $config{$proxyKey};
+            $config{$proxyKey} = $config{$proxyKey} - $offset;
+        }
+    }
+    else {
+        if ( $config{$proxyKey} + $offset == $config{$portKey} ) {
+            $config{$portKey}  = $config{$proxyKey};
+            $config{$proxyKey} = $config{$proxyKey} + $offset;
+        }
+    }
+}
+
 # Helper to ask for domain-validated user account - consolidates 4 nearly identical functions
 sub askDomainUserHelper {
     my ( $prompt, $configKey ) = @_;
@@ -1027,93 +1065,26 @@ sub setLdapDefaults {
 
     if ( isInstalled("carbonio-proxy") && isEnabled("carbonio-proxy") ) {
         if ( $config{MAILPROXY} eq "TRUE" ) {
-            if ( $config{IMAPPORT} == $config{IMAPPROXYPORT} && $config{IMAPPORT} == 143 ) {
-                $config{IMAPPORT} = 7143;
-            }
-            if ( $config{IMAPSSLPORT} == $config{IMAPSSLPROXYPORT} && $config{IMAPSSLPORT} == 993 ) {
-                $config{IMAPSSLPORT} = 7993;
-            }
-            if ( $config{POPPORT} == $config{POPPROXYPORT} && $config{POPPORT} == 110 ) {
-                $config{POPPORT} = 7110;
-            }
-            if ( $config{POPSSLPORT} == $config{POPSSLPROXYPORT} && $config{POPSSLPORT} == 995 ) {
-                $config{POPSSLPORT} = 7995;
-            }
-            if ( $config{IMAPPORT} == $config{IMAPPROXYPORT} && $config{IMAPPORT} == 7143 ) {
-                $config{IMAPPROXYPORT} = 143;
-            }
-            if ( $config{IMAPSSLPORT} == $config{IMAPSSLPROXYPORT} && $config{IMAPSSLPORT} == 7993 ) {
-                $config{IMAPSSLPROXYPORT} = 993;
-            }
-            if ( $config{POPPORT} == $config{POPPROXYPORT} && $config{POPPORT} == 7110 ) {
-                $config{POPPROXYPORT} = 110;
-            }
-            if ( $config{POPSSLPORT} == $config{POPSSLPROXYPORT} && $config{POPSSLPORT} == 7995 ) {
-                $config{POPSSLPROXYPORT} = 995;
-            }
+            resolvePortPairCollision( 'IMAPPORT',    'IMAPPROXYPORT',    143,  7143, 1 );
+            resolvePortPairCollision( 'IMAPSSLPORT', 'IMAPSSLPROXYPORT', 993,  7993, 1 );
+            resolvePortPairCollision( 'POPPORT',     'POPPROXYPORT',     110,  7110, 1 );
+            resolvePortPairCollision( 'POPSSLPORT',  'POPSSLPROXYPORT',  995,  7995, 1 );
         }
         if ( $config{HTTPPROXY} eq "TRUE" ) {
-
             # Add proxy component to a configured node
-            if ( ( $config{HTTPPORT} == 80 || $config{HTTPPORT} == 0 ) && $config{HTTPPROXYPORT} == 0 ) {
-                $config{HTTPPROXYPORT} = 80;
-            }
-
-            if ( ( $config{HTTPSPORT} == 443 || $config{HTTPSPORT} == 0 ) && $config{HTTPSPROXYPORT} == 0 ) {
-                $config{HTTPSPROXYPORT} = 443;
-            }
-
-            if ( $config{HTTPPORT} == $config{HTTPPROXYPORT} && $config{HTTPPORT} == 80 ) {
-                $config{HTTPPORT} = 8080;
-            }
-            if ( $config{HTTPSPORT} == $config{HTTPSPROXYPORT} && $config{HTTPSPORT} == 443 ) {
-                $config{HTTPSPORT} = 8443;
-            }
-            if ( $config{HTTPPORT} == $config{HTTPPROXYPORT} && $config{HTTPPORT} == 8080 ) {
-                $config{HTTPPROXYPORT} = 80;
-            }
-            if ( $config{HTTPSPORT} == $config{HTTPSPROXYPORT} && $config{HTTPSPORT} == 8443 ) {
-                $config{HTTPSPROXYPORT} = 443;
-            }
+            $config{HTTPPROXYPORT}  = 80  if ( ( $config{HTTPPORT} == 80 || $config{HTTPPORT} == 0 ) && $config{HTTPPROXYPORT} == 0 );
+            $config{HTTPSPROXYPORT} = 443 if ( ( $config{HTTPSPORT} == 443 || $config{HTTPSPORT} == 0 ) && $config{HTTPSPROXYPORT} == 0 );
+            resolvePortPairCollision( 'HTTPPORT',  'HTTPPROXYPORT',  80,   8080, 1 );
+            resolvePortPairCollision( 'HTTPSPORT', 'HTTPSPROXYPORT', 443,  8443, 1 );
         }
     }
     else {
-        if ( $config{IMAPPORT} == $config{IMAPPROXYPORT} && $config{IMAPPORT} == 143 ) {
-            $config{IMAPPROXYPORT} = 7143;
-        }
-        if ( $config{IMAPSSLPORT} == $config{IMAPSSLPROXYPORT} && $config{IMAPSSLPORT} == 993 ) {
-            $config{IMAPSSLPROXYPORT} = 7993;
-        }
-        if ( $config{POPPORT} == $config{POPPROXYPORT} && $config{POPPORT} == 110 ) {
-            $config{POPPROXYPORT} = 7110;
-        }
-        if ( $config{POPSSLPORT} == $config{POPSSLPROXYPORT} && $config{POPSSLPORT} == 995 ) {
-            $config{POPSSLPROXYPORT} = 7995;
-        }
-        if ( $config{IMAPPORT} == $config{IMAPPROXYPORT} && $config{IMAPPORT} == 7143 ) {
-            $config{IMAPPORT} = 143;
-        }
-        if ( $config{IMAPSSLPORT} == $config{IMAPSSLPROXYPORT} && $config{IMAPSSLPORT} == 7993 ) {
-            $config{IMAPSSLPORT} = 993;
-        }
-        if ( $config{POPPORT} == $config{POPPROXYPORT} && $config{POPPORT} == 7110 ) {
-            $config{POPPORT} = 110;
-        }
-        if ( $config{POPSSLPORT} == $config{POPSSLPROXYPORT} && $config{POPSSLPORT} == 7995 ) {
-            $config{POPSSLPORT} = 995;
-        }
-        if ( $config{HTTPPORT} == $config{HTTPPROXYPORT} && $config{HTTPPORT} == 80 ) {
-            $config{HTTPPROXYPORT} = 8080;
-        }
-        if ( $config{HTTPSPORT} == $config{HTTPSPROXYPORT} && $config{HTTPSPORT} == 443 ) {
-            $config{HTTPSPROXYPORT} = 8443;
-        }
-        if ( $config{HTTPPORT} == $config{HTTPPROXYPORT} && $config{HTTPPORT} == 8080 ) {
-            $config{HTTPPORT} = 80;
-        }
-        if ( $config{HTTPSPORT} == $config{HTTPSPROXYPORT} && $config{HTTPSPORT} == 8443 ) {
-            $config{HTTPSPORT} = 443;
-        }
+        resolvePortPairCollision( 'IMAPPORT',    'IMAPPROXYPORT',    143,  7143, 0 );
+        resolvePortPairCollision( 'IMAPSSLPORT', 'IMAPSSLPROXYPORT', 993,  7993, 0 );
+        resolvePortPairCollision( 'POPPORT',     'POPPROXYPORT',     110,  7110, 0 );
+        resolvePortPairCollision( 'POPSSLPORT',  'POPSSLPROXYPORT',  995,  7995, 0 );
+        resolvePortPairCollision( 'HTTPPORT',    'HTTPPROXYPORT',    80,   8080, 0 );
+        resolvePortPairCollision( 'HTTPSPORT',   'HTTPSPROXYPORT',   443,  8443, 0 );
     }
 
     #
@@ -2088,157 +2059,36 @@ sub toggleWebProxy() {
 }
 
 sub setUseProxy {
-
     if ( isEnabled("carbonio-proxy") ) {
-        if ( $config{MAILPROXY} eq "TRUE" ) {
-            if ( $config{IMAPPROXYPORT} == $config{IMAPPORT} ) {
-                $config{IMAPPORT} = 7000 + $config{IMAPPROXYPORT};
-            }
-            if ( $config{IMAPPORT} + 7000 == $config{IMAPPROXYPORT} ) {
-                $config{IMAPPORT}      = $config{IMAPPROXYPORT};
-                $config{IMAPPROXYPORT} = $config{IMAPPROXYPORT} - 7000;
-            }
-            if ( $config{IMAPSSLPROXYPORT} == $config{IMAPSSLPORT} ) {
-                $config{IMAPSSLPORT} = 7000 + $config{IMAPSSLPROXYPORT};
-            }
-            if ( $config{IMAPSSLPORT} + 7000 == $config{IMAPSSLPROXYPORT} ) {
-                $config{IMAPSSLPORT}      = $config{IMAPSSLPROXYPORT};
-                $config{IMAPSSLPROXYPORT} = $config{IMAPSSLPROXYPORT} - 7000;
-            }
-            if ( $config{POPPROXYPORT} == $config{POPPORT} ) {
-                $config{POPPORT} = 7000 + $config{POPPROXYPORT};
-            }
-            if ( $config{POPPORT} + 7000 == $config{POPPROXYPORT} ) {
-                $config{POPPORT}      = $config{POPPROXYPORT};
-                $config{POPPROXYPORT} = $config{POPPROXYPORT} - 7000;
-            }
-            if ( $config{POPSSLPROXYPORT} == $config{POPSSLPORT} ) {
-                $config{POPSSLPORT} = 7000 + $config{POPSSLPROXYPORT};
-            }
-            if ( $config{POPSSLPORT} + 7000 == $config{POPSSLPROXYPORT} ) {
-                $config{POPSSLPORT}      = $config{POPSSLPROXYPORT};
-                $config{POPSSLPROXYPORT} = $config{POPSSLPROXYPORT} - 7000;
-            }
-        }
-        else {
-            if ( $config{IMAPPROXYPORT} + 7000 == $config{IMAPPORT} ) {
-                $config{IMAPPORT}      = $config{IMAPPROXYPORT};
-                $config{IMAPPROXYPORT} = $config{IMAPPROXYPORT} + 7000;
-            }
-            if ( $config{IMAPSSLPROXYPORT} + 7000 == $config{IMAPSSLPORT} ) {
-                $config{IMAPSSLPORT}      = $config{IMAPSSLPROXYPORT};
-                $config{IMAPSSLPROXYPORT} = $config{IMAPSSLPROXYPORT} + 7000;
-            }
-            if ( $config{POPPROXYPORT} + 7000 == $config{POPPORT} ) {
-                $config{POPPORT}      = $config{POPPROXYPORT};
-                $config{POPPROXYPORT} = $config{POPPROXYPORT} + 7000;
-            }
-            if ( $config{POPSSLPROXYPORT} + 7000 == $config{POPSSLPORT} ) {
-                $config{POPSSLPORT}      = $config{POPSSLPROXYPORT};
-                $config{POPSSLPROXYPORT} = $config{POPSSLPROXYPORT} + 7000;
-            }
-        }
-        if ( $config{HTTPPROXY} eq "TRUE" ) {
-            if ( $config{HTTPROXYPPORT} == $config{HTTPPORT} ) {
-                $config{HTTPPORT} = 8000 + $config{HTTPPROXYPORT};
-            }
-            if ( $config{HTTPPORT} + 8000 == $config{HTTPPROXYPORT} ) {
-                $config{HTTPPORT}      = $config{HTTPPROXYPORT};
-                $config{HTTPPROXYPORT} = $config{HTTPPORT} - 8000;
-            }
-            if ( $config{HTTPSPROXYPORT} == $config{HTTPSPORT} ) {
-                $config{HTTPSPORT} = 8000 + $config{HTTPSPROXYPORT};
-            }
-            if ( $config{HTTPSPORT} + 8000 == $config{HTTPSPROXYPORT} ) {
-                $config{HTTPSPORT}      = $config{HTTPSPROXYPORT};
-                $config{HTTPSPROXYPORT} = $config{HTTPSPORT} - 8000;
-            }
-        }
-        else {
-            if ( $config{HTTPPROXYPORT} + 8000 == $config{HTTPPORT} ) {
-                $config{HTTPPORT}      = $config{HTTPPROXYPORT};
-                $config{HTTPPROXYPORT} = $config{HTTPPORT} + 8000;
-            }
-            if ( $config{HTTPSPROXYPORT} + 8000 == $config{HTTPSPORT} ) {
-                $config{HTTPSPORT}      = $config{HTTPSPROXYPORT};
-                $config{HTTPSPROXYPORT} = $config{HTTPSPORT} + 8000;
-            }
-        }
+        my $mailProxyEnabled = ( $config{MAILPROXY} eq "TRUE" );
+        resolvePortOffsetCollision( 'IMAPPORT',    'IMAPPROXYPORT',    7000, $mailProxyEnabled );
+        resolvePortOffsetCollision( 'IMAPSSLPORT', 'IMAPSSLPROXYPORT', 7000, $mailProxyEnabled );
+        resolvePortOffsetCollision( 'POPPORT',     'POPPROXYPORT',     7000, $mailProxyEnabled );
+        resolvePortOffsetCollision( 'POPSSLPORT',  'POPSSLPROXYPORT',  7000, $mailProxyEnabled );
+
+        my $httpProxyEnabled = ( $config{HTTPPROXY} eq "TRUE" );
+        resolvePortOffsetCollision( 'HTTPPORT',  'HTTPPROXYPORT',  8000, $httpProxyEnabled );
+        resolvePortOffsetCollision( 'HTTPSPORT', 'HTTPSPROXYPORT', 8000, $httpProxyEnabled );
     }
     else {
         if ( !isInstalled("carbonio-appserver") ) {
-            if ( $config{IMAPPROXYPORT} + 7000 == $config{IMAPPORT} ) {
-                $config{IMAPPORT}      = $config{IMAPPROXYPORT};
-                $config{IMAPPROXYPORT} = $config{IMAPPROXYPORT} + 7000;
-            }
-            if ( $config{IMAPSSLPROXYPORT} + 7000 == $config{IMAPSSLPORT} ) {
-                $config{IMAPSSLPORT}      = $config{IMAPSSLPROXYPORT};
-                $config{IMAPSSLPROXYPORT} = $config{IMAPSSLPROXYPORT} + 7000;
-            }
-            if ( $config{POPPROXYPORT} + 7000 == $config{POPPORT} ) {
-                $config{POPPORT}      = $config{POPPROXYPORT};
-                $config{POPPROXYPORT} = $config{POPPROXYPORT} + 7000;
-            }
-            if ( $config{POPSSLPROXYPORT} + 7000 == $config{POPSSLPORT} ) {
-                $config{POPSSLPORT}      = $config{POPSSLPROXYPORT};
-                $config{POPSSLPROXYPORT} = $config{POPSSLPROXYPORT} + 7000;
-            }
-            if ( $config{HTTPPROXYPORT} + 8000 == $config{HTTPPORT} ) {
-                $config{HTTPPORT}      = $config{HTTPPROXYPORT};
-                $config{HTTPPROXYPORT} = $config{HTTPPORT} + 8000;
-            }
-            if ( $config{HTTPSPROXYPORT} + 8000 == $config{HTTPSPORT} ) {
-                $config{HTTPSPORT}      = $config{HTTPSPROXYPORT};
-                $config{HTTPSPROXYPORT} = $config{HTTPSPORT} + 8000;
-            }
+            resolvePortOffsetCollision( 'IMAPPORT',    'IMAPPROXYPORT',    7000, 0 );
+            resolvePortOffsetCollision( 'IMAPSSLPORT', 'IMAPSSLPROXYPORT', 7000, 0 );
+            resolvePortOffsetCollision( 'POPPORT',     'POPPROXYPORT',     7000, 0 );
+            resolvePortOffsetCollision( 'POPSSLPORT',  'POPSSLPROXYPORT',  7000, 0 );
+            resolvePortOffsetCollision( 'HTTPPORT',    'HTTPPROXYPORT',    8000, 0 );
+            resolvePortOffsetCollision( 'HTTPSPORT',   'HTTPSPROXYPORT',   8000, 0 );
         }
         else {
-            if ( $config{zimbraMailProxy} eq "TRUE" ) {
-                if ( $config{IMAPPROXYPORT} == $config{IMAPPORT} ) {
-                    $config{IMAPPORT} = 7000 + $config{IMAPPROXYPORT};
-                }
-                if ( $config{IMAPPORT} + 7000 == $config{IMAPPROXYPORT} ) {
-                    $config{IMAPPORT}      = $config{IMAPPROXYPORT};
-                    $config{IMAPPROXYPORT} = $config{IMAPPROXYPORT} - 7000;
-                }
-                if ( $config{IMAPSSLPROXYPORT} == $config{IMAPSSLPORT} ) {
-                    $config{IMAPSSLPORT} = 7000 + $config{IMAPSSLPROXYPORT};
-                }
-                if ( $config{IMAPSSLPORT} + 7000 == $config{IMAPSSLPROXYPORT} ) {
-                    $config{IMAPSSLPORT}      = $config{IMAPSSLPROXYPORT};
-                    $config{IMAPSSLPROXYPORT} = $config{IMAPSSLPROXYPORT} - 7000;
-                }
-                if ( $config{POPPROXYPORT} == $config{POPPORT} ) {
-                    $config{POPPORT} = 7000 + $config{POPPROXYPORT};
-                }
-                if ( $config{POPPORT} + 7000 == $config{POPPROXYPORT} ) {
-                    $config{POPPORT}      = $config{POPPROXYPORT};
-                    $config{POPPROXYPORT} = $config{POPPROXYPORT} - 7000;
-                }
-                if ( $config{POPSSLPROXYPORT} == $config{POPSSLPORT} ) {
-                    $config{POPSSLPORT} = 7000 + $config{POPSSLPROXYPORT};
-                }
-                if ( $config{POPSSLPORT} + 7000 == $config{POPSSLPROXYPORT} ) {
-                    $config{POPSSLPORT}      = $config{POPSSLPROXYPORT};
-                    $config{POPSSLPROXYPORT} = $config{POPSSLPROXYPORT} - 7000;
-                }
-            }
-            if ( $config{zimbraWebProxy} eq "TRUE" ) {
-                if ( $config{HTTPROXYPPORT} == $config{HTTPPORT} ) {
-                    $config{HTTPPORT} = 8000 + $config{HTTPPROXYPORT};
-                }
-                if ( $config{HTTPPORT} + 8000 == $config{HTTPPROXYPORT} ) {
-                    $config{HTTPPORT}      = $config{HTTPPROXYPORT};
-                    $config{HTTPPROXYPORT} = $config{HTTPPORT} - 8000;
-                }
-                if ( $config{HTTPSPROXYPORT} == $config{HTTPSPORT} ) {
-                    $config{HTTPSPORT} = 8000 + $config{HTTPSPROXYPORT};
-                }
-                if ( $config{HTTPSPORT} + 8000 == $config{HTTPSPROXYPORT} ) {
-                    $config{HTTPSPORT}      = $config{HTTPSPROXYPORT};
-                    $config{HTTPSPROXYPORT} = $config{HTTPSPORT} - 8000;
-                }
-            }
+            my $mailProxyEnabled = ( $config{zimbraMailProxy} eq "TRUE" );
+            resolvePortOffsetCollision( 'IMAPPORT',    'IMAPPROXYPORT',    7000, $mailProxyEnabled );
+            resolvePortOffsetCollision( 'IMAPSSLPORT', 'IMAPSSLPROXYPORT', 7000, $mailProxyEnabled );
+            resolvePortOffsetCollision( 'POPPORT',     'POPPROXYPORT',     7000, $mailProxyEnabled );
+            resolvePortOffsetCollision( 'POPSSLPORT',  'POPSSLPROXYPORT',  7000, $mailProxyEnabled );
+
+            my $httpProxyEnabled = ( $config{zimbraWebProxy} eq "TRUE" );
+            resolvePortOffsetCollision( 'HTTPPORT',  'HTTPPROXYPORT',  8000, $httpProxyEnabled );
+            resolvePortOffsetCollision( 'HTTPSPORT', 'HTTPSPROXYPORT', 8000, $httpProxyEnabled );
         }
     }
 }
