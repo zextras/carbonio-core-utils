@@ -178,10 +178,10 @@ getInstalledWebapps();
 
 if ( $options{d} ) {
     foreach my $pkg ( keys %installedPackages ) {
-        detail("Package $pkg is installed");
+        detail("Package $pkg is installed.");
     }
     foreach my $pkg ( keys %enabledPackages ) {
-        detail("Package $pkg is $enabledPackages{$pkg}");
+        detail("Package $pkg is $enabledPackages{$pkg}.");
     }
 }
 
@@ -618,7 +618,7 @@ sub loadConfig {
 }
 
 sub checkPortConflicts {
-    progress("Checking for port conflicts\n");
+    progress("Checking for port conflicts...\n");
     my %needed = (
         25    => 'carbonio-mta',
         80    => 'carbonio-appserver',
@@ -690,7 +690,7 @@ sub isComponentAvailable {
 }
 
 sub getAvailableComponents {
-    detail("Getting available components");
+    detail("Getting available components...");
     open( ZM, "$ZMPROV gcf zimbraComponentAvailable 2> /dev/null|" )
       or return undef;
     while (<ZM>) {
@@ -715,7 +715,7 @@ sub getDateStamp() {
 }
 
 sub getInstalledPackages {
-    detail("Getting installed packages");
+    detail("Getting installed packages...");
     foreach my $p (@packageList) {
         if ( isInstalled($p) ) {
             $installedPackages{$p} = $p;
@@ -765,7 +765,7 @@ sub getInstalledPackages {
 }
 
 sub getInstalledWebapps {
-    detail("Determining installed web applications");
+    detail("Determining installed web applications...");
 
     # E.g.: installedWebapps = {"service": "Enabled"}
     if (   ( $newinstall && isEnabled("carbonio-appserver") )
@@ -796,16 +796,16 @@ sub isServiceEnabled {
 
     if ( defined( $enabledServices{$service} ) ) {
         if ( $enabledServices{$service} eq "Enabled" ) {
-            detail("$service is enabled");
+            detail("Service $service is enabled.");
             return 1;
         }
         else {
-            detail("$service is not enabled");
+            detail("Service $service is not enabled.");
             return undef;
         }
     }
     else {
-        detail("$service not in enabled cache");
+        detail("Service $service not in enabled cache.");
     }
 
     return undef;
@@ -820,9 +820,9 @@ sub isEnabled {
     }
 
     # Only log on cache miss
-    detail("checking isEnabled $package (cache miss)");
+    detail("Checking isEnabled $package (cache miss).");
     my $packages = join( " ", keys %enabledPackages );
-    detail("enabled packages $packages");
+    detail("Enabled packages: $packages.");
 
     # lookup service in ldap
     if ( $newinstall == 0 ) {
@@ -883,11 +883,11 @@ sub isEnabled {
         close(ZMPROV);
     }
     else {
-        detail("New install enabling all installed packages");
+        detail("New install, enabling all installed packages...");
         foreach my $p (@packageList) {
             if ( isInstalled($p) ) {
                 unless ( $enabledPackages{$p} eq "Disabled" ) {
-                    detail("Enabling $p");
+                    detail("Enabling $p.");
                     $enabledPackages{$p} = "Enabled";
                 }
             }
@@ -3908,9 +3908,9 @@ sub configInstallCert {
     }
     elsif ( isInstalled("carbonio-appserver") ) {
         if ( !( -f "$config{mailboxd_keystore}" ) || $needNewCert ne "" ) {
-            detail("$config{mailboxd_keystore} didn't exist.")
+            detail("Keystore $config{mailboxd_keystore} does not exist.")
               if ( !-f "$config{mailboxd_keystore}" );
-            detail("$needNewCert was ne \"\".")
+            detail("New certificate required: $needNewCert.")
               if ( $needNewCert ne "" );
             $needStoreInstall = 1;
         }
