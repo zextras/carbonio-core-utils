@@ -1025,7 +1025,7 @@ sub getRealLdapServerValue {
 sub setLdapDefaults {
 
     return if exists $config{LDAPDEFAULTSLOADED};
-    progress("Setting defaults from ldap...");
+    progress("Setting defaults from LDAP...");
 
     #
     # Load server specific attributes only if server exists
@@ -2275,7 +2275,7 @@ sub lookupHostName {
 
         # regexp based check that matches IP to check if its a possible loopback addresses (covers both IPv4 and IPv6)
         if ( $ip =~ /^127\.|^::1$/ ) {
-            progress("\n\tError: Resolved IP address $ip for current hostname $hostname is pointing to a loopback device or interface");
+            progress("\n\tERROR: Resolved IP address $ip for current hostname $hostname is pointing to a loopback device or interface");
             return 1;
         }
 
@@ -2283,7 +2283,7 @@ sub lookupHostName {
         # looking for "scope host" in interface detail
         my $ipo = `ip addr show $ip 2>&1`;
         if ( $? == 0 && $ipo =~ /scope host/ ) {
-            progress("\n\tError: Resolved IP address $ip for current hostname $hostname is pointing to a loopback device or interface");
+            progress("\n\tERROR: Resolved IP address $ip for current hostname $hostname is pointing to a loopback device or interface");
             return 1;
         }
     }
@@ -2366,7 +2366,7 @@ sub setPopProxyPort {
 }
 
 sub setPopSSLProxyPort {
-    setProxyPortHelper( "POP SSL Proxyserver port", "POPSSLPROXYPORT", "POPSSLPORT", "MAILPROXY" );
+    setProxyPortHelper( "POP SSL Proxy server port", "POPSSLPROXYPORT", "POPSSLPORT", "MAILPROXY" );
 }
 
 sub setPublicServiceHostname {
@@ -2391,11 +2391,11 @@ sub setPublicServiceHostname {
 }
 
 sub setHttpProxyPort {
-    setProxyPortHelper( "HTTP Proxyserver port", "HTTPPROXYPORT", "HTTPPORT", "HTTPPROXY" );
+    setProxyPortHelper( "HTTP Proxy server port", "HTTPPROXYPORT", "HTTPPORT", "HTTPPROXY" );
 }
 
 sub setHttpsProxyPort {
-    setProxyPortHelper( "HTTPS Proxyserver port", "HTTPSPROXYPORT", "HTTPSPORT", "HTTPPROXY" );
+    setProxyPortHelper( "HTTPS Proxy server port", "HTTPSPROXYPORT", "HTTPSPORT", "HTTPPROXY" );
 }
 
 sub setTimeZone {
@@ -3599,18 +3599,18 @@ sub updatePasswordsInLocalConfig {
         if ( $ldapRootPassChanged || $ldapAdminPassChanged || $ldapRepChanged || $ldapPostChanged || $ldapAmavisChanged || $ldapNginxChanged ) {
 
             if ($ldapRootPassChanged) {
-                progress("Setting ldap root password...");
+                progress("Setting LDAP root password...");
                 runAsZextras("/opt/zextras/bin/zmldappasswd -r $config{LDAPROOTPASS}");
                 progress("done.\n");
             }
-            setLdapPasswordHelper( "ldap admin", "", "LDAPADMINPASS", "zimbra_ldap_password" )         if $ldapAdminPassChanged;
+            setLdapPasswordHelper( "LDAP admin", "", "LDAPADMINPASS", "zimbra_ldap_password" )         if $ldapAdminPassChanged;
             setLdapPasswordHelper( "replication", "-l", "LDAPREPPASS", "ldap_replication_password" )  if $ldapRepChanged;
             setLdapPasswordHelper( "Postfix", "-p", "LDAPPOSTPASS", "ldap_postfix_password" )         if $ldapPostChanged;
             setLdapPasswordHelper( "amavis", "-a", "LDAPAMAVISPASS", "ldap_amavis_password" )         if $ldapAmavisChanged;
             setLdapPasswordHelper( "nginx", "-n", "ldap_nginx_password", "ldap_nginx_password" )     if $ldapNginxChanged;
         }
         else {
-            progress("Stopping ldap...");
+            progress("Stopping LDAP...");
             if ( isSystemd() ) {
                 system("systemctl stop carbonio-openldap.service");
             }
@@ -3647,7 +3647,7 @@ sub configSetupLdap {
     }
 
     if ( !$ldapConfigured && isEnabled("carbonio-directory-server") && !-f "/opt/zextras/.enable_replica" && $newinstall && ( $config{LDAPHOST} eq $config{HOSTNAME} ) ) {
-        progress("Initializing ldap...");
+        progress("Initializing LDAP...");
         ldapinit->preLdapStart( $config{LDAPROOTPASS}, $config{LDAPADMINPASS} );
         if ( isSystemd() ) {
             system("systemctl start carbonio-openldap.service");
@@ -3699,7 +3699,7 @@ sub configSetupLdap {
                 setLdapPasswordHelper( "nginx", "-n", "ldap_nginx_password", "ldap_nginx_password", 1 ) if $ldapNginxChanged;
             }
             progress("done.\n");
-            progress("Enabling ldap replication...");
+            progress("Enabling LDAP replication...");
             if ( !-f "/opt/zextras/.enable_replica" ) {
                 if ( $newinstall && $config{LDAPREPLICATIONTYPE} eq "mmr" ) {
                     my $ldapMasterUrl = getLocalConfig("ldap_master_url");
@@ -3730,7 +3730,7 @@ sub configSetupLdap {
                 }
                 $config{DOCREATEDOMAIN} = "no";
                 progress("done.\n");
-                progress("Stopping ldap...");
+                progress("Stopping LDAP...");
                 if ( isSystemd() ) {
                     $rc = system("systemctl stop carbonio-openldap.service");
                 }
@@ -3743,10 +3743,10 @@ sub configSetupLdap {
             else {
                 progress("failed.\n");
                 progress("You will have to correct the problem and manually enable replication.\n");
-                progress("Disabling ldap on $config{HOSTNAME}...");
+                progress("Disabling LDAP on $config{HOSTNAME}...");
                 my $rc = setLdapServerConfig( "-zimbraServiceEnabled", "directory-server" );
                 progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
-                progress("Stopping ldap...");
+                progress("Stopping LDAP...");
                 if ( isSystemd() ) {
                     $rc = system("systemctl stop carbonio-openldap.service");
                 }
@@ -3795,7 +3795,7 @@ sub configSaveCA {
         configLog("configSaveCA");
         return 0;
     }
-    progress("Saving CA in ldap...");
+    progress("Saving CA in LDAP...");
     my $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deployca");
     progressResult( $rc, 1 );
     configLog("configSaveCA");
@@ -3813,7 +3813,7 @@ sub configCreateCert {
         if ( $rc != 0 ) {
             $rc = runAsZextras("/opt/zextras/bin/zmcertmgr verifycrt self > /dev/null 2>&1");
             if ( $rc != 0 ) {
-                progress("Warning: No valid SSL certificates were found.\n");
+                progress("WARNING: No valid SSL certificates were found.\n");
                 progress("New self-signed certificates will be generated and installed.\n");
                 $needNewCert   = "-new" if ( $rc != 0 );
                 $ssl_cert_type = "self";
@@ -3886,7 +3886,7 @@ sub configSaveCert {
         return 0;
     }
     if ( -f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
-        progress("Saving SSL Certificate in ldap...");
+        progress("Saving SSL Certificate in LDAP...");
         my $rc = runAsZextras("/opt/zextras/bin/zmcertmgr savecrt $ssl_cert_type");
         progressResult( $rc, 1 );
         configLog("configSaveCert");
@@ -4057,13 +4057,13 @@ sub configSetStoreDefaults {
         if ( $config{zimbraMailProxy} eq "TRUE" ) {
             my $rc = runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -m -e -o " . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} " . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}" );
             if ( $rc != 0 ) {
-                progress("Warning: zmproxyconfig for mail proxy returned non-zero exit code: $rc\n");
+                progress("WARNING: zmproxyconfig for mail proxy returned non-zero exit code: $rc\n");
             }
         }
         if ( $config{zimbraWebProxy} eq "TRUE" ) {
             my $rc = runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -w -e -o " . "-x $config{PROXYMODE} " . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}" );
             if ( $rc != 0 ) {
-                progress("Warning: zmproxyconfig for web proxy returned non-zero exit code: $rc\n");
+                progress("WARNING: zmproxyconfig for web proxy returned non-zero exit code: $rc\n");
             }
         }
     }
@@ -4634,7 +4634,7 @@ sub applyConfig {
         my $rc = runAsZextras("/opt/zextras/common/bin/openssl dhparam -out /opt/zextras/conf/dhparam.pem.crb 2048 > /dev/null 2>&1");
         if ( $rc != 0 ) {
             progress("\nfailed to generate dhparam key");
-            progress("\nCarbonio bootstrap process exited cause one of the subprocess failed.\n");
+            progress("\nCarbonio bootstrap process exited because one of the subprocesses failed.\n");
             exit();
         }
         else {
@@ -4915,7 +4915,7 @@ sub mainMenu {
 
 sub startLdap {
     my $rc;
-    detail("Checking ldap status....");
+    detail("Checking LDAP status....");
     if ( isSystemd() ) {
         $rc = isSystemdActiveUnit("carbonio-openldap.service");
     }
@@ -4925,7 +4925,7 @@ sub startLdap {
     detail( ( $rc == 0 ) ? "already running.\n" : "not running.\n" );
 
     if ($rc) {
-        progress("Starting ldap...");
+        progress("Starting LDAP...");
         if ( isSystemd() ) {
             $rc = system("systemctl start carbonio-openldap.service");
         }
@@ -4939,7 +4939,7 @@ sub startLdap {
 
 sub stopLdap {
     my $rc;
-    detail("Checking ldap status....");
+    detail("Checking LDAP status....");
     if ( isSystemd() ) {
         $rc = isSystemdActiveUnit("carbonio-openldap.service");
     }
@@ -4949,7 +4949,7 @@ sub stopLdap {
     detail( ( $rc == 0 ) ? "already stopped.\n" : "running.\n" );
 
     if ($rc) {
-        progress("Stopping ldap...");
+        progress("Stopping LDAP...");
         if ( isSystemd() ) {
             $rc = system("systemctl stop carbonio-openldap.service");
         }
