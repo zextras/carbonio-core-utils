@@ -33,9 +33,6 @@ url="${first_url#*//}"
 # Retrieve the hostname
 ldap_domain="${url%:*}"
 
-# memcached
-memcached_flags="-U 0 -l 127.0.1.1,127.0.0.1 -p 11211"
-
 # mailboxdmgr
 # Memory for use by JVM.
 #
@@ -81,7 +78,6 @@ fi
   echo "mailboxd_directory=${mailboxd_directory}"
   echo "mailboxd_java_heap_new_size_percent=${mailboxd_java_heap_new_size_percent}"
   echo "mailboxd_java_options=${mailboxd_java_options}"
-  echo "memcached_flags=${memcached_flags}"
   echo "mysql_errlogfile=${mysql_errlogfile}"
   echo "mysql_mycnf=${mysql_mycnf}"
 } >/opt/zextras/data/systemd.env
