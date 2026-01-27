@@ -45,14 +45,7 @@ case "$1" in
       exit 0
     fi
 
-    addr=$(/opt/zextras/bin/zmprov -l gs "${zimbra_server_hostname}" zimbraMemcachedBindAddress | awk '/^zimbraMemcachedBindAddress:/{ print $2 }')
-    addr="${addr//$'\n'/,}"
-    port=$(/opt/zextras/bin/zmprov -l gs "${zimbra_server_hostname}" zimbraMemcachedBindPort | awk '/^zimbraMemcachedBindPort:/{ print $2 }')
-    if [ "$addr" = "" ]; then
-      /opt/zextras/common/bin/memcached -d -U 0 -l 127.0.1.1,127.0.0.1 -p "${port:-11211}"
-    else
-      /opt/zextras/common/bin/memcached -d -U 0 -l "${addr}" -p "${port:-11211}"
-    fi
+    /opt/zextras/common/bin/memcached -d -U 0 -l 127.0.1.1,127.0.0.1 -p 11211
     for ((i = 0; i < 10; i++)); do
       check_running
       if [ $running = 1 ]; then
