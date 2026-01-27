@@ -5254,12 +5254,6 @@ sub setProxyBits {
     push( @zmprov_args, ( 'zimbraReverseProxyDomainNameQuery', $ReverseProxyDomainNameQuery ) )
       if ( getLdapConfigValue("zimbraReverseProxyDomainNameQuery") eq "" );
 
-    push( @zmprov_args, ( 'zimbraMemcachedBindPort', '11211' ) )
-      if ( getLdapConfigValue("zimbraMemcachedBindPort") eq "" );
-
-    push( @zmprov_args, ( 'zimbraMemcachedBindAddress', '127.0.0.1' ) )
-      if ( getLdapConfigValue("zimbraMemcachedBindAddress") eq "" );
-
     push( @zmprov_args, ( 'zimbraReverseProxyMailHostAttribute', 'zimbraMailHost' ) )
       if ( getLdapConfigValue("zimbraReverseProxyMailHostAttribute") eq "" );
 
