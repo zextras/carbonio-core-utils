@@ -4524,8 +4524,9 @@ sub updatePasswordsInLocalConfig {
 
     if ( isEnabled("carbonio-directory-server") ) {
 
-        # zmldappasswd starts ldap and re-applies the ldif
-        if ( $ldapRootPassChanged || $ldapAdminPassChanged || $ldapRepChanged || $ldapPostChanged || $ldapAmavisChanged || $ldapNginxChanged ) {
+        if ( $ldapConfigured && ( $ldapRootPassChanged || $ldapAdminPassChanged || $ldapRepChanged || $ldapPostChanged || $ldapAmavisChanged || $ldapNginxChanged ) ) {
+
+            startLdap();
 
             if ($ldapRootPassChanged) {
                 progress("Setting ldap root password...");
@@ -4583,7 +4584,7 @@ sub updatePasswordsInLocalConfig {
                 progress("done.\n");
             }
         }
-        else {
+        elsif ($ldapConfigured) {
             progress("Stopping ldap...");
             if ( isSystemd() ) {
                 system("systemctl stop carbonio-openldap.service");
