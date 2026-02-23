@@ -4524,8 +4524,9 @@ sub updatePasswordsInLocalConfig {
 
     if ( isEnabled("carbonio-directory-server") ) {
 
-        # zmldappasswd starts ldap and re-applies the ldif
-        if ( $ldapRootPassChanged || $ldapAdminPassChanged || $ldapRepChanged || $ldapPostChanged || $ldapAmavisChanged || $ldapNginxChanged ) {
+        if ( $ldapConfigured && ( $ldapRootPassChanged || $ldapAdminPassChanged || $ldapRepChanged || $ldapPostChanged || $ldapAmavisChanged || $ldapNginxChanged ) ) {
+
+            startLdap();
 
             if ($ldapRootPassChanged) {
                 progress("Setting ldap root password...");
@@ -4583,7 +4584,7 @@ sub updatePasswordsInLocalConfig {
                 progress("done.\n");
             }
         }
-        else {
+        elsif ($ldapConfigured) {
             progress("Stopping ldap...");
             if ( isSystemd() ) {
                 system("systemctl stop carbonio-openldap.service");
@@ -4653,7 +4654,7 @@ sub configSetupLdap {
         ldapinit->preLdapStart( $config{LDAPROOTPASS}, $config{LDAPADMINPASS} );
         if ( isSystemd() ) {
             system("systemctl start carbonio-openldap.service");
-            sleep 5;
+            waitForLdap(30);
         }
         else {
             runAsZextras("/opt/zextras/bin/ldap start");
@@ -4741,6 +4742,7 @@ sub configSetupLdap {
                     }
                     if ( isSystemd() ) {
                         system("systemctl start carbonio-openldap.service");
+                        waitForLdap(30);
                     }
                     else {
                         runAsZextras("/opt/zextras/bin/ldap start");
@@ -5161,7 +5163,7 @@ sub configSetStoreDefaults {
             runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -m -e -o " . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} " . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}" );
         }
         if ( $config{zimbraWebProxy} eq "TRUE" ) {
-            runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -w -e -o " . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}" );
+            runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -w -e -o " . "-x $config{PROXYMODE} " . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}" );
         }
     }
 }
@@ -6081,6 +6083,27 @@ sub mainMenu {
     displayMenu( \%mm );
 }
 
+sub waitForLdap {
+    my $timeout = shift // 30;
+    my $ldapi   = "ldapi://%2frun%2fcarbonio%2frun%2fldapi/";
+    my $ldap_root_password = getLocalConfig("ldap_root_password");
+    my $elapsed = 0;
+    while ( $elapsed < $timeout ) {
+        my $ldap = Net::LDAP->new($ldapi);
+        if ($ldap) {
+            my $mesg = $ldap->bind( "cn=config", password => $ldap_root_password );
+            if ( !$mesg->code ) {
+                $ldap->unbind;
+                return 0;    # success: LDAP is ready
+            }
+            $ldap->unbind;
+        }
+        sleep 1;
+        $elapsed++;
+    }
+    return 1;    # timed out
+}
+
 sub startLdap {
     my $rc;
     detail("Checking ldap status....");
@@ -6096,6 +6119,9 @@ sub startLdap {
         progress("Starting ldap...");
         if ( isSystemd() ) {
             $rc = system("systemctl start carbonio-openldap.service");
+            if ( $rc == 0 ) {
+                $rc = waitForLdap(30);
+            }
         }
         else {
             $rc = runAsZextras("/opt/zextras/bin/ldap start");
