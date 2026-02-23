@@ -58,10 +58,12 @@ $mesg->code && die "Error binding to LDAP server: $mesg->error";
 
 if ($enable) {
   &enableDomain;
+  exit 0;
 }
 
 if ($disable) {
   &disableDomain;
+  exit 0;
 }
 
 my $ldapquery = "(objectClass=zimbraGlobalConfig)";
@@ -75,6 +77,12 @@ $mesg = $ldap->search(
 my $enabled = $mesg->entry(0)->get_value('zimbraDomainMandatoryMailSignatureEnabled');
 
 if (lc($enabled) eq "true") {
+  # Remove stale disclaimer files before regenerating from LDAP
+  foreach my $f (glob("/opt/zextras/data/altermime/*.txt"),
+                 glob("/opt/zextras/data/altermime/*.html"),
+                 glob("/opt/zextras/data/altermime/*.b64")) {
+    unlink($f) or warn "Could not delete $f: $!\n";
+  }
   $ldapquery = "(&(objectClass=zimbraDomain)(amavisDisclaimerOptions=*))";
   $mesg = $ldap->search(
                   base => '',
