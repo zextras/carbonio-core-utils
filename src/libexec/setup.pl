@@ -5163,7 +5163,7 @@ sub configSetStoreDefaults {
             runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -m -e -o " . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} " . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}" );
         }
         if ( $config{zimbraWebProxy} eq "TRUE" ) {
-            runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -w -e -o " . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}" );
+            runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -w -e -o " . "-x $config{PROXYMODE} " . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}" );
         }
     }
 }
