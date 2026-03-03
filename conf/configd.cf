@@ -332,7 +332,6 @@ SECTION mailbox
 SECTION proxy
 	LOCAL ldap_url
 	MAPLOCAL zimbraSSLDHParam
-	VAR getAllMemcachedServers
 	VAR getAllReverseProxyBackends
 	VAR getAllReverseProxyURLs
 	VAR zimbraFileUploadMaxSize
