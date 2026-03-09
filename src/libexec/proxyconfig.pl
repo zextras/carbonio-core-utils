@@ -544,7 +544,7 @@ sub usage() {
   print "\t-a: Colon separated list of Web ports to use. Format: HTTP-STORE:HTTP-PROXY:HTTPS-STORE:HTTPS-PROXY (Ex: 8080:80:8443:443)\n";
   print "\t-d: disable proxy\n";
   print "\t-e: enable proxy\n";
-  print "\t-f: Full reset on memcached port and search queries and POP/IMAP throttling.\n";
+  print "\t-f: Full reset on reverse proxy queries, port attributes, and POP/IMAP throttling.\n";
   print "\t-i: Colon separated list of IMAP ports to use. Format: IMAP-STORE:IMAP-PROXY:IMAPS-STORE:IMAPS-PROXY (Ex: 7143:143:7993:993)\n";
   print "\t-m: Toggle mail proxy portions\n";
   print "\t-o: Override enabled checks\n";
