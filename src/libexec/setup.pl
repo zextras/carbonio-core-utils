@@ -14,6 +14,7 @@ use Zextras::Util::Common;
 use Zextras::Util::Timezone;
 use Zextras::Util::Systemd;
 use Zextras::Setup::DNS;
+use Zextras::Setup::SSL;
 use FileHandle;
 use Net::LDAP;
 use IPC::Open3;
@@ -107,8 +108,8 @@ chomp(
     }
 );
 
-my $ldapConfigured           = 0;
-my $haveSetLdapSchemaVersion = 0;
+our $ldapConfigured           = 0;
+our $haveSetLdapSchemaVersion = 0;
 my $ldapRunning              = 0;
 my $sqlConfigured            = 0;
 my $sqlRunning               = 0;
@@ -123,8 +124,8 @@ my $ldapAmavisChanged                     = 0;
 my $ldapNginxChanged                      = 0;
 my $ldapReplica                           = 0;
 my $starttls                              = 0;
-my $needNewCert                           = "";
-my $ssl_cert_type                         = "self";
+our $needNewCert                           = "";
+our $ssl_cert_type                         = "self";
 my $publicServiceHostnameAlreadySet = 0;
 
 my @ssl_digests = ( "ripemd160", "sha", "sha1", "sha224", "sha256", "sha384", "sha512" );
@@ -3326,51 +3327,6 @@ sub configLCValues {
     progress("done.\n");
 }
 
-sub configCASetup {
-
-    if ( $configStatus{configCASetup} eq "CONFIGURED" && -d "/opt/zextras/ssl/carbonio/ca" ) {
-        configLog("configCASetup");
-        return 0;
-    }
-
-    if ( $config{LDAPHOST} ne $config{HOSTNAME} ) {
-
-        # fetch it from ldap if ldap has been configed
-        progress("Updating ldap_root_password and zimbra_ldap_password...");
-        setLocalConfigBatch(
-            ldap_root_password   => $config{LDAPROOTPASS},
-            zimbra_ldap_password => $config{LDAPADMINPASS}
-        );
-        progress("done.\n");
-    }
-    progress("Setting up CA...");
-    if ( !$newinstall ) {
-        if ( -f "/opt/zextras/conf/ca/ca.pem" ) {
-            my $rc = runAsRoot("/opt/zextras/common/bin/openssl verify -purpose sslserver -CAfile /opt/zextras/conf/ca/ca.pem /opt/zextras/conf/ca/ca.pem | egrep \"^error 10\"");
-            $needNewCert = "-new" if ( $rc == 0 );
-        }
-    }
-
-    # regenerate the certificate authority if this is the ldap master and
-    # either the ca is expired from the test above or the ca directory doesn't exist.
-    my $needNewCA;
-    if ( isLdapMaster() ) {
-        $needNewCA = "-new" if ( !-d "/opt/zextras/ssl/carbonio/ca" || $needNewCert eq "-new" );
-    }
-
-    # we are going to download a new CA or otherwise create one so we need to regenerate the self signed cert.
-    $needNewCert = "-new" if ( !-d "/opt/zextras/ssl/carbonio/ca" );
-
-    my $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createca $needNewCA");
-    progressResult( $rc, 1 );
-
-    progress("Deploying CA to /opt/zextras/conf/ca ...");
-    $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deployca -localonly");
-    progressResult( $rc, 1 );
-
-    configLog("configCASetup");
-}
-
 sub updatePasswordsInLocalConfig {
 
     if ( isEnabled("carbonio-directory-server") ) {
@@ -3549,143 +3505,6 @@ sub configLDAPSchemaVersion {
             progress("done.\n");
         }
     }
-}
-
-sub configSaveCA {
-
-    if ( $configStatus{configSaveCA} eq "CONFIGURED" ) {
-        configLog("configSaveCA");
-        return 0;
-    }
-    progress("Saving CA in LDAP...");
-    my $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deployca");
-    progressResult( $rc, 1 );
-    configLog("configSaveCA");
-}
-
-sub configCreateCert {
-
-    if ( $configStatus{configCreateCert} eq "CONFIGURED" && -d "/opt/zextras/ssl/carbonio/server" ) {
-        configLog("configCreateCert");
-        return 0;
-    }
-
-    if ( !$newinstall ) {
-        my $rc = runAsZextras("/opt/zextras/bin/zmcertmgr verifycrt comm > /dev/null 2>&1");
-        if ( $rc != 0 ) {
-            $rc = runAsZextras("/opt/zextras/bin/zmcertmgr verifycrt self > /dev/null 2>&1");
-            if ( $rc != 0 ) {
-                progress("WARNING: No valid SSL certificates were found.\n");
-                progress("New self-signed certificates will be generated and installed.\n");
-                $needNewCert   = "-new" if ( $rc != 0 );
-                $ssl_cert_type = "self";
-            }
-        }
-        else {
-            $ssl_cert_type = "comm";
-            $needNewCert   = "";
-        }
-    }
-
-    my $rc;
-
-    # Helper to create certificate for a component
-    my $createCertFor = sub {
-        my ($component, $msg) = @_;
-        progress("$msg...");
-        $rc = runAsZextras("/opt/zextras/bin/zmcertmgr createcrt $needNewCert");
-        progressResult( $rc, 1 );
-    };
-
-    my @cert_components = (
-        [ 'carbonio-appserver',        $config{mailboxd_keystore},    'appserver' ],
-        [ 'carbonio-directory-server', '/opt/zextras/conf/slapd.crt', 'ldap' ],
-        [ 'carbonio-mta',             '/opt/zextras/conf/smtpd.crt', 'mta' ],
-        [ 'carbonio-proxy',           '/opt/zextras/conf/nginx.crt', 'proxy' ],
-    );
-
-    for my $comp (@cert_components) {
-        my ( $package, $cert_file, $label ) = @$comp;
-        next unless isInstalled($package);
-
-        # Ensure mailboxd directory exists for appserver
-        if ( $package eq "carbonio-appserver" && !-d "$config{mailboxd_directory}" ) {
-            qx(mkdir -p $config{mailboxd_directory}/etc);
-            qx(chown -R zextras:zextras $config{mailboxd_directory});
-            qx(chmod 744 $config{mailboxd_directory}/etc);
-        }
-
-        if ( !-f "$cert_file" && !-f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
-            $createCertFor->( $label, "Creating $package SSL certificate" );
-        }
-        elsif ( $needNewCert ne "" && $ssl_cert_type eq "self" ) {
-            $createCertFor->( $label, "Creating new $package SSL certificate" );
-        }
-    }
-
-    configLog("configCreateCert");
-}
-
-sub configSaveCert {
-
-    if ( $configStatus{configSaveCert} eq "CONFIGURED" ) {
-        configLog("configSaveCert");
-        return 0;
-    }
-    if ( -f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
-        progress("Saving SSL Certificate in LDAP...");
-        my $rc = runAsZextras("/opt/zextras/bin/zmcertmgr savecrt $ssl_cert_type");
-        progressResult( $rc, 1 );
-        configLog("configSaveCert");
-    }
-}
-
-sub configInstallCert {
-    my $rc;
-
-    # Certificate install check table: [ config_key, package, check_files, deploy_label ]
-    my @install_checks = (
-        [ 'configInstallCertStore', 'carbonio-appserver',        [ $config{mailboxd_keystore} ],                                  'mailboxd' ],
-        [ 'configInstallCertMTA',   'carbonio-mta',             [ '/opt/zextras/conf/smtpd.key', '/opt/zextras/conf/smtpd.crt' ], 'MTA' ],
-        [ 'configInstallCertLDAP',  'carbonio-directory-server', [ '/opt/zextras/conf/slapd.key', '/opt/zextras/conf/slapd.crt' ], 'LDAP' ],
-        [ 'configInstallCertProxy', 'carbonio-proxy',           [ '/opt/zextras/conf/nginx.key', '/opt/zextras/conf/nginx.crt' ], 'Proxy' ],
-    );
-
-    my %needInstall;
-    for my $check (@install_checks) {
-        my ( $config_key, $package, $check_files, $label ) = @$check;
-        if ( $configStatus{$config_key} eq "CONFIGURED" && $needNewCert eq "" ) {
-            configLog($config_key);
-        }
-        elsif ( isInstalled($package) ) {
-            my $files_exist = grep { -f $_ } @$check_files;
-            if ( !$files_exist || $needNewCert ne "" ) {
-                $needInstall{$config_key} = $label;
-            }
-            else {
-                configLog($config_key);
-            }
-        }
-    }
-
-    # Run deploycrt only once if any certificate needs to be installed
-    if (%needInstall) {
-        my @components = map { $needInstall{ $_->[0] } } grep { $needInstall{ $_->[0] } } @install_checks;
-        progress( "Installing SSL certificates for: " . join( ", ", @components ) . "..." );
-
-        $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deploycrt $ssl_cert_type");
-        progressResult( $rc, 1 );
-        for my $check (@install_checks) {
-            my ( $config_key, $package, $check_files, $label ) = @$check;
-            next unless $needInstall{$config_key};
-            if ( $label eq "LDAP" && $ldapConfigured ) {
-                stopLdap();
-                startLdap();
-            }
-            configLog($config_key);
-        }
-    }
-
 }
 
 sub configCreateServerEntry {
