@@ -678,62 +678,35 @@ sub installLdapSchema {
 sub setDefaults {
     progress("Setting defaults...") unless $options{d};
 
-    # Get the interfaces.
-    # Do this in perl, since it's the same on all platforms.
+    # Detect network interfaces from ifconfig and/or ip addr
     my $ipv4found = 0;
     my $ipv6found = 0;
 
-    open INTS, "/sbin/ifconfig | grep ' addr' |";
-    foreach (<INTS>) {
-        chomp;
-        if ( $_ =~ /inet6/ ) {
-            next if ( $_ =~ /Link/ );
-            s/.*inet6 //;
-            s/.*addr: //;
-            s/\/.*//;
-            if ( $_ ne "::1" ) {
-                $ipv6found = 1;
-            }
-        }
-        else {
-            s/.*inet //;
-            s/\s.*//;
-            s/[a-zA-Z:]//g;
-            s/^\n//g;
-            next if ( $_ eq "" );
-            if ( $_ ne "127.0.0.1" ) {
-                $ipv4found = 1;
-            }
-        }
-        push @interfaces, $_;
-    }
-    close INTS;
-    if ( -x "/sbin/ip" ) {
-        open INTS, "/sbin/ip addr| grep ' scope ' |";
-        foreach (<INTS>) {
+    my @iface_cmds = ( "/sbin/ifconfig | grep ' addr' " );
+    push @iface_cmds, "/sbin/ip addr | grep ' scope ' " if -x "/sbin/ip";
+
+    for my $cmd (@iface_cmds) {
+        open( my $fh, "$cmd |" ) or next;
+        while (<$fh>) {
             chomp;
-            if ( $_ =~ /inet6/ ) {
-                next if ( $_ =~ /link/ );
+            if (/inet6/) {
+                next if /[Ll]ink/;
                 s/.*inet6 //;
                 s/.*addr: //;
                 s/\/.*//;
-                if ( $_ ne "::1" ) {
-                    $ipv6found = 1;
-                }
+                $ipv6found = 1 if $_ ne "::1";
             }
             else {
                 s/.*inet //;
-                s/\/.*//;
+                s/[\s\/].*//;
                 s/[a-zA-Z:]//g;
                 s/^\n//g;
-                next if ( $_ eq "" );
-                if ( $_ ne "127.0.0.1" ) {
-                    $ipv4found = 1;
-                }
+                next if $_ eq "";
+                $ipv4found = 1 if $_ ne "127.0.0.1";
             }
             push @interfaces, $_;
         }
-        close INTS;
+        close $fh;
     }
 
     my %seen = ();
@@ -798,17 +771,11 @@ sub setDefaults {
         $config{zimbraWebProxy}                 = "TRUE" if $newinstall;
 
         # default values for upgrades
-        if ( $config{TRAINSASPAM} eq "" ) {
-            $config{TRAINSASPAM} = "spam." . lc( genRandomPass() );
-            $config{TRAINSASPAM} .= '@' . $config{CREATEDOMAIN};
-        }
-        if ( $config{TRAINSAHAM} eq "" ) {
-            $config{TRAINSAHAM} = "ham." . lc( genRandomPass() );
-            $config{TRAINSAHAM} .= '@' . $config{CREATEDOMAIN};
-        }
-        if ( $config{VIRUSQUARANTINE} eq "" ) {
-            $config{VIRUSQUARANTINE} = "virus-quarantine." . lc( genRandomPass() );
-            $config{VIRUSQUARANTINE} .= '@' . $config{CREATEDOMAIN};
+        for my $sa ( [ 'TRAINSASPAM', 'spam' ], [ 'TRAINSAHAM', 'ham' ], [ 'VIRUSQUARANTINE', 'virus-quarantine' ] ) {
+            my ( $key, $prefix ) = @$sa;
+            if ( $config{$key} eq "" ) {
+                $config{$key} = "$prefix." . lc( genRandomPass() ) . '@' . $config{CREATEDOMAIN};
+            }
         }
     }
 
@@ -921,31 +888,30 @@ sub setDefaults {
         }
 
     }
+    # Proxy port defaults differ based on whether proxy is installed
+    $config{HTTPPROXYPORT}    = 8080;
+    $config{HTTPSPROXYPORT}   = 8443;
     if ( isInstalled("carbonio-proxy") ) {
         progress "setting defaults for carbonio-proxy.\n" if $options{d};
         $config{STRICTSERVERNAMEENABLED} = "TRUE";
-        $config{IMAPPROXYPORT}           = 143;
-        $config{IMAPSSLPROXYPORT}        = 993;
-        $config{POPPROXYPORT}            = 110;
-        $config{POPSSLPROXYPORT}         = 995;
-        $config{IMAPPORT}                = 7143;
-        $config{IMAPSSLPORT}             = 7993;
-        $config{POPPORT}                 = 7110;
-        $config{POPSSLPORT}              = 7995;
-        $config{MAILPROXY}               = "TRUE";
-        $config{HTTPPROXY}               = "TRUE";
-        $config{HTTPPROXYPORT}           = 8080;
-        $config{HTTPSPROXYPORT}          = 8443;
-        $config{HTTPPORT}                = 80;
-        $config{HTTPSPORT}               = 443;
+        $config{IMAPPROXYPORT}    = 143;
+        $config{IMAPSSLPROXYPORT} = 993;
+        $config{POPPROXYPORT}     = 110;
+        $config{POPSSLPROXYPORT}  = 995;
+        $config{IMAPPORT}         = 7143;
+        $config{IMAPSSLPORT}      = 7993;
+        $config{POPPORT}          = 7110;
+        $config{POPSSLPORT}       = 7995;
+        $config{MAILPROXY}        = "TRUE";
+        $config{HTTPPROXY}        = "TRUE";
+        $config{HTTPPORT}         = 80;
+        $config{HTTPSPORT}        = 443;
     }
     else {
         $config{IMAPPROXYPORT}    = 7143;
         $config{IMAPSSLPROXYPORT} = 7993;
         $config{POPPROXYPORT}     = 7110;
         $config{POPSSLPROXYPORT}  = 7995;
-        $config{HTTPPROXYPORT}    = 8080;
-        $config{HTTPSPROXYPORT}   = 8443;
     }
 
     # set default value for zimbraPublicServiceHostname
