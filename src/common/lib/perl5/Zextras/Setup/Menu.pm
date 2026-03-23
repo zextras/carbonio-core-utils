@@ -842,7 +842,7 @@ sub setProxyMode {
 
 sub setEnabledDependencies {
     if ( main::isEnabled("carbonio-directory-server") ) {
-        if ( $main::config{LDAPHOST} eq "" ) {
+        if ( ( $main::config{LDAPHOST} // "" ) eq "" ) {
             changeLdapHost( $main::config{HOSTNAME} );
         }
     }
