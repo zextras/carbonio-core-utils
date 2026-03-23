@@ -186,6 +186,7 @@ sub setLdapConfigHelper {
     while (@args) {
         my $key = shift @args;
         my $val = shift @args;
+        $val //= "";
         if ( ifKeyValueEquate( $sec, $key, $val, $entity ) ) {
             main::detail("Skipping update of unchanged value for $key=$val.");
         }
@@ -1155,7 +1156,7 @@ sub setProxyBits {
     my @zmprov_args = ();
     for my $pair (@proxy_defaults) {
         my ( $key, $val ) = @$pair;
-        push( @zmprov_args, ( $key, $val ) ) if ( getLdapConfigValue($key) eq "" );
+        push( @zmprov_args, ( $key, $val ) ) if ( ( getLdapConfigValue($key) // "" ) eq "" );
     }
     setLdapGlobalConfig(@zmprov_args);
 }
