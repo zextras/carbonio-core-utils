@@ -30,8 +30,8 @@ unlink("/tmp/zmsetup.log") if ( -e "/tmp/zmsetup.log" );
 symlink( $logfile, "/tmp/zmsetup.log" );
 
 my $ol = select(LOGFILE);
-select($ol);
 $| = 1;
+select($ol);
 
 progress("Operations logged to $logfile\n");
 
@@ -251,9 +251,7 @@ sub detail {
     my $date = ctime();
     $msg =~ s/\n$//;
     $msg = "$sub:$line $msg" if $options{d};
-    open( LOG, ">>$logfile" );
-    print LOG "$date $msg\n";
-    close(LOG);
+    print LOGFILE "$date $msg\n";
 }
 
 # Helper function to print done/failed based on return code
@@ -714,6 +712,29 @@ sub getDateStamp() {
     return $stamp;
 }
 
+# Ensure LDAP connection config is loaded and LDAP is running if needed.
+# Returns 0 on success, 1 on failure to start LDAP.
+sub ensureLdapForServerQuery {
+    $config{zimbra_server_hostname} = getLocalConfig("zimbra_server_hostname")
+      if ( $config{zimbra_server_hostname} eq "" );
+    detail("DEBUG: zimbra_server_hostname=$config{zimbra_server_hostname}")
+      if $options{d};
+
+    $config{ldap_url} = getLocalConfig("ldap_url")
+      if ( $config{ldap_url} eq "" );
+    detail("DEBUG: ldap_url=$config{ldap_url}")
+      if $options{d};
+
+    if ( index( $config{ldap_url}, "/" . $config{zimbra_server_hostname} ) != -1 ) {
+        detail("Server hostname found in ldap_url, checking LDAP status...");
+        if ( startLdap() ) { return 1; }
+    }
+    else {
+        detail("Server hostname not in ldap_url, not starting slapd.");
+    }
+    return 0;
+}
+
 sub getInstalledPackages {
     detail("Getting installed packages...");
     foreach my $p (@packageList) {
@@ -722,26 +743,14 @@ sub getInstalledPackages {
         }
     }
 
-    # get list of previously installed packages on upgrade
+    # get list of previously installed packages and enabled services on upgrade
     if ( $newinstall != 1 ) {
-        $config{zimbra_server_hostname} = getLocalConfig("zimbra_server_hostname")
-          if ( $config{zimbra_server_hostname} eq "" );
-        detail("DEBUG: zimbra_server_hostname=$config{zimbra_server_hostname}")
-          if $options{d};
+        return 1 if ensureLdapForServerQuery();
 
-        $config{ldap_url} = getLocalConfig("ldap_url")
-          if ( $config{ldap_url} eq "" );
-        detail("DEBUG: ldap_url=$config{ldap_url}")
-          if $options{d};
+        detail("Getting installed and enabled services from LDAP...");
+        $enabledPackages{"carbonio-core"} = "Enabled"
+          if ( isInstalled("carbonio-core") );
 
-        if ( index( $config{ldap_url}, "/" . $config{zimbra_server_hostname} ) != -1 ) {
-            detail("Server hostname found in ldap_url, checking LDAP status...");
-            if ( startLdap() ) { return 1; }
-        }
-        else {
-            detail("Server hostname not in ldap_url, not starting slapd.");
-        }
-        detail("Getting installed services from LDAP...");
         open( ZMPROV, "$ZMPROV gs $config{zimbra_server_hostname}|" );
         while (<ZMPROV>) {
             chomp;
@@ -756,8 +765,36 @@ sub getInstalledPackages {
                     progress("WARNING: Unknown package installed for $service.\n");
                 }
             }
+            elsif (/zimbraServiceEnabled:\s(.*)/) {
+                my $service = $1;
+                if ( $service eq "imapproxy" ) {
+                    $service = "proxy";
+                }
+                if ( exists $packageServiceMap{$service} ) {
+                    detail("Marking $service as an enabled service.")
+                      if ($debug);
+                    $enabledPackages{ $packageServiceMap{$service} } = "Enabled";
+                    $enabledServices{$service}                       = "Enabled";
+                    $prevEnabledServices{$service}                   = "Enabled";
+                }
+                else {
+                    progress("WARNING: Unknown package installed for $service.\n");
+                }
+            }
             else {
-                detail("DEBUG: skipping not zimbraServiceInstalled =>  $_") if $debug;
+                detail("DEBUG: skipping => $_") if $debug;
+            }
+        }
+        close(ZMPROV);
+
+        foreach my $p (@packageList) {
+            if ( isInstalled($p) and not defined $prevInstalledPackages{$p} ) {
+                detail("Marking $p as installed. Services for $p will be enabled.");
+                $enabledPackages{$p} = "Enabled";
+            }
+            elsif ( isInstalled($p) and not defined $enabledPackages{$p} ) {
+                detail("Marking $p as disabled.");
+                $enabledPackages{$p} = "Disabled";
             }
         }
     }
@@ -824,65 +861,8 @@ sub isEnabled {
     my $packages = join( " ", keys %enabledPackages );
     detail("Enabled packages: $packages.");
 
-    # lookup service in ldap
-    if ( $newinstall == 0 ) {
-        $config{zimbra_server_hostname} = getLocalConfig("zimbra_server_hostname")
-          if ( $config{zimbra_server_hostname} eq "" );
-        detail("DEBUG: zimbra_server_hostname=$config{zimbra_server_hostname}")
-          if $options{d};
-
-        $config{ldap_url} = getLocalConfig("ldap_url")
-          if ( $config{ldap_url} eq "" );
-        detail("DEBUG: ldap_url=$config{ldap_url}")
-          if $options{d};
-
-        if ( index( $config{ldap_url}, "/" . $config{zimbra_server_hostname} ) != -1 ) {
-            detail("Server hostname found in ldap_url, checking LDAP status...");
-            if ( startLdap() ) { return 1; }
-        }
-        else {
-            detail("Server hostname not in ldap_url, not starting slapd.");
-        }
-        detail("Getting enabled services from LDAP...");
-        $enabledPackages{"carbonio-core"} = "Enabled"
-          if ( isInstalled("carbonio-core") );
-
-        open( ZMPROV, "$ZMPROV gs $config{zimbra_server_hostname}|" );
-        while (<ZMPROV>) {
-            chomp;
-            if (/zimbraServiceEnabled:\s(.*)/) {
-                my $service = $1;
-                if ( $service eq "imapproxy" ) {
-                    $service = "proxy";
-                }
-                if ( exists $packageServiceMap{$service} ) {
-                    detail("Marking $service as an enabled service.")
-                      if ($debug);
-                    $enabledPackages{ $packageServiceMap{$service} } = "Enabled";
-                    $enabledServices{$service}                       = "Enabled";
-                    $prevEnabledServices{$service}                   = "Enabled";
-                }
-                else {
-                    progress("WARNING: Unknown package installed for $service.\n");
-                }
-            }
-            else {
-                detail("DEBUG: skipping not zimbraServiceEnabled => $_") if $debug;
-            }
-        }
-        foreach my $p (@packageList) {
-            if ( isInstalled($p) and not defined $prevInstalledPackages{$p} ) {
-                detail("Marking $p as installed. Services for $p will be enabled.");
-                $enabledPackages{$p} = "Enabled";
-            }
-            elsif ( isInstalled($p) and not defined $enabledPackages{$p} ) {
-                detail("Marking $p as disabled.");
-                $enabledPackages{$p} = "Disabled";
-            }
-        }
-        close(ZMPROV);
-    }
-    else {
+    # On new install, enable all installed packages (LDAP data loaded by getInstalledPackages on upgrade)
+    if ($newinstall) {
         detail("New install, enabling all installed packages...");
         foreach my $p (@packageList) {
             if ( isInstalled($p) ) {
@@ -900,8 +880,12 @@ sub isEnabled {
     return ( $enabledPackages{$package} eq "Enabled" ? 1 : 0 );
 }
 
+my %isInstalledCache;
+
 sub isInstalled {
     my $pkg = shift;
+
+    return $isInstalledCache{$pkg} if exists $isInstalledCache{$pkg};
 
     my $pkgQuery;
 
@@ -915,16 +899,20 @@ sub isInstalled {
 
     my $rc = 0xffff & system("$pkgQuery > /dev/null 2>&1");
     $rc >>= 8;
+    my $result;
     if ( ( $platform =~ /ubuntu/ ) && $rc == 0 ) {
         $good     = 1;
         $pkgQuery = "dpkg -s $pkg | egrep '^Status: ' | grep 'not-installed'";
         $rc       = 0xffff & system("$pkgQuery > /dev/null 2>&1");
         $rc >>= 8;
-        return ( $rc == $good );
+        $result = ( $rc == $good );
     }
     else {
-        return ( $rc == $good );
+        $result = ( $rc == $good );
     }
+
+    $isInstalledCache{$pkg} = $result;
+    return $result;
 }
 
 sub genRandomPass {
@@ -1413,66 +1401,7 @@ sub setDefaults {
                 }
             }
             elsif ( isEnabled("carbonio-mta") ) {
-
-                my @answer = $ans->answer;
-                foreach my $a (@answer) {
-                    if ( $a->type eq "MX" ) {
-                        my $h    = getDnsRecords( $a->exchange, 'A' );
-                        my $ipv6 = 0;
-                        if ( !defined $h ) {
-                            $h    = getDnsRecords( $a->exchange, 'AAAA' );
-                            $ipv6 = 1;
-                        }
-                        if ( defined $h ) {
-                            my @ha = $h->answer;
-                            foreach $h (@ha) {
-                                if ($ipv6) {
-                                    if ( $h->type eq 'AAAA' ) {
-                                        progress "\tMX: " . $a->exchange . " (" . $h->address . ")\n";
-                                    }
-                                }
-                                else {
-                                    if ( $h->type eq 'A' ) {
-                                        progress "\tMX: " . $a->exchange . " (" . $h->address . ")\n";
-                                    }
-                                }
-                            }
-                        }
-                        else {
-                            progress "\n\nDNS ERROR - No \"A\" or \"AAAA\" record for $config{CREATEDOMAIN}.\n";
-                        }
-                    }
-                }
-                progress "\n";
-                foreach my $i (@interfaces) {
-                    progress "\tInterface: $i\n";
-                }
-                foreach my $a (@answer) {
-                    foreach my $i (@interfaces) {
-                        if ( $a->type eq "MX" ) {
-                            my $h = getDnsRecords( $a->exchange, 'A' );
-                            if ( !defined $h ) {
-                                $h = getDnsRecords( $a->exchange, 'AAAA' );
-                            }
-                            if ( defined $h ) {
-                                my @ha = $h->answer;
-                                foreach $h (@ha) {
-                                    my $interIp   = NetAddr::IP->new("$i");
-                                    my $interface = lc( $interIp->addr );
-                                    if ( $h->type eq 'A' || $h->type eq 'AAAA' ) {
-                                        print "\t\t" . $h->address . "\n";
-                                        if ( $h->address eq $interface ) {
-                                            $good = 1;
-                                            last;
-                                        }
-                                    }
-                                }
-                                if ($good) { last; }
-                            }
-                        }
-                    }
-                    if ($good) { last; }
-                }
+                $good = validateMxRecords( $config{CREATEDOMAIN}, $ans );
                 if ( !$good ) {
                     progress("\n\nDNS ERROR - none of the \"MX\" records for $config{CREATEDOMAIN}\n");
                     progress("resolve to this host.\n");
@@ -1480,7 +1409,6 @@ sub setDefaults {
                         setCreateDomain();
                     }
                 }
-
             }
         }
 
@@ -1513,8 +1441,7 @@ sub setDefaults {
     }
 
     # set default value for zimbraPublicServiceHostname
-    $config{PUBLICSERVICEHOSTNAME} = lc(qx(hostname --fqdn));
-    chomp $config{PUBLICSERVICEHOSTNAME};
+    $config{PUBLICSERVICEHOSTNAME} = $config{HOSTNAME};
     if ( $config{PUBLICSERVICEHOSTNAME} eq "" ) {
         $config{PUBLICSERVICEHOSTNAME} = "UNSET";
     }
@@ -1829,64 +1756,7 @@ sub setCreateDomain {
             next;
         }
         elsif ( isEnabled("carbonio-mta") ) {
-            my @answer = $ans->answer;
-            foreach my $a (@answer) {
-                if ( $a->type eq "MX" ) {
-                    my $h    = getDnsRecords( $a->exchange, 'A' );
-                    my $ipv6 = 0;
-                    if ( !defined $h ) {
-                        $h    = getDnsRecords( $a->exchange, 'AAAA' );
-                        $ipv6 = 1;
-                    }
-                    if ( defined $h ) {
-                        my @ha = $h->answer;
-                        foreach $h (@ha) {
-                            if ($ipv6) {
-                                if ( $h->type eq 'AAAA' ) {
-                                    progress "\tMX: " . $a->exchange . " (" . $h->address . ")\n";
-                                }
-                            }
-                            else {
-                                if ( $h->type eq 'A' ) {
-                                    progress "\tMX: " . $a->exchange . " (" . $h->address . ")\n";
-                                }
-                            }
-                        }
-                    }
-                    else {
-                        progress "\n\nDNS ERROR - No \"A\" or \"AAAA\" record for $config{CREATEDOMAIN}.\n";
-                    }
-                }
-            }
-            progress "\n";
-            foreach my $i (@interfaces) {
-                progress "\tInterface: $i\n";
-            }
-            foreach my $a (@answer) {
-                foreach my $i (@interfaces) {
-                    if ( $a->type eq "MX" ) {
-                        my $h = getDnsRecords( $a->exchange, 'A' );
-                        if ( !defined $h ) {
-                            $h = getDnsRecords( $a->exchange, 'AAAA' );
-                        }
-                        if ( defined $h ) {
-                            my @ha = $h->answer;
-                            foreach $h (@ha) {
-                                my $interIp   = NetAddr::IP->new("$i");
-                                my $interface = lc( $interIp->addr );
-                                if ( $h->type eq 'A' || $h->type eq 'AAAA' ) {
-                                    if ( $h->address eq $interface ) {
-                                        $good = 1;
-                                        last;
-                                    }
-                                }
-                            }
-                        }
-                        if ($good) { last; }
-                    }
-                }
-                if ($good) { last; }
-            }
+            $good = validateMxRecords( $config{CREATEDOMAIN}, $ans );
             if ($good) { last; }
             else {
                 progress("\n\nDNS ERROR - none of the \"MX\" records for $config{CREATEDOMAIN}\n");
@@ -2289,6 +2159,64 @@ sub lookupHostName {
     }
 
     # if everything is okay
+    return 0;
+}
+
+# Validate MX records for a domain against local interfaces.
+# Displays MX records and checks if any resolve to this host.
+# Returns 1 if a match is found, 0 otherwise.
+sub validateMxRecords {
+    my ( $domain, $ans ) = @_;
+    my @answer = $ans->answer;
+    my %resolved_mx;
+
+    # Display MX records and cache DNS results
+    foreach my $a (@answer) {
+        next unless $a->type eq "MX";
+        my $exchange = $a->exchange;
+        my $h        = getDnsRecords( $exchange, 'A' );
+        my $ipv6     = 0;
+        if ( !defined $h ) {
+            $h    = getDnsRecords( $exchange, 'AAAA' );
+            $ipv6 = 1;
+        }
+        if ( defined $h ) {
+            my @ha = $h->answer;
+            $resolved_mx{$exchange} = \@ha;
+            foreach $h (@ha) {
+                my $type = $ipv6 ? 'AAAA' : 'A';
+                if ( $h->type eq $type ) {
+                    progress "\tMX: $exchange (" . $h->address . ")\n";
+                }
+            }
+        }
+        else {
+            progress "\n\nDNS ERROR - No \"A\" or \"AAAA\" record for $domain.\n";
+        }
+    }
+
+    progress "\n";
+    foreach my $i (@interfaces) {
+        progress "\tInterface: $i\n";
+    }
+
+    # Check if any MX record resolves to a local interface
+    foreach my $a (@answer) {
+        next unless $a->type eq "MX";
+        my $ha_ref = $resolved_mx{ $a->exchange };
+        next unless defined $ha_ref;
+        foreach my $i (@interfaces) {
+            foreach my $h (@$ha_ref) {
+                if ( $h->type eq 'A' || $h->type eq 'AAAA' ) {
+                    my $interIp   = NetAddr::IP->new("$i");
+                    my $interface = lc( $interIp->addr );
+                    if ( $h->address eq $interface ) {
+                        return 1;
+                    }
+                }
+            }
+        }
+    }
     return 0;
 }
 
@@ -3313,13 +3241,14 @@ sub runAsZextrasWithOutput {
 }
 
 sub getLocalConfig {
-    my ( $key, $force ) = @_;
+    my ( $key, $force, $raw ) = @_;
 
     return $main::loaded{lc}{$key}
       if ( exists $main::loaded{lc}{$key} && !$force );
 
     detail("Getting local config $key...");
-    my $val = qx(/opt/zextras/bin/zmlocalconfig -x -s -m nokey ${key} 2> /dev/null);
+    my $expand = $raw ? "" : "-x";
+    my $val = qx(/opt/zextras/bin/zmlocalconfig $expand -s -m nokey ${key} 2> /dev/null);
     chomp $val;
     detail("DEBUG: Local config loaded $key=$val.") if $debug;
     $main::loaded{lc}{$key} = $val;
@@ -3328,16 +3257,7 @@ sub getLocalConfig {
 
 sub getLocalConfigRaw {
     my ( $key, $force ) = @_;
-
-    return $main::loaded{lc}{$key}
-      if ( exists $main::loaded{lc}{$key} && !$force );
-
-    detail("Getting local config $key...");
-    my $val = qx(/opt/zextras/bin/zmlocalconfig -s -m nokey ${key} 2> /dev/null);
-    chomp $val;
-    detail("DEBUG: Local config loaded $key=$val.") if $debug;
-    $main::loaded{lc}{$key} = $val;
-    return $val;
+    return getLocalConfig( $key, $force, 1 );
 }
 
 sub deleteLocalConfig {
@@ -3611,14 +3531,7 @@ sub updatePasswordsInLocalConfig {
             setLdapPasswordHelper( "nginx", "-n", "ldap_nginx_password", "ldap_nginx_password" )     if $ldapNginxChanged;
         }
         elsif ($ldapConfigured) {
-            progress("Stopping LDAP...");
-            if ( isSystemd() ) {
-                system("systemctl stop carbonio-openldap.service");
-            }
-            else {
-                runAsZextras("/opt/zextras/bin/ldap stop");
-            }
-            progress("done.\n");
+            stopLdap();
             startLdap();
         }
     }
@@ -3710,13 +3623,7 @@ sub configSetupLdap {
                         ldap_url       => "$proto://$config{HOSTNAME}:$config{LDAPPORT} $ldapMasterUrl"
                     );
                     $ldapMasterUrl .= "/" unless $ldapMasterUrl =~ /\/$/;
-                    if ( isSystemd() ) {
-                        system("systemctl start carbonio-openldap.service");
-                        waitForLdap(30);
-                    }
-                    else {
-                        runAsZextras("/opt/zextras/bin/ldap start");
-                    }
+                    startLdap();
                     $rc = runAsZextras("/opt/zextras/libexec/zmldapenable-mmr -s $config{LDAPSERVERID} -m $ldapMasterUrl");
                 }
                 else {
@@ -3732,14 +3639,7 @@ sub configSetupLdap {
                 }
                 $config{DOCREATEDOMAIN} = "no";
                 progress("done.\n");
-                progress("Stopping LDAP...");
-                if ( isSystemd() ) {
-                    $rc = system("systemctl stop carbonio-openldap.service");
-                }
-                else {
-                    $rc = runAsZextras("/opt/zextras/bin/ldap stop");
-                }
-                progress("done.\n");
+                stopLdap();
                 startLdap();
             }
             else {
@@ -3748,14 +3648,7 @@ sub configSetupLdap {
                 progress("Disabling LDAP on $config{HOSTNAME}...");
                 my $rc = setLdapServerConfig( "-zimbraServiceEnabled", "directory-server" );
                 progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
-                progress("Stopping LDAP...");
-                if ( isSystemd() ) {
-                    $rc = system("systemctl stop carbonio-openldap.service");
-                }
-                else {
-                    $rc = runAsZextras("/opt/zextras/bin/ldap stop");
-                }
-                progress("done.\n");
+                stopLdap();
             }
         }
     }
@@ -4247,71 +4140,58 @@ sub configSetProxyPrefs {
     }
 }
 
-sub countReverseProxyLookupTargets {
-    my $count           = 0;
+# Connect and bind to LDAP master. Returns ($ldap, undef) on success,
+# or (undef, $error_msg) on failure.
+sub ldapBindMaster {
     my $ldap_pass       = getLocalConfig("zimbra_ldap_password");
     my $ldap_master_url = getLocalConfig("ldap_master_url");
-    my $ldap;
-    my @masters    = split( / /, $ldap_master_url );
-    my $master_ref = \@masters;
+    my @masters         = split( / /, $ldap_master_url );
 
-    unless ( $ldap = Net::LDAP->new($master_ref) ) {
+    my $ldap = Net::LDAP->new( \@masters );
+    unless ($ldap) {
         detail("Unable to contact $ldap_master_url.");
-        return;
+        return ( undef, "Unable to contact $ldap_master_url" );
     }
-    my $ldap_dn   = $config{zimbra_ldap_userdn};
-    my $ldap_base = "";
 
-    my $result = $ldap->bind( $ldap_dn, password => $ldap_pass );
+    my $ldap_dn = $config{zimbra_ldap_userdn};
+    my $result  = $ldap->bind( $ldap_dn, password => $ldap_pass );
     if ( $result->code() ) {
         detail("LDAP bind failed for $ldap_dn.");
-        return;
+        return ( undef, "LDAP bind failed for $ldap_dn" );
     }
-    else {
-        detail("LDAP bind done for $ldap_dn.");
-        progress("Searching LDAP for reverseProxyLookupTargets...");
-        $result = $ldap->search( base => 'cn=zimbra', filter => '(zimbraReverseProxyLookupTarget=TRUE)', attrs => ['1.1'] );
+    detail("LDAP bind done for $ldap_dn.");
+    return ( $ldap, undef );
+}
 
-        progress( ( $result->code() ) ? "failed.\n" : "done.\n" );
-        return if ( $result->code() );
-        $count = $result->count;
-    }
-    return "$count";
+sub countReverseProxyLookupTargets {
+    my ( $ldap, $err ) = ldapBindMaster();
+    return unless $ldap;
+
+    progress("Searching LDAP for reverseProxyLookupTargets...");
+    my $result = $ldap->search( base => 'cn=zimbra', filter => '(zimbraReverseProxyLookupTarget=TRUE)', attrs => ['1.1'] );
+    progress( ( $result->code() ) ? "failed.\n" : "done.\n" );
+    $ldap->unbind;
+    return if ( $result->code() );
+    return "" . $result->count;
 }
 
 sub countUsers {
     return $main::loaded{stats}{numAccts}
       if ( exists $main::loaded{stats}{numAccts} );
-    my $count           = 0;
-    my $ldap_pass       = getLocalConfig("zimbra_ldap_password");
-    my $ldap_master_url = getLocalConfig("ldap_master_url");
-    my $ldap;
-    my @masters    = split( / /, $ldap_master_url );
-    my $master_ref = \@masters;
-    unless ( $ldap = Net::LDAP->new($master_ref) ) {
-        detail("Unable to contact $ldap_master_url.");
-        return undef;
-    }
-    my $ldap_dn   = $config{zimbra_ldap_userdn};
-    my $ldap_base = "";
 
-    my $result = $ldap->bind( $ldap_dn, password => $ldap_pass );
-    if ( $result->code() ) {
-        detail("LDAP bind failed for $ldap_dn.");
-        return undef;
-    }
-    else {
-        detail("LDAP bind done for $ldap_dn.");
-        progress("Searching LDAP for zimbra accounts...");
-        $result = $ldap->search(
-            filter => "(objectclass=zimbraAccount)",
-            \attrs => ['zimbraMailDeliveryAddress']
-        );
-        progress( ( $result->code() ) ? "failed.\n" : "done.\n" );
-        return undef if ( $result->code() );
-        $count = $result->count;
-    }
-    $result = $ldap->unbind;
+    my ( $ldap, $err ) = ldapBindMaster();
+    return undef unless $ldap;
+
+    progress("Searching LDAP for zimbra accounts...");
+    my $result = $ldap->search(
+        filter => "(objectclass=zimbraAccount)",
+        attrs  => ['zimbraMailDeliveryAddress']
+    );
+    progress( ( $result->code() ) ? "failed.\n" : "done.\n" );
+    $ldap->unbind;
+    return undef if ( $result->code() );
+
+    my $count = $result->count;
     $main::loaded{stats}{numAccts} = $count
       if ( $count > 0 );
     return ( ( $count > 0 ) ? "$count" : undef );
