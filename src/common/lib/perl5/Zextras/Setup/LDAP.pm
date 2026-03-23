@@ -51,7 +51,7 @@ our @EXPORT = qw(
 sub updateKeyValue {
     my ( $sec, $key, $val, $sub ) = @_;
     if ( $key =~ /^\+(.*)/ ) {
-        $main::loaded{$sec}{$sub}{$1} = "$main::loaded{$sec}{$sub}{$1}\n$val";
+        $main::loaded{$sec}{$sub}{$1} = ( $main::loaded{$sec}{$sub}{$1} // "" ) . "\n$val";
         $main::saved{$sec}{$sub}{$1}  = $main::loaded{$sec}{$sub}{$1};
     }
     elsif ( $key =~ /^-(.*)/ ) {
@@ -103,7 +103,7 @@ sub getLdapValueHelper {
     while ( scalar(@d) > 0 ) {
         chomp( my $line = shift(@d) );
         my ( $k, $v ) = $line =~ m/^(\w+):\s(.*)/;
-        while ( $d[0] !~ m/^\w+:\s.*/ && scalar(@d) > 0 ) {
+        while ( scalar(@d) > 0 && $d[0] !~ m/^\w+:\s.*/ ) {
             chomp( $v .= shift(@d) );
         }
         if ( !$main::loaded{$sec}{$sub}{zmsetuploaded} || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) ) {
@@ -138,7 +138,7 @@ sub getLdapValueHelper {
     close $efh;
     $main::loaded{$sec}{$sub}{zmsetuploaded} = 1;
     $val = $main::loaded{$sec}{$sub}{$attrib};
-    main::detail("Returning retrieved $detailType config attribute for $sub: $attrib=$val.");
+    main::detail("Returning retrieved $detailType config attribute for $sub: $attrib=" . ($val // "") . ".");
     return $val;
 }
 
@@ -149,7 +149,7 @@ sub getLdapAccountValue($$) {
 
 sub getLdapCOSValue {
     my ( $attrib, $sub ) = @_;
-    $sub = "default" if ( $sub eq "" );
+    $sub = "default" if ( !defined($sub) || $sub eq "" );
     return getLdapValueHelper( $attrib, $sub, "gc", "$main::ZMPROV gc $sub", "cos" );
 }
 
@@ -160,20 +160,20 @@ sub getLdapConfigValue {
 
 sub getLdapDomainValue {
     my ( $attrib, $sub ) = @_;
-    $sub = $main::config{zimbraDefaultDomainName} if ( $sub eq "" );
-    return undef if ( $sub eq "" );
+    $sub = $main::config{zimbraDefaultDomainName} if ( !defined($sub) || $sub eq "" );
+    return undef if ( !defined($sub) || $sub eq "" );
     return getLdapValueHelper( $attrib, $sub, "domain", "$main::ZMPROV gd $sub", "domain" );
 }
 
 sub getLdapServerValue {
     my ( $attrib, $sub ) = @_;
-    $sub = $main::config{HOSTNAME} if ( $sub eq "" );
+    $sub = $main::config{HOSTNAME} if ( !defined($sub) || $sub eq "" );
     return getLdapValueHelper( $attrib, $sub, "gs", "$main::ZMPROV gs $sub", "server" );
 }
 
 sub getRealLdapServerValue {
     my ( $attrib, $sub ) = @_;
-    $sub = $main::config{HOSTNAME} if ( $sub eq "" );
+    $sub = $main::config{HOSTNAME} if ( !defined($sub) || $sub eq "" );
     return getLdapValueHelper( $attrib, $sub, "gsreal", "$main::ZMPROV gs -e $sub", "server" );
 }
 
@@ -420,7 +420,7 @@ sub createSystemAccountIfMissing {
     $main::config{$configKey} = lc( $main::config{$configKey} );
     main::progress("Creating user $main::config{$configKey}...");
     my $acctId = getLdapAccountValue( "zimbraId", $main::config{$configKey} );
-    if ( $acctId ne "" ) {
+    if ( ($acctId // "") ne "" ) {
         main::progress("already exists.\n");
         return 0;
     }
@@ -471,7 +471,7 @@ sub setLdapDefaults {
     # Load server specific attributes only if server exists
     #
     my $serverid = getLdapServerValue("zimbraId");
-    if ( $serverid ne "" ) {
+    if ( ($serverid // "") ne "" ) {
 
         # Load server attributes in bulk using data-driven mapping
         my %ldapServerAttribs = (
@@ -983,7 +983,7 @@ sub configCreateServerEntry {
     }
 
     main::progress("Creating server entry for $main::config{HOSTNAME}...");
-    my $serverId = getLdapServerValue("zimbraId");
+    my $serverId = getLdapServerValue("zimbraId") // "";
     if ( $serverId ne "" ) {
         main::progress("already exists.\n");
     }
@@ -1009,7 +1009,7 @@ sub configSetStoreDefaults {
         my $adding = 0;
         main::progress("Checking current setting of ReverseProxyAvailableLookupTargets...\n");
         my $zrpALT = getLdapConfigValue("zimbraReverseProxyAvailableLookupTargets");
-        if ( $zrpALT ne "" ) {
+        if ( ($zrpALT // "") ne "" ) {
             $adding = 1;
         }
         else {
@@ -1235,7 +1235,7 @@ sub configCreateDomain {
         if ( $main::config{DOCREATEDOMAIN} eq "yes" ) {
             main::progress("Creating domain $main::config{CREATEDOMAIN}...");
             my $domainId = getLdapDomainValue("zimbraId");
-            if ( $domainId ne "" ) {
+            if ( ($domainId // "") ne "" ) {
                 main::progress("already exists.\n");
             }
             else {
@@ -1259,7 +1259,7 @@ sub configCreateDomain {
 
             main::progress("Creating domain $d...");
             my $domainId = getLdapDomainValue( "zimbraId", $d );
-            if ( $domainId ne "" ) {
+            if ( ($domainId // "") ne "" ) {
                 main::progress("already exists.\n");
             }
             else {
@@ -1269,7 +1269,7 @@ sub configCreateDomain {
 
             main::progress("Creating admin account $main::config{CREATEADMIN}...");
             my $acctId = getLdapAccountValue( "zimbraId", $main::config{CREATEADMIN} );
-            if ( $acctId ne "" ) {
+            if ( ($acctId // "") ne "" ) {
                 main::progress("already exists.\n");
             }
             else {

@@ -1334,6 +1334,10 @@ sub isStoreServiceNode {
     }
 }
 
+sub isZCS {
+    return ( ( grep( /\b\w+-appserver\b/, @packageList ) ) ? 1 : 0 );
+}
+
 
 
 sub configInitSql {
