@@ -13,7 +13,7 @@ our @EXPORT = qw(configCASetup configSaveCA configCreateCert configSaveCert conf
 
 sub configCASetup {
 
-    if ( $main::configStatus{configCASetup} eq "CONFIGURED" && -d "/opt/zextras/ssl/carbonio/ca" ) {
+    if ( ( $main::configStatus{configCASetup} // "" ) eq "CONFIGURED" && -d "/opt/zextras/ssl/carbonio/ca" ) {
         main::configLog("configCASetup");
         return 0;
     }
@@ -34,7 +34,7 @@ sub configCASetup {
         }
     }
 
-    my $needNewCA;
+    my $needNewCA = "";
     if ( main::isLdapMaster() ) {
         $needNewCA = "-new" if ( !-d "/opt/zextras/ssl/carbonio/ca" || $main::needNewCert eq "-new" );
     }
@@ -53,7 +53,7 @@ sub configCASetup {
 
 sub configSaveCA {
 
-    if ( $main::configStatus{configSaveCA} eq "CONFIGURED" ) {
+    if ( ( $main::configStatus{configSaveCA} // "" ) eq "CONFIGURED" ) {
         main::configLog("configSaveCA");
         return 0;
     }
@@ -65,7 +65,7 @@ sub configSaveCA {
 
 sub configCreateCert {
 
-    if ( $main::configStatus{configCreateCert} eq "CONFIGURED" && -d "/opt/zextras/ssl/carbonio/server" ) {
+    if ( ( $main::configStatus{configCreateCert} // "" ) eq "CONFIGURED" && -d "/opt/zextras/ssl/carbonio/server" ) {
         main::configLog("configCreateCert");
         return 0;
     }
@@ -126,7 +126,7 @@ sub configCreateCert {
 
 sub configSaveCert {
 
-    if ( $main::configStatus{configSaveCert} eq "CONFIGURED" ) {
+    if ( ( $main::configStatus{configSaveCert} // "" ) eq "CONFIGURED" ) {
         main::configLog("configSaveCert");
         return 0;
     }
@@ -151,7 +151,7 @@ sub configInstallCert {
     my %needInstall;
     for my $check (@install_checks) {
         my ( $config_key, $package, $check_files, $label ) = @$check;
-        if ( $main::configStatus{$config_key} eq "CONFIGURED" && $main::needNewCert eq "" ) {
+        if ( ( $main::configStatus{$config_key} // "" ) eq "CONFIGURED" && $main::needNewCert eq "" ) {
             main::configLog($config_key);
         }
         elsif ( main::isInstalled($package) ) {
