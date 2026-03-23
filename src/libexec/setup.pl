@@ -13,6 +13,7 @@ use lib "/opt/zextras/common/lib/perl5";
 use Zextras::Util::Common;
 use Zextras::Util::Timezone;
 use Zextras::Util::Systemd;
+use Zextras::Setup::DNS;
 use FileHandle;
 use Net::LDAP;
 use IPC::Open3;
@@ -51,7 +52,6 @@ if ( $user ne "zextras" ) {
 
 use ldapinit;
 use Getopt::Std;
-use Net::DNS::Resolver;
 use NetAddr::IP;
 
 our %options = ();
@@ -1389,7 +1389,7 @@ sub setDefaults {
                 }
             }
             elsif ( isEnabled("carbonio-mta") ) {
-                $good = validateMxRecords( $config{CREATEDOMAIN}, $ans );
+                $good = validateMxRecords( $config{CREATEDOMAIN}, $ans, \@interfaces );
                 if ( !$good ) {
                     progress("\n\nDNS ERROR - none of the \"MX\" records for $config{CREATEDOMAIN}\n");
                     progress("resolve to this host.\n");
@@ -1737,7 +1737,7 @@ sub setCreateDomain {
             next;
         }
         elsif ( isEnabled("carbonio-mta") ) {
-            $good = validateMxRecords( $config{CREATEDOMAIN}, $ans );
+            $good = validateMxRecords( $config{CREATEDOMAIN}, $ans, \@interfaces );
             if ($good) { last; }
             else {
                 progress("\n\nDNS ERROR - none of the \"MX\" records for $config{CREATEDOMAIN}\n");
@@ -2085,120 +2085,6 @@ sub changeLdapServerID {
 
 sub changePublicServiceHostname {
     $config{PUBLICSERVICEHOSTNAME} = shift;
-}
-
-sub getDnsRecords {
-    my $hostname   = shift;
-    my $query_type = shift;
-
-    progress("\n\nQuerying DNS for \"$query_type\" record of $hostname...");
-
-    my $resolver = Net::DNS::Resolver->new;
-    my $ans      = $resolver->search( $hostname, $query_type );
-
-    return $ans;
-}
-
-sub lookupHostName {
-    my $hostname   = shift;
-    my $query_type = shift;
-
-    progress("\n\nQuerying DNS for \"$query_type\" record of current hostname $hostname...");
-
-    # perform DNS lookup for asked query_type for supplied hostname
-    my $resolver = Net::DNS::Resolver->new;
-    my $ans      = $resolver->search( $hostname, $query_type );
-    if ( !defined $ans ) {
-        progress("\n\tNo results returned for \"$query_type\" record of current hostname $hostname\n");
-        progress("\nChecked nameservers:\n");
-        foreach my $server ( $resolver->nameservers() ) {
-            progress("\t$server\n");
-        }
-
-        # return if no record was found
-        return 1;
-    }
-
-    # else check if resolved IP address is pointing to a loopback device or interface
-    foreach my $rr ( $ans->answer ) {
-        next unless $rr->type eq 'A';
-        my $ip = $rr->address;
-
-        # regexp based check that matches IP to check if its a possible loopback addresses (covers both IPv4 and IPv6)
-        if ( $ip =~ /^127\.|^::1$/ ) {
-            progress("\n\tERROR: Resolved IP address $ip for current hostname $hostname is pointing to a loopback device or interface");
-            return 1;
-        }
-
-        # check if IP address belongs to a local network interface on the current host by
-        # looking for "scope host" in interface detail
-        my $ipo = `ip addr show $ip 2>&1`;
-        if ( $? == 0 && $ipo =~ /scope host/ ) {
-            progress("\n\tERROR: Resolved IP address $ip for current hostname $hostname is pointing to a loopback device or interface");
-            return 1;
-        }
-    }
-
-    # if everything is okay
-    return 0;
-}
-
-# Validate MX records for a domain against local interfaces.
-# Displays MX records and checks if any resolve to this host.
-# Returns 1 if a match is found, 0 otherwise.
-sub validateMxRecords {
-    my ( $domain, $ans ) = @_;
-    my @answer = $ans->answer;
-    my %resolved_mx;
-
-    # Display MX records and cache DNS results
-    foreach my $a (@answer) {
-        next unless $a->type eq "MX";
-        my $exchange = $a->exchange;
-        my $h        = getDnsRecords( $exchange, 'A' );
-        my $ipv6     = 0;
-        if ( !defined $h ) {
-            $h    = getDnsRecords( $exchange, 'AAAA' );
-            $ipv6 = 1;
-        }
-        if ( defined $h ) {
-            my @ha = $h->answer;
-            $resolved_mx{$exchange} = \@ha;
-            foreach $h (@ha) {
-                my $type = $ipv6 ? 'AAAA' : 'A';
-                if ( $h->type eq $type ) {
-                    progress "\tMX: $exchange (" . $h->address . ")\n";
-                }
-            }
-        }
-        else {
-            progress "\n\nDNS ERROR - No \"A\" or \"AAAA\" record for $domain.\n";
-        }
-    }
-
-    progress "\n";
-    foreach my $i (@interfaces) {
-        progress "\tInterface: $i\n";
-    }
-
-    # Check if any MX record resolves to a local interface
-    foreach my $a (@answer) {
-        next unless $a->type eq "MX";
-        my $ha_ref = $resolved_mx{ $a->exchange };
-        next unless defined $ha_ref;
-        foreach my $i (@interfaces) {
-            foreach my $h (@$ha_ref) {
-                if ( $h->type eq 'A' || $h->type eq 'AAAA' ) {
-                    my $interIp   = NetAddr::IP->new("$i");
-                    my $interface = lc( $interIp->addr );
-                    if ( $h->address eq $interface ) {
-                        return 1;
-                    }
-                }
-            }
-        }
-    }
-    return 0;
 }
 
 sub setHostName {
