@@ -61,7 +61,7 @@ our %config  = ();
 our %loaded  = ();
 our %saved   = ();
 
-my @packageList = (
+our @packageList = (
     "carbonio-core",
     "carbonio-clamav",
     "carbonio-directory-server",
@@ -87,21 +87,21 @@ my %packageServiceMap = (
     service            => "carbonio-appserver",
 );
 
-my $serviceWebApp = "service";
+our $serviceWebApp = "service";
 
-my %installedPackages = ();
-our %installedWebapps = ();
-my %prevInstalledPackages = ();
-my %prevEnabledServices   = ();
-my %enabledPackages       = ();
-my %enabledServices       = ();
+our %installedPackages     = ();
+our %installedWebapps      = ();
+our %prevInstalledPackages = ();
+our %prevEnabledServices   = ();
+our %enabledPackages       = ();
+our %enabledServices       = ();
 
 my %installStatus = ();
 our %configStatus = ();
 
 our $newinstall = 1;
 chomp(
-    my $ldapSchemaVersion = do {
+    our $ldapSchemaVersion = do {
         local $/ = undef;
         open my $fh, "<", "/opt/zextras/conf/attrs-schema"
           or die "could not open /opt/zextras/conf/attrs-schema: $!";
@@ -111,26 +111,26 @@ chomp(
 
 our $ldapConfigured           = 0;
 our $haveSetLdapSchemaVersion = 0;
-my $ldapRunning              = 0;
-my $sqlConfigured            = 0;
-my $sqlRunning               = 0;
-my @installedServiceList     = ();
-my @enabledServiceList       = ();
+our $ldapRunning              = 0;
+my $sqlConfigured             = 0;
+my $sqlRunning                = 0;
+our @installedServiceList     = ();
+our @enabledServiceList       = ();
 
-my $ldapRootPassChanged                   = 0;
-my $ldapAdminPassChanged                  = 0;
-my $ldapRepChanged                        = 0;
-my $ldapPostChanged                       = 0;
-my $ldapAmavisChanged                     = 0;
-my $ldapNginxChanged                      = 0;
-my $ldapReplica                           = 0;
-my $starttls                              = 0;
+our $ldapRootPassChanged                   = 0;
+our $ldapAdminPassChanged                  = 0;
+our $ldapRepChanged                        = 0;
+our $ldapPostChanged                       = 0;
+our $ldapAmavisChanged                     = 0;
+our $ldapNginxChanged                      = 0;
+our $ldapReplica                           = 0;
+our $starttls                              = 0;
 our $needNewCert                           = "";
 our $ssl_cert_type                         = "self";
-my $publicServiceHostnameAlreadySet = 0;
+our $publicServiceHostnameAlreadySet = 0;
 
-my @ssl_digests = ( "ripemd160", "sha", "sha1", "sha224", "sha256", "sha384", "sha512" );
-my @interfaces  = ();
+our @ssl_digests = ( "ripemd160", "sha", "sha1", "sha224", "sha256", "sha384", "sha512" );
+our @interfaces  = ();
 
 ($>) and usage();
 
@@ -269,24 +269,6 @@ sub progressResult {
     return 1;
 }
 
-# Helper function to set LDAP passwords - consolidates repeated pattern
-# $name: display name (e.g., "replication", "postfix")
-# $flag: zmldappasswd flag (e.g., "-l", "-p", "-a", "-n")
-# $configKey: config hash key for the password
-# $localConfigKey: localconfig key for remote LDAP case
-# $quotePassword: whether to quote the password (for post-LDAP-init calls)
-sub setLdapPasswordHelper {
-    my ( $name, $flag, $configKey, $localConfigKey, $quotePassword ) = @_;
-    progress("Setting $name password...");
-    if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-        my $pass = $quotePassword ? "'$config{$configKey}'" : $config{$configKey};
-        runAsZextras("/opt/zextras/bin/zmldappasswd $flag $pass");
-    }
-    else {
-        setLocalConfig( $localConfigKey, "$config{$configKey}" );
-    }
-    progress("done.\n");
-}
 
 # Track if log has been moved to avoid duplication
 my $logFileMoved = 0;
@@ -305,22 +287,6 @@ sub moveLogToZextras {
     $logFileMoved = 1;
 }
 
-# Helper to ask for LDAP password - consolidates 6 nearly identical functions
-sub askLdapPasswordHelper {
-    my ( $prompt, $configKey, $changedFlagRef, $checkLdapAvailable ) = @_;
-    while (1) {
-        my $new = askPassword( "Password for $prompt (min 6 characters):", $config{$configKey} );
-        if ( length($new) >= 6 ) {
-            if ( $config{$configKey} ne $new ) {
-                $config{$configKey} = $new;
-                $$changedFlagRef = 1;
-            }
-            ldapIsAvailable() if ( $checkLdapAvailable && $config{HOSTNAME} ne $config{LDAPHOST} );
-            return;
-        }
-        print "Minimum length of 6 characters!\n";
-    }
-}
 
 # Helper to set proxy port - consolidates 6 nearly identical functions
 sub setProxyPortHelper {
@@ -462,27 +428,6 @@ sub setEmailDomain {
     $config{$configKey} = $user . '@' . $newDomain;
 }
 
-# Helper to create a system account if it doesn't exist
-sub createSystemAccountIfMissing {
-    my ( $configKey, $description, $extraAttrs ) = @_;
-    $extraAttrs //= "";
-    $config{$configKey} = lc( $config{$configKey} );
-    progress("Creating user $config{$configKey}...");
-    my $acctId = getLdapAccountValue( "zimbraId", $config{$configKey} );
-    if ( $acctId ne "" ) {
-        progress("already exists.\n");
-        return 0;
-    }
-    my $pass = genRandomPass();
-    my $rc   = runAsZextras(
-        "$ZMPROV ca $config{$configKey} \'$pass\' "
-          . "amavisBypassSpamChecks TRUE zimbraAttachmentsIndexingEnabled FALSE "
-          . "zimbraIsSystemResource TRUE zimbraIsSystemAccount TRUE zimbraHideInGal TRUE "
-          . "zimbraMailQuota 0 $extraAttrs description \'$description\'"
-    );
-    progressResult($rc);
-    return $rc;
-}
 
 sub defineInstallWebapps {
     if ( !defined $config{INSTALL_WEBAPPS} ) {
@@ -632,28 +577,6 @@ sub getDateStamp() {
     return $stamp;
 }
 
-# Ensure LDAP connection config is loaded and LDAP is running if needed.
-# Returns 0 on success, 1 on failure to start LDAP.
-sub ensureLdapForServerQuery {
-    $config{zimbra_server_hostname} = getLocalConfig("zimbra_server_hostname")
-      if ( $config{zimbra_server_hostname} eq "" );
-    detail("DEBUG: zimbra_server_hostname=$config{zimbra_server_hostname}")
-      if $options{d};
-
-    $config{ldap_url} = getLocalConfig("ldap_url")
-      if ( $config{ldap_url} eq "" );
-    detail("DEBUG: ldap_url=$config{ldap_url}")
-      if $options{d};
-
-    if ( index( $config{ldap_url}, "/" . $config{zimbra_server_hostname} ) != -1 ) {
-        detail("Server hostname found in ldap_url, checking LDAP status...");
-        if ( startLdap() ) { return 1; }
-    }
-    else {
-        detail("Server hostname not in ldap_url, not starting slapd.");
-    }
-    return 0;
-}
 
 sub getInstalledPackages {
     detail("Getting installed packages...");
@@ -872,144 +795,6 @@ sub getSystemStatus {
     }
 }
 
-sub setLdapDefaults {
-
-    return if exists $config{LDAPDEFAULTSLOADED};
-    progress("Setting defaults from LDAP...");
-
-    #
-    # Load server specific attributes only if server exists
-    #
-    my $serverid = getLdapServerValue("zimbraId");
-    if ( $serverid ne "" ) {
-
-        # Load server attributes in bulk using data-driven mapping
-        my %ldapServerAttribs = (
-            'zimbraIPMode'                 => 'zimbraIPMode',
-            'IMAPPORT'                     => 'zimbraImapBindPort',
-            'IMAPSSLPORT'                  => 'zimbraImapSSLBindPort',
-            'REMOTEIMAPBINDPORT'           => 'zimbraRemoteImapBindPort',
-            'REMOTEIMAPSSLBINDPORT'        => 'zimbraRemoteImapSSLBindPort',
-            'POPPORT'                      => 'zimbraPop3BindPort',
-            'POPSSLPORT'                   => 'zimbraPop3SSLBindPort',
-            'IMAPPROXYPORT'                => 'zimbraImapProxyBindPort',
-            'IMAPSSLPROXYPORT'             => 'zimbraImapSSLProxyBindPort',
-            'POPPROXYPORT'                 => 'zimbraPop3ProxyBindPort',
-            'POPSSLPROXYPORT'              => 'zimbraPop3SSLProxyBindPort',
-            'MAILPROXY'                    => 'zimbraReverseProxyMailEnabled',
-            'MODE'                         => 'zimbraMailMode',
-            'PROXYMODE'                    => 'zimbraReverseProxyMailMode',
-            'HTTPPORT'                     => 'zimbraMailPort',
-            'HTTPSPORT'                    => 'zimbraMailSSLPort',
-            'HTTPPROXYPORT'                => 'zimbraMailProxyPort',
-            'HTTPSPROXYPORT'               => 'zimbraMailSSLProxyPort',
-            'HTTPPROXY'                    => 'zimbraReverseProxyHttpEnabled',
-            'SMTPHOST'                     => 'zimbraSmtpHostname',
-        );
-        for my $key ( keys %ldapServerAttribs ) {
-            $config{$key} = getLdapServerValue( $ldapServerAttribs{$key} );
-        }
-
-        $config{zimbraReverseProxyLookupTarget} = getLdapServerValue("zimbraReverseProxyLookupTarget")
-          if ( $config{zimbraReverseProxyLookupTarget} eq "" );
-
-        if ( isEnabled("carbonio-mta") ) {
-            my $tmpval = getLdapServerValue("zimbraMtaMyNetworks");
-            $config{zimbraMtaMyNetworks} = $tmpval
-              unless ( $tmpval eq "" );
-        }
-    }
-
-    #
-    # Load Global config values
-    #
-    # default domain name
-    # get zimbraPublicServiceHostname from ldap
-    my $publicServiceHostnameLdap = getLdapConfigValue("zimbraPublicServiceHostname");
-
-    # if zimbraPublicServiceHostname is already set on ldap...
-    if ( !( $publicServiceHostnameLdap eq "" ) ) {
-
-        # ...use the ldap value
-        $config{PUBLICSERVICEHOSTNAME} = $publicServiceHostnameLdap;
-
-        # set the flag to avoid overwriting zimbraPublicServiceHostname on ldap
-        $publicServiceHostnameAlreadySet = 1;
-    }
-
-    $config{zimbraDefaultDomainName} = getLdapConfigValue("zimbraDefaultDomainName");
-    if ( $config{zimbraDefaultDomainName} eq "" ) {
-        $config{zimbraDefaultDomainName} = $config{CREATEDOMAIN};
-    }
-    else {
-        $config{CREATEDOMAIN} = $config{zimbraDefaultDomainName};
-        $config{CREATEADMIN}  = "zextras\@$config{CREATEDOMAIN}";
-    }
-
-    if ( $config{SMTPHOST} eq "" ) {
-        my $smtphost = getLdapConfigValue("zimbraSmtpHostname");
-        $smtphost =~ s/\n/ /g;
-        $config{SMTPHOST} = $smtphost if ( $smtphost ne "localhost" );
-    }
-
-    $config{TRAINSASPAM} = getLdapConfigValue("zimbraSpamIsSpamAccount");
-    if ( $config{TRAINSASPAM} eq "" ) {
-        $config{TRAINSASPAM} = "spam." . lc( genRandomPass() ) . '@' . $config{CREATEDOMAIN};
-    }
-    $config{TRAINSAHAM} = getLdapConfigValue("zimbraSpamIsNotSpamAccount");
-    if ( $config{TRAINSAHAM} eq "" ) {
-        $config{TRAINSAHAM} = "ham." . lc( genRandomPass() ) . '@' . $config{CREATEDOMAIN};
-    }
-    $config{VIRUSQUARANTINE} = getLdapConfigValue("zimbraAmavisQuarantineAccount");
-    if ( $config{VIRUSQUARANTINE} eq "" ) {
-        $config{VIRUSQUARANTINE} = "virus-quarantine." . lc( genRandomPass() ) . '@' . $config{CREATEDOMAIN};
-    }
-
-    #
-    # Load default COS
-    #
-    $config{USEKBSHORTCUTS}       = getLdapCOSValue("zimbraPrefUseKeyboardShortcuts");
-    $config{zimbraPrefTimeZoneId} = getLdapCOSValue("zimbraPrefTimeZoneId");
-
-    #
-    # Load default domain values
-    #
-    my $galacct = getLdapDomainValue("zimbraGalAccountId");
-    $config{ENABLEGALSYNCACCOUNTS} = ( ( $galacct eq "" ) ? "no" : "yes" );
-
-    #
-    # Set some sane defaults if values were missing in LDAP
-    #
-    $config{HTTPPORT}              = 80      if ( $config{HTTPPORT} eq 0 );
-    $config{HTTPSPORT}             = 443     if ( $config{HTTPSPORT} eq 0 );
-    $config{MODE}                  = "https" if ( $config{MODE} eq "" );
-    $config{PROXYMODE}             = "https" if ( $config{PROXYMODE} eq "" );
-    $config{REMOTEIMAPBINDPORT}    = 8143    if ( $config{REMOTEIMAPBINDPORT} eq 0 );
-    $config{REMOTEIMAPSSLBINDPORT} = 8993    if ( $config{REMOTEIMAPSSLBINDPORT} eq 0 );
-
-    if ( isInstalled("carbonio-proxy") && isEnabled("carbonio-proxy") ) {
-        resolveMailPortPairCollisions(1) if ( $config{MAILPROXY} eq "TRUE" );
-        if ( $config{HTTPPROXY} eq "TRUE" ) {
-            # Add proxy component to a configured node
-            $config{HTTPPROXYPORT}  = 80  if ( ( $config{HTTPPORT} == 80 || $config{HTTPPORT} == 0 ) && $config{HTTPPROXYPORT} == 0 );
-            $config{HTTPSPROXYPORT} = 443 if ( ( $config{HTTPSPORT} == 443 || $config{HTTPSPORT} == 0 ) && $config{HTTPSPROXYPORT} == 0 );
-            resolveHttpPortPairCollisions(1);
-        }
-    }
-    else {
-        resolveMailPortPairCollisions(0);
-        resolveHttpPortPairCollisions(0);
-    }
-
-    #
-    # debug output
-    #
-    if ( $options{d} ) {
-        dumpConfig();
-    }
-    $config{LDAPDEFAULTSLOADED} = 1;
-    progress("done.\n");
-}
 
 sub installLdapConfig {
     my $config_src  = "/opt/zextras/common/etc/openldap/zimbra/config";
@@ -2757,197 +2542,6 @@ sub checkMenuConfig {
     return 1;
 }
 
-sub ldapIsAvailable {
-    my $failedcheck = 0;
-    if ( ( $config{LDAPHOST} eq $config{HOSTNAME} ) && !$ldapConfigured ) {
-        detail("This is the LDAP master and LDAP has not been configured yet.");
-        return 0;
-    }
-
-    # check zimbra ldap admin user binding to the master
-    if ( $config{LDAPADMINPASS} eq "" || $config{LDAPPORT} eq "" || $config{LDAPHOST} eq "" ) {
-        detail("LDAP configuration not complete.\n");
-        return 0;
-    }
-
-    if ( checkLdapBind( $config{zimbra_ldap_userdn}, $config{LDAPADMINPASS} ) ) {
-        detail("Could not bind to $config{LDAPHOST} as $config{zimbra_ldap_userdn}.\n");
-        $config{LDAPADMINPASSSET} = "Not Verified";
-        $failedcheck++;
-    }
-    else {
-        detail("Verified $config{zimbra_ldap_userdn} on $config{LDAPHOST}.\n");
-        $config{LDAPADMINPASSSET} = "set";
-        setLocalConfig( "zimbra_ldap_password", $config{LDAPADMINPASS} );
-        setLdapDefaults() if ( $config{LDAPHOST} ne $config{HOSTNAME} );
-    }
-
-    # check nginx user binding to the master
-    if ( isInstalled("carbonio-proxy") ) {
-        if ( $config{ldap_nginx_password} eq "" ) {
-            detail("Nginx configuration not complete.\n");
-            $failedcheck++;
-        }
-        my $binduser = "uid=zmnginx,cn=appaccts,$config{ldap_dit_base_dn_config}";
-        if ( checkLdapBind( $binduser, $config{ldap_nginx_password} ) ) {
-            detail("Could not bind to $config{LDAPHOST} as $binduser.\n");
-            $config{LDAPNGINXPASSSET} = "Not Verified";
-            $failedcheck++;
-        }
-        else {
-            detail("Verified $binduser on $config{LDAPHOST}.\n");
-            $config{LDAPNGINXPASSSET} = "set";
-        }
-    }
-
-    # check postfix and amavis user binding to the master
-    if ( isInstalled("carbonio-mta") ) {
-        if ( $config{LDAPPOSTPASS} eq "" || $config{LDAPAMAVISPASS} eq "" ) {
-            detail("MTA configuration not complete.\n");
-            $failedcheck++;
-        }
-        my $binduser = "uid=zmpostfix,cn=appaccts,$config{ldap_dit_base_dn_config}";
-        if ( checkLdapBind( $binduser, $config{LDAPPOSTPASS} ) ) {
-            detail("Could not bind to $config{LDAPHOST} as $binduser.\n");
-            $config{LDAPPOSTPASSSET} = "Not Verified";
-            detail("Setting LDAPPOSTPASSSET to $config{LDAPPOSTPASSSET}.") if $debug;
-            $failedcheck++;
-        }
-        else {
-            detail("Verified $binduser on $config{LDAPHOST}.\n");
-            $config{LDAPPOSTPASSSET} = "set";
-        }
-        my $binduser = "uid=zmamavis,cn=appaccts,$config{ldap_dit_base_dn_config}";
-        if ( checkLdapBind( $binduser, $config{LDAPAMAVISPASS} ) ) {
-            detail("Could not bind to $config{LDAPHOST} as $binduser.\n");
-            $config{LDAPAMAVISPASSSET} = "Not Verified";
-            detail("Setting LDAPAMAVISPASSSET to $config{LDAPAMAVISPASSSET}.") if $debug;
-            $failedcheck++;
-        }
-        else {
-            detail("Verified $binduser on $config{LDAPHOST}.\n");
-            $config{LDAPAMAVISPASSSET} = "set";
-        }
-    }
-
-    # check replication user binding to master
-    if ( isInstalled("carbonio-directory-server") && $config{LDAPHOST} ne $config{HOSTNAME} ) {
-        if ( $config{LDAPREPPASS} eq "" ) {
-            detail("LDAP configuration not complete: replication password is not set.\n");
-            $failedcheck++;
-        }
-        my $binduser = "uid=zmreplica,cn=admins,$config{ldap_dit_base_dn_config}";
-        if ( checkLdapBind( $binduser, $config{LDAPREPPASS} ) ) {
-            detail("Could not bind to $config{LDAPHOST} as $binduser.\n");
-            $config{LDAPREPPASSSET} = "Not Verified";
-            detail("Setting LDAPREPPASSSET to $config{LDAPREPPASSSET}.") if $debug;
-            $failedcheck++;
-        }
-        else {
-            detail("Verified $binduser on $config{LDAPHOST}.\n");
-            $config{LDAPREPPASSSET} = "set";
-        }
-        if ( checkLdapReplicationEnabled( $config{zimbra_ldap_userdn}, $config{LDAPADMINPASS} ) ) {
-            detail("LDAP configuration not complete: unable to verify LDAP replication is enabled on $config{LDAPHOST}.\n");
-            $failedcheck++;
-        }
-        else {
-            detail("LDAP replication ability verified.\n");
-        }
-    }
-    return ( $failedcheck > 0 ) ? 0 : 1;
-}
-
-sub checkLdapBind() {
-    my ( $binduser, $bindpass ) = @_;
-
-    detail("Checking LDAP on $config{LDAPHOST}:$config{LDAPPORT}...");
-    my $ldap;
-    my $ldap_secure = ( ( $config{LDAPPORT} == "636" ) ? "s" : "" );
-    my $ldap_url    = "ldap${ldap_secure}://$config{LDAPHOST}:$config{LDAPPORT}";
-    unless ( $ldap = Net::LDAP->new($ldap_url) ) {
-        detail("Failed: Unable to contact LDAP at $ldap_url: $!");
-        return 1;
-    }
-
-    if ( $ldap_secure ne "s" && $config{zimbra_require_interprocess_security} ) {
-        $starttls = 1;
-        my $result = $ldap->start_tls( verify => 'none' );
-        if ( $result->code() ) {
-            detail("Unable to startTLS: $!\n");
-            detail("Disabling the requirement for interprocess security.\n");
-            $config{zimbra_require_interprocess_security} = 0;
-            $config{ZIMBRA_REQ_SECURITY}                  = "no";
-            $starttls                                     = 0;
-        }
-    }
-    else {
-        $starttls = 0;
-    }
-    my $result = $ldap->bind( $binduser, password => $bindpass );
-    if ( $result->code() ) {
-        detail("Unable to bind to $ldap_url with user $binduser.");
-        return 1;
-    }
-    else {
-        $ldap->unbind;
-        detail("Verified LDAP running at $ldap_url.\n");
-        if ($newinstall) {
-            setLocalConfigBatch(
-                ldap_url                             => $ldap_url,
-                ldap_starttls_supported              => $starttls,
-                zimbra_require_interprocess_security => $config{zimbra_require_interprocess_security},
-                ssl_allow_untrusted_certs            => "true"
-            );
-        }
-        return 0;
-    }
-
-}
-
-sub checkLdapReplicationEnabled() {
-    my ( $binduser, $bindpass ) = @_;
-    detail("Checking LDAP replication is enabled on $config{LDAPHOST}:$config{LDAPPORT}...");
-    my $ldap;
-    my $ldap_secure = ( ( $config{LDAPPORT} == "636" ) ? "s" : "" );
-    my $ldap_url    = "ldap${ldap_secure}://$config{LDAPHOST}:$config{LDAPPORT}";
-    unless ( $ldap = Net::LDAP->new($ldap_url) ) {
-        detail("Failed: Unable to contact LDAP at $ldap_url: $!");
-        return 1;
-    }
-    if ( $ldap_secure ne "s" && $starttls ) {
-        my $result = $ldap->start_tls( verify => 'none' );
-        if ( $result->code() ) {
-            detail("Unable to startTLS: $!\n");
-            detail("Disabling the requirement for interprocess security.\n");
-            $config{zimbra_require_interprocess_security} = 0;
-            $config{ZIMBRA_REQ_SECURITY}                  = "no";
-            $starttls                                     = 0;
-        }
-    }
-    my $result = $ldap->bind( $binduser, password => $bindpass );
-    if ( $result->code() ) {
-        detail("Unable to bind to $ldap_url with user $binduser.");
-        return 1;
-    }
-    else {
-        my $result = $ldap->search( base => "cn=accesslog", scope => "base", filter => "cn=accesslog", attrs => ['cn'] );
-        if ( $result->code() ) {
-            detail("Unable to find accesslog database on master.\n");
-            if ( $config{LDAPREPLICATIONTYPE} eq "replica" ) {
-                detail("Please run zmldapenablereplica on the master.\n");
-            }
-            elsif ( $config{LDAPREPLICATIONTYPE} eq "mmr" ) {
-                detail("Please run zmldapenable-mmr on the master.\n");
-            }
-            return 1;
-        }
-        else {
-            detail("Verified ability to query accesslog on master.\n");
-        }
-    }
-    return 0;
-}
 
 # Helper to log command execution while suppressing sensitive data
 sub logRunCommand {
@@ -3129,267 +2723,7 @@ sub configLCValues {
     progress("done.\n");
 }
 
-sub updatePasswordsInLocalConfig {
 
-    if ( isEnabled("carbonio-directory-server") ) {
-
-        # On new install where we're the LDAP host and LDAP isn't configured yet,
-        # skip password setting here - it will be done after LDAP is started in configSetupLdap
-        if ( $newinstall && !$ldapConfigured && ( $config{LDAPHOST} eq $config{HOSTNAME} ) ) {
-            detail("Skipping password update - LDAP not yet started, will be set after initialization.\n");
-            return;
-        }
-
-        if ( $ldapConfigured && ( $ldapRootPassChanged || $ldapAdminPassChanged || $ldapRepChanged || $ldapPostChanged || $ldapAmavisChanged || $ldapNginxChanged ) ) {
-
-            startLdap();
-
-            if ($ldapRootPassChanged) {
-                progress("Setting LDAP root password...");
-                runAsZextras("/opt/zextras/bin/zmldappasswd -r $config{LDAPROOTPASS}");
-                progress("done.\n");
-            }
-            setLdapPasswordHelper( "LDAP admin", "", "LDAPADMINPASS", "zimbra_ldap_password" )         if $ldapAdminPassChanged;
-            setLdapPasswordHelper( "replication", "-l", "LDAPREPPASS", "ldap_replication_password" )  if $ldapRepChanged;
-            setLdapPasswordHelper( "postfix", "-p", "LDAPPOSTPASS", "ldap_postfix_password" )         if $ldapPostChanged;
-            setLdapPasswordHelper( "amavis", "-a", "LDAPAMAVISPASS", "ldap_amavis_password" )         if $ldapAmavisChanged;
-            setLdapPasswordHelper( "nginx", "-n", "ldap_nginx_password", "ldap_nginx_password" )     if $ldapNginxChanged;
-        }
-        elsif ($ldapConfigured) {
-            stopLdap();
-            startLdap();
-        }
-    }
-    else {
-        # this sets the password for each component if they are enabled, use full in case of multiserver
-        # especially when we add components to existing configured node
-        if ( isEnabled("carbonio-mta") && ( $ldapPostChanged || $ldapAmavisChanged ) ) {
-            setLdapPasswordHelper( "postfix", "-p", "LDAPPOSTPASS", "ldap_postfix_password" ) if $ldapPostChanged;
-            setLdapPasswordHelper( "amavis", "-a", "LDAPAMAVISPASS", "ldap_amavis_password" ) if $ldapAmavisChanged;
-        }
-
-        if ( isEnabled("carbonio-proxy") && $ldapNginxChanged ) {
-            setLdapPasswordHelper( "nginx", "-n", "ldap_nginx_password", "ldap_nginx_password" );
-        }
-    }
-}
-
-sub configSetupLdap {
-
-    updatePasswordsInLocalConfig();
-
-    #Check if skipping configSetupLdap on existing install is distructive
-    if ( $configStatus{configSetupLdap} eq "CONFIGURED" ) {
-        detail("LDAP already configured, bypassing configuration.\n");
-        configLog("configSetupLdap");
-        return 0;
-    }
-
-    if ( !$ldapConfigured && isEnabled("carbonio-directory-server") && !-f "/opt/zextras/.enable_replica" && $newinstall && ( $config{LDAPHOST} eq $config{HOSTNAME} ) ) {
-        progress("Initializing LDAP...");
-        ldapinit->preLdapStart( $config{LDAPROOTPASS}, $config{LDAPADMINPASS} );
-        if ( isSystemd() ) {
-            system("systemctl start carbonio-openldap.service");
-            waitForLdap(30);
-        }
-        else {
-            runAsZextras("/opt/zextras/bin/ldap start");
-        }
-
-        if ( my $rc = ldapinit->postLdapStart() ) {
-            progress("failed. ($rc)\n");
-            failConfig();
-        }
-        else {
-            progress("done.\n");
-            # Set passwords after LDAP init (use quoted passwords for shell safety)
-            setLdapPasswordHelper( "replication", "-l", "LDAPREPPASS", "ldap_replication_password", 1 ) if $ldapRepChanged;
-            setLdapPasswordHelper( "postfix", "-p", "LDAPPOSTPASS", "ldap_postfix_password", 1 )        if $ldapPostChanged;
-            setLdapPasswordHelper( "amavis", "-a", "LDAPAMAVISPASS", "ldap_amavis_password", 1 )        if $ldapAmavisChanged;
-            setLdapPasswordHelper( "nginx", "-n", "ldap_nginx_password", "ldap_nginx_password", 1 )    if $ldapNginxChanged;
-        }
-        if ( $config{FORCEREPLICATION} eq "yes" ) {
-            my $rc   = system("/opt/zextras/libexec/zmldapenablereplica");
-            my $file = "/opt/zextras/.enable_replica";
-            open( ER, ">>$file" );
-            close ER;
-        }
-    }
-    elsif ( isEnabled("carbonio-directory-server") ) {
-        my $rc;
-        if ($newinstall) {
-            $rc = runAsZextras("/opt/zextras/libexec/zmldapapplyldif");
-        }
-        if ( !$newinstall ) {
-            $rc = runAsZextras("/opt/zextras/libexec/zmldapupdateldif");
-        }
-
-        # enable replica for both new and upgrade installs if we are adding ldap
-        if ( $config{LDAPHOST} ne $config{HOSTNAME} || -f "/opt/zextras/.enable_replica" ) {
-            progress("Updating ldap_root_password and zimbra_ldap_password...");
-            setLocalConfigBatch(
-                ldap_root_password        => $config{LDAPROOTPASS},
-                zimbra_ldap_password      => $config{LDAPADMINPASS},
-                ldap_replication_password => $config{LDAPREPPASS}
-            );
-            if ( $newinstall && $config{LDAPREPLICATIONTYPE} eq "mmr" ) {
-                setLdapPasswordHelper( "postfix", "-p", "LDAPPOSTPASS", "ldap_postfix_password", 1 )     if $ldapPostChanged;
-                setLdapPasswordHelper( "amavis", "-a", "LDAPAMAVISPASS", "ldap_amavis_password", 1 )     if $ldapAmavisChanged;
-                setLdapPasswordHelper( "nginx", "-n", "ldap_nginx_password", "ldap_nginx_password", 1 ) if $ldapNginxChanged;
-            }
-            progress("done.\n");
-            progress("Enabling LDAP replication...");
-            if ( !-f "/opt/zextras/.enable_replica" ) {
-                if ( $newinstall && $config{LDAPREPLICATIONTYPE} eq "mmr" ) {
-                    my $ldapMasterUrl = getLocalConfig("ldap_master_url");
-                    my $proto = ( $config{LDAPPORT} == 636 ) ? "ldaps" : "ldap";
-                    setLocalConfigBatch(
-                        ldap_is_master => "true",
-                        ldap_url       => "$proto://$config{HOSTNAME}:$config{LDAPPORT} $ldapMasterUrl"
-                    );
-                    $ldapMasterUrl .= "/" unless $ldapMasterUrl =~ /\/$/;
-                    startLdap();
-                    $rc = runAsZextras("/opt/zextras/libexec/zmldapenable-mmr -s $config{LDAPSERVERID} -m $ldapMasterUrl");
-                }
-                else {
-                    $rc = system("/opt/zextras/libexec/zmldapenablereplica");
-                }
-                my $file = "/opt/zextras/.enable_replica";
-                open( ER, ">>$file" );
-                close ER;
-            }
-            if ( $rc == 0 ) {
-                if ( !isEnabled("carbonio-appserver") ) {
-                    $config{DOCREATEADMIN} = "no";
-                }
-                $config{DOCREATEDOMAIN} = "no";
-                progress("done.\n");
-                stopLdap();
-                startLdap();
-            }
-            else {
-                progress("failed.\n");
-                progress("You will have to correct the problem and manually enable replication.\n");
-                progress("Disabling LDAP on $config{HOSTNAME}...");
-                my $rc = setLdapServerConfig( "-zimbraServiceEnabled", "directory-server" );
-                progressResult($rc);
-                stopLdap();
-            }
-        }
-    }
-    else {
-        detail("Updating LDAP user passwords.\n");
-        setLocalConfigBatch(
-            ldap_root_password        => $config{LDAPROOTPASS},
-            zimbra_ldap_password      => $config{LDAPADMINPASS},
-            ldap_replication_password => $config{LDAPREPPASS},
-            ldap_postfix_password     => $config{LDAPPOSTPASS},
-            ldap_amavis_password      => $config{LDAPAMAVISPASS},
-            ldap_nginx_password       => $config{ldap_nginx_password}
-        );
-    }
-
-    configLog("configSetupLdap");
-    return 0;
-
-}
-
-sub configLDAPSchemaVersion {
-    return if ($haveSetLdapSchemaVersion);
-    if ( isEnabled("carbonio-directory-server") ) {
-        progress("Updating LDAP Schema version to '$ldapSchemaVersion'...");
-        my $ec = setLdapGlobalConfig( 'zimbraLDAPSchemaVersion', $ldapSchemaVersion );
-        if ( $ec != 0 ) {
-            progress("failed.\n");
-        }
-        else {
-            $haveSetLdapSchemaVersion = 1;
-            progress("done.\n");
-        }
-    }
-}
-
-sub configCreateServerEntry {
-
-    if ( $configStatus{configCreateServerEntry} eq "CONFIGURED" ) {
-        configLog("configCreateServerEntry");
-        return 0;
-    }
-
-    progress("Creating server entry for $config{HOSTNAME}...");
-    my $serverId = getLdapServerValue("zimbraId");
-    if ( $serverId ne "" ) {
-        progress("already exists.\n");
-    }
-    else {
-        my $rc = runAsZextras("$ZMPROV cs $config{HOSTNAME}");
-        progressResult($rc);
-    }
-    progress("Setting IP Mode...");
-    my $rc = setLdapServerConfig( "zimbraIPMode", $config{zimbraIPMode} );
-    progressResult($rc);
-    my $rc = runAsZextras("/opt/zextras/libexec/zmiptool >/dev/null 2>/dev/null");
-
-    configLog("configCreateServerEntry");
-}
-
-sub configSetStoreDefaults {
-    if ( isEnabled("carbonio-proxy") || $config{zimbraMailProxy} eq "TRUE" || $config{zimbraWebProxy} eq "TRUE" ) {
-        $config{zimbraReverseProxyLookupTarget} = "TRUE";
-    }
-
-    # for mailstore split, set zimbraReverseProxyAvailableLookupTargets on service-only nodes
-    if ( $newinstall && isStoreServiceNode() ) {
-        my $adding = 0;
-        progress("Checking current setting of ReverseProxyAvailableLookupTargets...\n");
-        my $zrpALT = getLdapConfigValue("zimbraReverseProxyAvailableLookupTargets");
-        if ( $zrpALT ne "" ) {
-            $adding = 1;
-        }
-        else {
-            progress("Querying LDAP for other mailstores...\n");
-
-            # query LDAP to see if there are other mailstores.  If there are none, add this
-            # new service node to zimbraReverseProxyAvailableLookupTargets.  Otherwise do not
-            my $count = countReverseProxyLookupTargets();
-            if ( !defined($count) || $count == 0 ) {
-                $adding = 1;
-            }
-        }
-        if ($adding) {
-            progress("Adding $config{HOSTNAME} to ReverseProxyAvailableLookupTargets...\n");
-            setLdapGlobalConfig( "+zimbraReverseProxyAvailableLookupTargets", $config{HOSTNAME} );
-        }
-    }
-    $config{zimbraMtaAuthTarget} = "TRUE";
-    if ( !isStoreServiceNode() ) {
-        $config{zimbraMtaAuthTarget} = "FALSE";
-    }
-    if ( $newinstall && isStoreServiceNode() ) {
-        setLdapGlobalConfig( "+zimbraReverseProxyUpstreamEwsServers", "$config{HOSTNAME}" );
-    }
-
-    setLdapServerConfig( "zimbraReverseProxyLookupTarget", $config{zimbraReverseProxyLookupTarget} );
-    setLdapServerConfig( "zimbraMtaAuthTarget",            $config{zimbraMtaAuthTarget} );
-    my $upstream = "-u";
-    if ( $config{zimbra_require_interprocess_security} ) {
-        $upstream = "-U";
-    }
-    if ( $newinstall && ( $config{zimbraWebProxy} eq "TRUE" || $config{zimbraMailProxy} eq "TRUE" ) ) {
-        if ( $config{zimbraMailProxy} eq "TRUE" ) {
-            my $rc = runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -m -e -o " . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} " . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}" );
-            if ( $rc != 0 ) {
-                progress("WARNING: zmproxyconfig for mail proxy returned non-zero exit code: $rc.\n");
-            }
-        }
-        if ( $config{zimbraWebProxy} eq "TRUE" ) {
-            my $rc = runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -w -e -o " . "-x $config{PROXYMODE} " . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}" );
-            if ( $rc != 0 ) {
-                progress("WARNING: zmproxyconfig for web proxy returned non-zero exit code: $rc.\n");
-            }
-        }
-    }
-}
 
 sub isStoreServiceNode {
     if ( $installedWebapps{"service"} eq "Enabled" ) {
@@ -3400,255 +2734,7 @@ sub isStoreServiceNode {
     }
 }
 
-sub configSetServicePorts {
 
-    if ( $configStatus{configSetServicePorts} eq "CONFIGURED" ) {
-        configLog("configSetServicePorts");
-        return 0;
-    }
-
-    progress("Setting service ports on $config{HOSTNAME}...");
-    if ( $config{MAILPROXY} eq "FALSE" ) {
-        if ( $config{IMAPPORT} == 7143 && $config{IMAPPROXYPORT} == $config{IMAPPORT} ) {
-            $config{IMAPPROXYPORT} = 143;
-        }
-        if ( $config{IMAPSSLPORT} == 7993 && $config{IMAPSSLPROXYPORT} == $config{IMAPSSLPORT} ) {
-            $config{IMAPSSLPROXYPORT} = 993;
-        }
-        if ( $config{POPPORT} == 7110 && $config{POPPROXYPORT} == $config{POPPORT} ) {
-            $config{POPPROXYPORT} = 110;
-        }
-        if ( $config{POPSSLPORT} == 7995 && $config{POPSSLPROXYPORT} == $config{POPSSLPORT} ) {
-            $config{POPSSLPORT} = 995;
-        }
-    }
-    setLdapServerConfig( $config{HOSTNAME}, "zimbraImapBindPort", $config{IMAPPORT}, "zimbraImapSSLBindPort", $config{IMAPSSLPORT}, "zimbraImapProxyBindPort", $config{IMAPPROXYPORT}, "zimbraImapSSLProxyBindPort", $config{IMAPSSLPROXYPORT} );
-    setLdapServerConfig( $config{HOSTNAME}, "zimbraPop3BindPort", $config{POPPORT},  "zimbraPop3SSLBindPort", $config{POPSSLPORT},  "zimbraPop3ProxyBindPort", $config{POPPROXYPORT},  "zimbraPop3SSLProxyBindPort", $config{POPSSLPROXYPORT} );
-    if ( $config{HTTPPROXY} eq "FALSE" ) {
-        if ( $config{HTTPPORT} == 8080 && $config{HTTPPROXYPORT} == $config{HTTPPORT} ) {
-            $config{HTTPPROXYPORT} = 80;
-        }
-        if ( $config{HTTPSPORT} == 8443 && $config{HTTPSPROXYPORT} == $config{HTTPSPORT} ) {
-            $config{HTTPSPROXYPORT} = 443;
-        }
-    }
-    setLdapServerConfig( $config{HOSTNAME}, "zimbraMailPort", $config{HTTPPORT}, "zimbraMailSSLPort", $config{HTTPSPORT}, "zimbraMailProxyPort", $config{HTTPPROXYPORT}, "zimbraMailSSLProxyPort", $config{HTTPSPROXYPORT}, "zimbraMailMode", $config{MODE} );
-    setLocalConfig( "zimbra_mail_service_port", $config{HTTPPORT} );
-
-    progress("done.\n");
-    configLog("configSetServicePorts");
-}
-
-sub configSetKeyboardShortcutsPref {
-    if ( $configStatus{zimbraPrefUseKeyboardShortcuts} eq "CONFIGURED" ) {
-        configLog("zimbraPrefUseKeyboardShortcuts");
-        return 0;
-    }
-    progress("Setting Keyboard Shortcut Preferences...");
-    my $rc = setLdapCOSConfig( "zimbraPrefUseKeyboardShortcuts", $config{USEKBSHORTCUTS} );
-    progressResult($rc);
-    configLog("zimbraPrefUseKeyboardShortcuts");
-}
-
-sub configSetTimeZonePref {
-    if ( $configStatus{zimbraPrefTimeZoneId} eq "CONFIGURED" ) {
-        configLog("zimbraPrefTimeZoneId");
-        return 0;
-    }
-    if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
-        progress("Setting TimeZone Preference...");
-        my $rc = setLdapCOSConfig( "zimbraPrefTimeZoneId", $config{zimbraPrefTimeZoneId} );
-        progressResult($rc);
-    }
-    configLog("zimbraPrefTimeZoneId");
-}
-
-sub setProxyBits {
-    detail("Setting proxy configuration...\n");
-    my $ReverseProxyMailHostQuery   = "\(\|\(zimbraMailDeliveryAddress=\${USER}\)\(zimbraMailAlias=\${USER}\)\(zimbraId=\${USER}\)\)";
-    my $ReverseProxyDomainNameQuery = '\(\&\(zimbraVirtualIPAddress=\${IPADDR}\)\(objectClass=zimbraDomain\)\)';
-    my $ReverseProxyPortQuery       = '\(\&\(zimbraServiceHostname=\${MAILHOST}\)\(objectClass=zimbraServer\)\)';
-
-    my @proxy_defaults = (
-        [ 'zimbraReverseProxyMailHostQuery',          $ReverseProxyMailHostQuery ],
-        [ 'zimbraReverseProxyPortQuery',              $ReverseProxyPortQuery ],
-        [ 'zimbraReverseProxyDomainNameQuery',        $ReverseProxyDomainNameQuery ],
-        [ 'zimbraMemcachedBindPort',                  '11211' ],
-        [ 'zimbraMemcachedBindAddress',               '127.0.0.1' ],
-        [ 'zimbraReverseProxyMailHostAttribute',      'zimbraMailHost' ],
-        [ 'zimbraReverseProxyPop3PortAttribute',      'zimbraPop3BindPort' ],
-        [ 'zimbraReverseProxyPop3SSLPortAttribute',   'zimbraPop3SSLBindPort' ],
-        [ 'zimbraReverseProxyImapPortAttribute',      'zimbraImapBindPort' ],
-        [ 'zimbraReverseProxyImapSSLPortAttribute',   'zimbraImapSSLBindPort' ],
-        [ 'zimbraReverseProxyDomainNameAttribute',    'zimbraDomainName' ],
-        [ 'zimbraImapCleartextLoginEnabled',          'FALSE' ],
-        [ 'zimbraPop3CleartextLoginEnabled',          'FALSE' ],
-        [ 'zimbraReverseProxyAuthWaitInterval',       '10s' ],
-        [ 'zimbraReverseProxyIPLoginLimit',           '0' ],
-        [ 'zimbraReverseProxyIPLoginLimitTime',       '3600' ],
-        [ 'zimbraReverseProxyUserLoginLimit',         '0' ],
-        [ 'zimbraReverseProxyUserLoginLimitTime',     '3600' ],
-        [ 'zimbraMailProxyPort',                      '0' ],
-        [ 'zimbraMailSSLProxyPort',                   '0' ],
-        [ 'zimbraReverseProxyHttpEnabled',            'FALSE' ],
-        [ 'zimbraReverseProxyMailEnabled',            'TRUE' ],
-    );
-
-    my @zmprov_args = ();
-    for my $pair (@proxy_defaults) {
-        my ( $key, $val ) = @$pair;
-        push( @zmprov_args, ( $key, $val ) ) if ( getLdapConfigValue($key) eq "" );
-    }
-    setLdapGlobalConfig(@zmprov_args);
-}
-
-sub configSetProxyPrefs {
-    if ( isEnabled("carbonio-proxy") ) {
-        if ( $config{STRICTSERVERNAMEENABLED} eq "yes" ) {
-            progress("Enabling strict server name enforcement on $config{HOSTNAME}...");
-            runAsZextras("$ZMPROV ms $config{HOSTNAME} zimbraReverseProxyStrictServerNameEnabled TRUE");
-            progress("done.\n");
-        }
-        else {
-            progress("Disabling strict server name enforcement on $config{HOSTNAME}...");
-            runAsZextras("$ZMPROV ms $config{HOSTNAME} zimbraReverseProxyStrictServerNameEnabled FALSE");
-            progress("done.\n");
-        }
-        if ( $config{MAILPROXY} eq "FALSE" && $config{HTTPPROXY} eq "FALSE" ) {
-            $enabledPackages{"carbonio-proxy"} = "Disabled";
-        }
-        else {
-            my $upstream = "-u";
-            if ( $config{zimbra_require_interprocess_security} ) {
-                $upstream = "-U";
-            }
-            if ( $config{MAILPROXY} eq "TRUE" ) {
-                runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -m -e -o " . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} " . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}" );
-            }
-            else {
-                runAsZextras( "/opt/zextras/libexec/zmproxyconfig -m -d -o " . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} " . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}" );
-            }
-            if ( $config{HTTPPROXY} eq "TRUE" ) {
-                runAsZextras( "/opt/zextras/libexec/zmproxyconfig $upstream -w -e -o " . " -x $config{PROXYMODE} " . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}" );
-            }
-            else {
-                runAsZextras( "/opt/zextras/libexec/zmproxyconfig -w -d -o " . "-x $config{MODE} " . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}" );
-            }
-        }
-        if ( !( isEnabled("carbonio-appserver") ) ) {
-            my @storetargets;
-            detail("Running $ZMPROV garpu...");
-            open( ZMPROV, "$ZMPROV garpu 2>/dev/null|" );
-            chomp( @storetargets = <ZMPROV> );
-            close(ZMPROV);
-            if ( $storetargets[0] !~ /nginx-lookup/ ) {
-                progress("WARNING: There is currently no mailstore to proxy. Proxy will restart once one becomes available.\n");
-            }
-        }
-        if ( !( isEnabled("carbonio-memcached") ) ) {
-            my @memcachetargets;
-            detail("Running $ZMPROV gamcs...");
-            open( ZMPROV, "$ZMPROV gamcs 2>/dev/null|" );
-            chomp( @memcachetargets = <ZMPROV> );
-            close(ZMPROV);
-            if ( $memcachetargets[0] !~ /:11211/ ) {
-                progress("WARNING: There are currently no memcached servers for the proxy. Proxy will start once one becomes available.\n");
-            }
-        }
-        if ( ( !( $config{PUBLICSERVICEHOSTNAME} eq "" ) ) && ( !($publicServiceHostnameAlreadySet) ) ) {
-            progress("Setting Public Service Hostname $config{PUBLICSERVICEHOSTNAME}...");
-            runAsZextras("$ZMPROV mcf zimbraPublicServiceHostname $config{PUBLICSERVICEHOSTNAME}");
-            progress("done.\n");
-        }
-    }
-    else {
-        runAsZextras( "/opt/zextras/libexec/zmproxyconfig -m -d -o " . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} " . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}" );
-        runAsZextras( "/opt/zextras/libexec/zmproxyconfig -w -d -o " . "-x $config{MODE} " . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}" );
-    }
-}
-
-sub configCreateDomain {
-
-    if ( $configStatus{configCreateDomain} eq "CONFIGURED" ) {
-        configLog("configCreateDomain");
-        return 0;
-    }
-
-    if ( !$ldapConfigured && isEnabled("carbonio-directory-server") ) {
-        if ( $config{DOCREATEDOMAIN} eq "yes" ) {
-            progress("Creating domain $config{CREATEDOMAIN}...");
-            my $domainId = getLdapDomainValue("zimbraId");
-            if ( $domainId ne "" ) {
-                progress("already exists.\n");
-            }
-            else {
-                my $rc = runAsZextras("$ZMPROV cd $config{CREATEDOMAIN}");
-                progressResult($rc);
-            }
-
-            progress("Setting default domain name...");
-            my $rc = setLdapGlobalConfig( "zimbraDefaultDomainName", $config{CREATEDOMAIN} );
-            progressResult($rc);
-
-            progress("Setting value of postfix myorigin...");
-            my $rc = setLdapGlobalConfig( "zimbraMtaMyOrigin", $config{CREATEDOMAIN} );
-            progressResult($rc);
-        }
-    }
-    if ( isEnabled("carbonio-appserver") ) {
-        if ( $config{DOCREATEADMIN} eq "yes" ) {
-            $config{CREATEADMIN} = lc( $config{CREATEADMIN} );
-            my ( $u, $d ) = split( '@', $config{CREATEADMIN} );
-
-            progress("Creating domain $d...");
-            my $domainId = getLdapDomainValue( "zimbraId", $d );
-            if ( $domainId ne "" ) {
-                progress("already exists.\n");
-            }
-            else {
-                my $rc = runAsZextras("$ZMPROV cd $d");
-                progressResult($rc);
-            }
-
-            progress("Creating admin account $config{CREATEADMIN}...");
-            my $acctId = getLdapAccountValue( "zimbraId", $config{CREATEADMIN} );
-            if ( $acctId ne "" ) {
-                progress("already exists.\n");
-            }
-            else {
-                my $rc = runAsZextras( "$ZMPROV ca " . "$config{CREATEADMIN} \'$config{CREATEADMINPASS}\' " . "zimbraAdminConsoleUIComponents cartBlancheUI " . "description \'Administrative Account\' " . "displayName \'Carbonio Admin\' " . "zimbraIsAdminAccount TRUE" );
-                progressResult($rc);
-            }
-
-            # no root/postmaster accounts on web-only nodes
-            if ( isStoreServiceNode() ) {
-                progress("Creating root alias...");
-                my $rc = runAsZextras( "$ZMPROV aaa " . "$config{CREATEADMIN} root\@$config{CREATEDOMAIN}" );
-                progressResult($rc);
-
-                progress("Creating postmaster alias...");
-                $rc = runAsZextras( "$ZMPROV aaa " . "$config{CREATEADMIN} postmaster\@$config{CREATEDOMAIN}" );
-                progressResult($rc);
-            }
-
-            # set carbonioNotificationFrom & carbonioNotificationRecipients global config attributes
-            progress("Setting infrastructure notification sender and recipients accounts...");
-            my $rc = setLdapGlobalConfig( 'carbonioNotificationFrom', "$config{CREATEADMIN}", 'carbonioNotificationRecipients', "$config{CREATEADMIN}" );
-            progressResult($rc);
-        }
-
-        if ( $config{DOTRAINSA} eq "yes" ) {
-            createSystemAccountIfMissing( "TRAINSASPAM", "System account for spam training.", "" );
-            createSystemAccountIfMissing( "TRAINSAHAM", "System account for Non-Spam (Ham) training.", "" );
-            createSystemAccountIfMissing( "VIRUSQUARANTINE", "System account for Anti-virus quarantine.", "zimbraMailMessageLifetime 30d" );
-
-            progress("Setting spam, training and anti-virus quarantine accounts...");
-            my $rc = setLdapGlobalConfig( 'zimbraSpamIsSpamAccount', "$config{TRAINSASPAM}", 'zimbraSpamIsNotSpamAccount', "$config{TRAINSAHAM}", 'zimbraAmavisQuarantineAccount', "$config{VIRUSQUARANTINE}" );
-            progressResult($rc);
-        }
-    }
-    configLog("configCreateDomain");
-}
 
 sub configInitSql {
 
@@ -3717,104 +2803,7 @@ sub configInitMta {
     }
 }
 
-sub configInitGALSyncAccts {
 
-    if ( $configStatus{configInitGALSyncAccts} eq "CONFIGURED" ) {
-        configLog("configInitGALSyncAccts");
-        return 0;
-    }
-
-    return 1
-      unless ( isEnabled("carbonio-directory-server") && $config{LDAPHOST} eq $config{HOSTNAME} );
-
-    #if ($config{ENABLEGALSYNCACCOUNTS} eq "yes") {
-    #progress("Creating galsync accounts in all domains...");
-    #my $rc = runAsZextras("zmjava com.zimbra.cs.account.ldap.upgrade.LdapUpgrade -b 14531 -v");
-    #progress(($rc == 0) ? "done.\n" : "failed.\n");
-    #configLog("configInitGALSyncAccts") if ($rc == 0);
-    #}
-}
-
-sub configCreateDefaultDomainGALSyncAcct {
-
-    if ( $configStatus{configCreateDefaultGALSyncAcct} eq "CONFIGURED" ) {
-        configLog("configCreateDefaultGALSyncAcct");
-        return 0;
-    }
-
-    if ( isEnabled("carbonio-appserver") ) {
-        progress("Creating galsync account for default domain...");
-        my $_server  = getLocalConfig("zimbra_server_hostname");
-        my $default_domain = ( ($newinstall) ? "$config{CREATEDOMAIN}" : "$config{zimbraDefaultDomainName}" );
-        my $galsyncacct    = "galsync." . lc( genRandomPass() ) . '@' . $default_domain;
-        my $rc             = runAsZextras("/opt/zextras/bin/zmgsautil createAccount -a $galsyncacct -n InternalGAL --domain $default_domain -s $_server -t zimbra -f _InternalGAL -p 1d");
-        progressResult($rc);
-        configLog("configCreateDefaultDomainGALSyncAcct") if ( $rc == 0 );
-    }
-}
-
-sub configSetEnabledServices {
-
-    foreach my $p ( keys %installedPackages ) {
-        if ( $p eq "carbonio-core" ) {
-            push( @installedServiceList, ( 'zimbraServiceInstalled', 'stats' ) );
-            next;
-        }
-        $p =~ s/carbonio-//;
-        if ( $p eq "appserver" ) { $p = "mailbox"; }
-
-        # do not push antivirus if already exists, required to enable support for single & multi-node installs
-        if ( $p eq "clamav" && !grep( /^antivirus$/, @installedServiceList ) ) { $p = "antivirus"; }
-
-        # do not add clamav as service, it is known as antivirus
-        if ( $p eq "clamav" ) { next; }
-        push( @installedServiceList, ( 'zimbraServiceInstalled', "$p" ) );
-    }
-
-    foreach my $p ( keys %enabledPackages ) {
-        if ( $p eq "carbonio-core" ) {
-            push( @enabledServiceList, ( 'zimbraServiceEnabled', 'stats' ) );
-            next;
-        }
-        if ( $enabledPackages{$p} eq "Enabled" ) {
-            $p =~ s/carbonio-//;
-            if ( $p eq "appserver" ) {
-                $p = "mailbox";
-
-                # Add carbonio-appserver webapps to service list
-                if ( $installedWebapps{$serviceWebApp} eq "Enabled" ) {
-                    push( @enabledServiceList, 'zimbraServiceEnabled', "$serviceWebApp" );
-                }
-            }
-
-            # do not push antivirus if already exists, required to enable support for single & multi-node installs
-            if ( $p eq "clamav" && !grep( /^antivirus$/, @enabledServiceList ) ) { $p = "antivirus"; }
-
-            # do not add clamav as service, it is known as antivirus
-            if ( $p eq "clamav" ) { next; }
-            push( @enabledServiceList, 'zimbraServiceEnabled', "$p" );
-        }
-    }
-
-    progress("Setting services on $config{HOSTNAME}...");
-
-    # add service-discover as enabled service if it was in zimbraServiceEnabled before.
-    # service-discover is special case which is not handled by regular logic, since it
-    # has no explicit package mapping. we also do not add it to installedServiceList
-    # for the same reason.
-    if ( $prevEnabledServices{"service-discover"} && $prevEnabledServices{"service-discover"} eq "Enabled" ) {
-        detail("Restoring service-discover serviceEnabled state from previous install.");
-        push( @enabledServiceList, ( 'zimbraServiceEnabled', 'service-discover' ) );
-    }
-
-    setLdapServerConfig( $config{HOSTNAME}, @installedServiceList );
-    setLdapServerConfig( $config{HOSTNAME}, @enabledServiceList );
-    progress("done.\n");
-
-    my $rc = runAsZextras("/opt/zextras/libexec/zmiptool >/dev/null 2>/dev/null");
-
-    configLog("configSetEnabledServices");
-}
 
 sub failConfig {
     progress("\n\nERROR\n\n");
@@ -4135,28 +3124,6 @@ sub mailboxdMemoryMB {
     return int( $memory * 1024 );
 }
 
-sub addServerToHostPool {
-    progress("Adding $config{HOSTNAME} to MailHostPool in default COS...");
-    my $id = getLdapServerValue( "zimbraId", $config{HOSTNAME} );
-    my $hp = getLdapCOSValue("zimbraMailHostPool");
-
-    if ( $id eq "" ) {
-        progress("failed. Could not find a server entry for $config{HOSTNAME}.\n");
-        return undef;
-    }
-    $hp .= ( ( $hp eq "" ) ? "$id" : "\n$id" );
-
-    my %k;
-    my @zmprov_args = ();
-    foreach my $serverid ( split( /\n/, $hp ) ) {
-        $k{$serverid} = 1;
-    }
-    foreach my $host ( keys %k ) {
-        push( @zmprov_args, ( 'zimbraMailHostPool', $host ) );
-    }
-    my $rc = setLdapCOSConfig( 'default', @zmprov_args );
-    progressResult($rc);
-}
 
 sub mainMenu {
     my %mm = ();
