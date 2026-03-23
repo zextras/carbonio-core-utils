@@ -15,6 +15,7 @@ use Zextras::Util::Timezone;
 use Zextras::Util::Systemd;
 use Zextras::Setup::DNS;
 use Zextras::Setup::SSL;
+use Zextras::Setup::LDAP;
 use FileHandle;
 use Net::LDAP;
 use IPC::Open3;
@@ -461,88 +462,6 @@ sub setEmailDomain {
     $config{$configKey} = $user . '@' . $newDomain;
 }
 
-# Helper to get LDAP values - consolidates 6 nearly identical functions
-sub getLdapValueHelper {
-    my ( $attrib, $sub, $sec, $cmd, $detailType ) = @_;
-    my ( $val, $err );
-    if ( exists $main::loaded{$sec}{$sub}{$attrib} ) {
-        $val = $main::loaded{$sec}{$sub}{$attrib};
-        detail("Returning cached $detailType config attribute for $sub: $attrib=$val.");
-        return $val;
-    }
-    my ( $rfh, $wfh, $efh, $rc );
-    $rfh = new FileHandle;
-    $wfh = new FileHandle;
-    $efh = new FileHandle;
-    my $pid = open3( $wfh, $rfh, $efh, $cmd );
-    unless ( defined($pid) ) {
-        return undef;
-    }
-    close $wfh;
-    my @d = <$rfh>;
-    while ( scalar(@d) > 0 ) {
-        chomp( my $line = shift(@d) );
-        my ( $k, $v ) = $line =~ m/^(\w+):\s(.*)/;
-        while ( $d[0] !~ m/^\w+:\s.*/ && scalar(@d) > 0 ) {
-            chomp( $v .= shift(@d) );
-        }
-        if ( !$main::loaded{$sec}{$sub}{zmsetuploaded} || ( $main::loaded{$sec}{$sub}{zmsetuploaded} && $k eq $attrib ) ) {
-            if ( exists $main::loaded{$sec}{$sub}{$k} ) {
-                $main::loaded{$sec}{$sub}{$k} = "$main::loaded{$sec}{$sub}{$k}\n$v";
-            }
-            else {
-                $main::loaded{$sec}{$sub}{$k} = "$v";
-            }
-        }
-    }
-    chomp( $err = join "", <$efh> );
-    detail("$err") if ( length($err) > 0 );
-    waitpid( $pid, 0 );
-    if ( $? == -1 ) {
-        close $rfh;
-        close $efh;
-        return undef;
-    }
-    elsif ( $? & 127 ) {
-        close $rfh;
-        close $efh;
-        return undef;
-    }
-    else {
-        $rc = $? >> 8;
-        close $rfh;
-        close $efh;
-        return undef if ( $rc != 0 );
-    }
-    close $rfh;
-    close $efh;
-    $main::loaded{$sec}{$sub}{zmsetuploaded} = 1;
-    $val = $main::loaded{$sec}{$sub}{$attrib};
-    detail("Returning retrieved $detailType config attribute for $sub: $attrib=$val.");
-    return $val;
-}
-
-# Helper to set LDAP config values - consolidates 5 nearly identical functions
-sub setLdapConfigHelper {
-    my ( $sec, $entity, $zmprovCmd, $detailType, @args ) = @_;
-    my $zmprov_arg_str;
-    while (@args) {
-        my $key = shift @args;
-        my $val = shift @args;
-        if ( ifKeyValueEquate( $sec, $key, $val, $entity ) ) {
-            detail("Skipping update of unchanged value for $key=$val.");
-        }
-        else {
-            detail("Updating cached config attribute for $detailType $entity: $key=$val.");
-            updateKeyValue( $sec, $key, $val, $entity );
-            $zmprov_arg_str .= " $key \'$val\'";
-        }
-    }
-    if ($zmprov_arg_str) {
-        return runAsZextras("$zmprovCmd $zmprov_arg_str");
-    }
-}
-
 # Helper to create a system account if it doesn't exist
 sub createSystemAccountIfMissing {
     my ( $configKey, $description, $extraAttrs ) = @_;
@@ -951,52 +870,6 @@ sub getSystemStatus {
     if ( isEnabled("carbonio-mta") ) {
         $config{SMTPHOST} = $config{HOSTNAME} if ( $config{SMTPHOST} eq "" );
     }
-}
-
-sub getAllServers {
-    my ($service) = @_;
-    my @servers;
-    detail("Running $ZMPROV gas $service...");
-    open( ZMPROV, "$ZMPROV gas $service 2>/dev/null|" );
-    chomp( @servers = <ZMPROV> );
-    close(ZMPROV);
-
-    return @servers;
-}
-
-sub getLdapAccountValue($$) {
-    my ( $attrib, $sub ) = @_;
-    return getLdapValueHelper( $attrib, $sub, "acct", "$ZMPROV ga $sub", "account" );
-}
-
-sub getLdapCOSValue {
-    my ( $attrib, $sub ) = @_;
-    $sub = "default" if ( $sub eq "" );
-    return getLdapValueHelper( $attrib, $sub, "gc", "$ZMPROV gc $sub", "cos" );
-}
-
-sub getLdapConfigValue {
-    my $attrib = shift;
-    return getLdapValueHelper( $attrib, "gcf", "gcf", "$ZMPROV gacf", "global" );
-}
-
-sub getLdapDomainValue {
-    my ( $attrib, $sub ) = @_;
-    $sub = $config{zimbraDefaultDomainName} if ( $sub eq "" );
-    return undef if ( $sub eq "" );
-    return getLdapValueHelper( $attrib, $sub, "domain", "$ZMPROV gd $sub", "domain" );
-}
-
-sub getLdapServerValue {
-    my ( $attrib, $sub ) = @_;
-    $sub = $main::config{HOSTNAME} if ( $sub eq "" );
-    return getLdapValueHelper( $attrib, $sub, "gs", "$ZMPROV gs $sub", "server" );
-}
-
-sub getRealLdapServerValue {
-    my ( $attrib, $sub ) = @_;
-    $sub = $main::config{HOSTNAME} if ( $sub eq "" );
-    return getLdapValueHelper( $attrib, $sub, "gsreal", "$ZMPROV gs -e $sub", "server" );
 }
 
 sub setLdapDefaults {
@@ -2358,10 +2231,6 @@ sub genSubMenu {
     return \%lm;
 }
 
-sub isLdapMaster {
-    return ( ( $config{LDAPHOST} eq $config{HOSTNAME} ) ? 1 : 0 );
-}
-
 sub isZCS {
     return ( ( grep( /\b\w+-appserver\b/, @packageList ) ) ? 1 : 0 );
 }
@@ -3185,73 +3054,6 @@ sub setLocalConfigBatch {
     }
 }
 
-sub updateKeyValue {
-    my ( $sec, $key, $val, $sub ) = @_;
-    if ( $key =~ /^\+(.*)/ ) {
-
-        # TODO remove duplicates
-        $main::loaded{$sec}{$sub}{$1} = "$main::loaded{$sec}{$sub}{$1}\n$val";
-        $main::saved{$sec}{$sub}{$1}  = $main::loaded{$sec}{$sub}{$1};
-    }
-    elsif ( $key =~ /^-(.*)/ ) {
-        if ( exists $main::loaded{$sec}{$sub}{$1} ) {
-            my %tmp = map { $_ => 1 } split( /\n/, $main::loaded{$sec}{$sub}{$1} );
-            delete $tmp{$val};
-            $main::loaded{$sec}{$sub}{$1} = join "\n", keys %tmp;
-            $main::saved{$sec}{$sub}{$1}  = $main::loaded{$sec}{$sub}{$1};
-        }
-    }
-    else {
-        $main::loaded{$sec}{$sub}{$key} = $val;
-        $main::saved{$sec}{$sub}{$key}  = $val;
-    }
-}
-
-sub ifKeyValueEquate {
-    my ( $sec, $key, $val, $sub ) = @_;
-    $key = $1 if ( $key =~ /^[+|-](.*)/ );
-    detail("Checking to see if $key=$val has changed for $sec $sub.\n") if $debug;
-    if ( exists $main::saved{$sec}{$sub}{$key} && $main::saved{$sec}{$sub}{$key} eq $val ) {
-
-        #detail("DEBUG: \"$main::saved{$sec}{$sub}{$key}\" eq \"$val\"\n") if $debug;
-        return 1;
-    }
-    else {
-        #detail("DEBUG: \"$main::saved{$sec}{$sub}{$key}\" ne \"$val\"\n") if $debug;
-        return 0;
-    }
-}
-
-#
-#  setLdapGlobalConfig(key, val [, key, val ...])
-#
-sub setLdapGlobalConfig {
-    return setLdapConfigHelper( "gcf", "gcf", "$ZMPROV mcf", "Global", @_ );
-}
-
-sub setLdapServerConfig {
-    my $server = ( $#_ % 2 ) == 0 ? shift : $config{HOSTNAME};
-    return undef if ( $server eq "" );
-    return setLdapConfigHelper( "gs", $server, "$ZMPROV ms $server", "Server", @_ );
-}
-
-sub setLdapDomainConfig {
-    my $domain = ( $#_ % 2 ) == 0 ? shift : getLdapConfigValue("zimbraDefaultDomainName");
-    return undef if ( $domain eq "" );
-    return setLdapConfigHelper( "domain", $domain, "$ZMPROV md $domain", "Domain", @_ );
-}
-
-sub setLdapCOSConfig {
-    my $cos = ( $#_ % 2 ) == 0 ? shift : 'default';
-    return setLdapConfigHelper( "gc", $cos, "$ZMPROV mc $cos", "COS", @_ );
-}
-
-sub setLdapAccountConfig {
-    my $acct = ( $#_ % 2 ) == 0 ? shift : "";
-    return undef if ( $acct eq "" );
-    return setLdapConfigHelper( "acct", $acct, "$ZMPROV ma $acct", "Account", @_ );
-}
-
 sub configLCValues {
 
     # we want these two entries to have the default configuration values
@@ -3763,63 +3565,6 @@ sub configSetProxyPrefs {
         runAsZextras( "/opt/zextras/libexec/zmproxyconfig -m -d -o " . "-i $config{IMAPPORT}:$config{IMAPPROXYPORT}:$config{IMAPSSLPORT}:$config{IMAPSSLPROXYPORT} " . "-p $config{POPPORT}:$config{POPPROXYPORT}:$config{POPSSLPORT}:$config{POPSSLPROXYPORT} -H $config{HOSTNAME}" );
         runAsZextras( "/opt/zextras/libexec/zmproxyconfig -w -d -o " . "-x $config{MODE} " . "-a $config{HTTPPORT}:$config{HTTPPROXYPORT}:$config{HTTPSPORT}:$config{HTTPSPROXYPORT} -H $config{HOSTNAME}" );
     }
-}
-
-# Connect and bind to LDAP master. Returns ($ldap, undef) on success,
-# or (undef, $error_msg) on failure.
-sub ldapBindMaster {
-    my $ldap_pass       = getLocalConfig("zimbra_ldap_password");
-    my $ldap_master_url = getLocalConfig("ldap_master_url");
-    my @masters         = split( / /, $ldap_master_url );
-
-    my $ldap = Net::LDAP->new( \@masters );
-    unless ($ldap) {
-        detail("Unable to contact $ldap_master_url.");
-        return ( undef, "Unable to contact $ldap_master_url" );
-    }
-
-    my $ldap_dn = $config{zimbra_ldap_userdn};
-    my $result  = $ldap->bind( $ldap_dn, password => $ldap_pass );
-    if ( $result->code() ) {
-        detail("LDAP bind failed for $ldap_dn.");
-        return ( undef, "LDAP bind failed for $ldap_dn" );
-    }
-    detail("LDAP bind done for $ldap_dn.");
-    return ( $ldap, undef );
-}
-
-sub countReverseProxyLookupTargets {
-    my ( $ldap, $err ) = ldapBindMaster();
-    return unless $ldap;
-
-    progress("Searching LDAP for reverseProxyLookupTargets...");
-    my $result = $ldap->search( base => 'cn=zimbra', filter => '(zimbraReverseProxyLookupTarget=TRUE)', attrs => ['1.1'] );
-    progress( ( $result->code() ) ? "failed.\n" : "done.\n" );
-    $ldap->unbind;
-    return if ( $result->code() );
-    return "" . $result->count;
-}
-
-sub countUsers {
-    return $main::loaded{stats}{numAccts}
-      if ( exists $main::loaded{stats}{numAccts} );
-
-    my ( $ldap, $err ) = ldapBindMaster();
-    return undef unless $ldap;
-
-    progress("Searching LDAP for zimbra accounts...");
-    my $result = $ldap->search(
-        filter => "(objectclass=zimbraAccount)",
-        attrs  => ['zimbraMailDeliveryAddress']
-    );
-    progress( ( $result->code() ) ? "failed.\n" : "done.\n" );
-    $ldap->unbind;
-    return undef if ( $result->code() );
-
-    my $count = $result->count;
-    $main::loaded{stats}{numAccts} = $count
-      if ( $count > 0 );
-    return ( ( $count > 0 ) ? "$count" : undef );
 }
 
 sub configCreateDomain {
@@ -4418,81 +4163,6 @@ sub mainMenu {
     $mm{createsub} = \&createMainMenu;
 
     displayMenu( \%mm );
-}
-
-sub waitForLdap {
-    my $timeout = shift // 30;
-    my $ldapi   = "ldapi://%2frun%2fcarbonio%2frun%2fldapi/";
-    my $ldap_root_password = getLocalConfig("ldap_root_password");
-    my $elapsed = 0;
-    while ( $elapsed < $timeout ) {
-        my $ldap = Net::LDAP->new($ldapi);
-        if ($ldap) {
-            my $mesg = $ldap->bind( "cn=config", password => $ldap_root_password );
-            if ( !$mesg->code ) {
-                $ldap->unbind;
-                return 0;    # success: LDAP is ready
-            }
-            $ldap->unbind;
-        }
-        sleep 1;
-        $elapsed++;
-    }
-    return 1;    # timed out
-}
-
-# Returns 1 if LDAP is running, 0 if not.
-sub isLdapRunning {
-    if ( isSystemd() ) {
-        return isSystemdActiveUnit("carbonio-openldap.service");
-    }
-    else {
-        my $rc = 0xffff & system("/opt/zextras/bin/ldap status > /dev/null 2>&1");
-        return ( $rc == 0 ) ? 1 : 0;
-    }
-}
-
-sub startLdap {
-    my $rc;
-    detail("Checking LDAP status...");
-    if ( isLdapRunning() ) {
-        detail("already running.\n");
-        return 0;
-    }
-    detail("not running.\n");
-
-    progress("Starting LDAP...");
-    if ( isSystemd() ) {
-        $rc = system("systemctl start carbonio-openldap.service");
-        if ( $rc == 0 ) {
-            $rc = waitForLdap(30);
-        }
-    }
-    else {
-        $rc = runAsZextras("/opt/zextras/bin/ldap start");
-    }
-    progress( ( $rc == 0 ) ? "done.\n" : "failed with exit code: $rc.\n" );
-    return $rc;
-}
-
-sub stopLdap {
-    my $rc;
-    detail("Checking LDAP status...");
-    unless ( isLdapRunning() ) {
-        detail("already stopped.\n");
-        return 0;
-    }
-    detail("running.\n");
-
-    progress("Stopping LDAP...");
-    if ( isSystemd() ) {
-        $rc = system("systemctl stop carbonio-openldap.service");
-    }
-    else {
-        $rc = runAsZextras("/opt/zextras/bin/ldap stop");
-    }
-    progress( ( $rc == 0 ) ? "done.\n" : "failed with exit code: $rc.\n" );
-    return $rc;
 }
 
 sub resumeConfiguration {
