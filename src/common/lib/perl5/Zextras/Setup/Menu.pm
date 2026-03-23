@@ -232,11 +232,11 @@ sub askDomainUserHelper {
 # Helper to update password display status for menu (UNSET, set, or Not Verified)
 sub updatePasswordDisplayStatus {
     my ( $passKey, $passSetKey ) = @_;
-    if ( $main::config{$passKey} eq "" ) {
+    if ( ( $main::config{$passKey} // "" ) eq "" ) {
         $main::config{$passSetKey} = "UNSET";
     }
     else {
-        $main::config{$passSetKey} = "set" unless ( $main::config{$passSetKey} eq "Not Verified" );
+        $main::config{$passSetKey} = "set" unless ( ( $main::config{$passSetKey} // "" ) eq "Not Verified" );
     }
 }
 
@@ -858,7 +858,7 @@ sub setEnabledDependencies {
         if ( main::isEnabled("carbonio-mta") ) {
             $main::config{SMTPHOST} = $main::config{HOSTNAME};
         }
-        if ( $main::config{zimbraMailProxy} eq "TRUE" || $main::config{zimbraWebProxy} eq "TRUE" ) {
+        if ( ( $main::config{zimbraMailProxy} // "" ) eq "TRUE" || ( $main::config{zimbraWebProxy} // "" ) eq "TRUE" ) {
             setUseProxy();
         }
     }
@@ -873,7 +873,7 @@ sub setEnabledDependencies {
         else {
             $main::config{RUNSA} = ( main::isServiceEnabled("antispam")  ? "yes" : "no" );
             $main::config{RUNAV} = ( main::isServiceEnabled("antivirus") ? "yes" : "no" );
-            if ( $main::config{RUNDKIM} ne "yes" ) {
+            if ( ( $main::config{RUNDKIM} // "" ) ne "yes" ) {
                 $main::config{RUNDKIM} = ( main::isServiceEnabled("opendkim") ? "yes" : "no" );
             }
             $main::config{RUNCBPOLICYD} = ( main::isServiceEnabled("cbpolicyd") ? "yes" : "no" );
@@ -1063,7 +1063,7 @@ sub displayMenu {
                 if ( defined( $$items{menuitems}{$i}{submenu} ) ) {
                     $subMenuCheck = checkMenuConfig( $$items{menuitems}{$i}{submenu} );
                 }
-                printf( "${ind}%2s) %-40s %-30s\n", $i, $$items{menuitems}{$i}{prompt}, $v );
+                printf( "${ind}%2s) %-40s %-30s\n", $i, $$items{menuitems}{$i}{prompt}, $v // "" );
             }
             else {
                 # Disabled items
@@ -1096,7 +1096,7 @@ sub displayMenu {
         my $r = <>;
         $r //= "";
         chomp $r;
-        if ( $r eq "" ) { $r = $$items{default}; }
+        if ( $r eq "" ) { $r = $$items{default} // ""; }
         if ( $r eq "" ) { next; }
         if ( $r eq $$items{lastitem}{selector} ) {
             if ( $$items{lastitem}{action} eq "quit" ) {
@@ -1371,8 +1371,7 @@ sub createStoreMenu {
     if ( main::isEnabled($package) ) {
         addMenuItem( $lm, \$i, "Create Admin User:", 'DOCREATEADMIN', \&toggleYN, "DOCREATEADMIN" );
 
-        my $ldap_virusquarantine = getLdapConfigValue("zimbraAmavisQuarantineAccount")
-          if ( ldapIsAvailable() );
+        my $ldap_virusquarantine = ldapIsAvailable() ? ( getLdapConfigValue("zimbraAmavisQuarantineAccount") // "" ) : "";
 
         if ( $ldap_virusquarantine eq "" ) {
             addMenuItem( $lm, \$i, "Anti-virus quarantine user:", 'VIRUSQUARANTINE', \&setAmavisVirusQuarantine );
@@ -1384,8 +1383,7 @@ sub createStoreMenu {
         addMenuItem( $lm, \$i, "Enable automated spam training:", 'DOTRAINSA', \&toggleYN, "DOTRAINSA" );
 
         if ( $main::config{DOTRAINSA} eq "yes" ) {
-            my $ldap_trainsaspam = getLdapConfigValue("zimbraSpamIsSpamAccount")
-              if ( ldapIsAvailable() );
+            my $ldap_trainsaspam = ldapIsAvailable() ? ( getLdapConfigValue("zimbraSpamIsSpamAccount") // "" ) : "";
 
             if ( $ldap_trainsaspam eq "" ) {
                 addMenuItem( $lm, \$i, "Spam training user:", 'TRAINSASPAM', \&setTrainSASpam );
@@ -1394,8 +1392,7 @@ sub createStoreMenu {
                 $main::config{TRAINSASPAM} = $ldap_trainsaspam;
             }
 
-            my $ldap_trainsaham = getLdapConfigValue("zimbraSpamIsNotSpamAccount")
-              if ( ldapIsAvailable() );
+            my $ldap_trainsaham = ldapIsAvailable() ? ( getLdapConfigValue("zimbraSpamIsNotSpamAccount") // "" ) : "";
 
             if ( $ldap_trainsaham eq "" ) {
                 addMenuItem( $lm, \$i, "Non-spam(Ham) training user:", 'TRAINSAHAM', \&setTrainSAHam );

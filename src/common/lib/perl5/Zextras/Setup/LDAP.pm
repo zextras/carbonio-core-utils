@@ -234,7 +234,7 @@ sub isLdapRunning {
         return Zextras::Util::Systemd::isSystemdActiveUnit("carbonio-openldap.service");
     }
     else {
-        my $rc = 0xffff & system("/opt/zextras/bin/ldap status > /dev/null 2>&1");
+        my $rc = main::runAsZextras("/opt/zextras/bin/ldap status");
         return ( $rc == 0 ) ? 1 : 0;
     }
 }
