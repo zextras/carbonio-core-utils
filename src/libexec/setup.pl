@@ -560,7 +560,7 @@ sub createSystemAccountIfMissing {
           . "zimbraIsSystemResource TRUE zimbraIsSystemAccount TRUE zimbraHideInGal TRUE "
           . "zimbraMailQuota 0 $extraAttrs description \'$description\'"
     );
-    progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+    progressResult($rc);
     return $rc;
 }
 
@@ -3628,7 +3628,7 @@ sub configSetupLdap {
                 progress("You will have to correct the problem and manually enable replication.\n");
                 progress("Disabling LDAP on $config{HOSTNAME}...");
                 my $rc = setLdapServerConfig( "-zimbraServiceEnabled", "directory-server" );
-                progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+                progressResult($rc);
                 stopLdap();
             }
         }
@@ -3816,11 +3816,11 @@ sub configCreateServerEntry {
     }
     else {
         my $rc = runAsZextras("$ZMPROV cs $config{HOSTNAME}");
-        progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+        progressResult($rc);
     }
     progress("Setting IP Mode...");
     my $rc = setLdapServerConfig( "zimbraIPMode", $config{zimbraIPMode} );
-    progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+    progressResult($rc);
     my $rc = runAsZextras("/opt/zextras/libexec/zmiptool >/dev/null 2>/dev/null");
 
     configLog("configCreateServerEntry");
@@ -3939,7 +3939,7 @@ sub configSetKeyboardShortcutsPref {
     }
     progress("Setting Keyboard Shortcut Preferences...");
     my $rc = setLdapCOSConfig( "zimbraPrefUseKeyboardShortcuts", $config{USEKBSHORTCUTS} );
-    progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+    progressResult($rc);
     configLog("zimbraPrefUseKeyboardShortcuts");
 }
 
@@ -3951,7 +3951,7 @@ sub configSetTimeZonePref {
     if ( $config{LDAPHOST} eq $config{HOSTNAME} ) {
         progress("Setting TimeZone Preference...");
         my $rc = setLdapCOSConfig( "zimbraPrefTimeZoneId", $config{zimbraPrefTimeZoneId} );
-        progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+        progressResult($rc);
     }
     configLog("zimbraPrefTimeZoneId");
 }
@@ -4133,16 +4133,16 @@ sub configCreateDomain {
             }
             else {
                 my $rc = runAsZextras("$ZMPROV cd $config{CREATEDOMAIN}");
-                progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+                progressResult($rc);
             }
 
             progress("Setting default domain name...");
             my $rc = setLdapGlobalConfig( "zimbraDefaultDomainName", $config{CREATEDOMAIN} );
-            progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+            progressResult($rc);
 
             progress("Setting value of postfix myorigin...");
             my $rc = setLdapGlobalConfig( "zimbraMtaMyOrigin", $config{CREATEDOMAIN} );
-            progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+            progressResult($rc);
         }
     }
     if ( isEnabled("carbonio-appserver") ) {
@@ -4157,7 +4157,7 @@ sub configCreateDomain {
             }
             else {
                 my $rc = runAsZextras("$ZMPROV cd $d");
-                progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+                progressResult($rc);
             }
 
             progress("Creating admin account $config{CREATEADMIN}...");
@@ -4167,24 +4167,24 @@ sub configCreateDomain {
             }
             else {
                 my $rc = runAsZextras( "$ZMPROV ca " . "$config{CREATEADMIN} \'$config{CREATEADMINPASS}\' " . "zimbraAdminConsoleUIComponents cartBlancheUI " . "description \'Administrative Account\' " . "displayName \'Carbonio Admin\' " . "zimbraIsAdminAccount TRUE" );
-                progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+                progressResult($rc);
             }
 
             # no root/postmaster accounts on web-only nodes
             if ( isStoreServiceNode() ) {
                 progress("Creating root alias...");
                 my $rc = runAsZextras( "$ZMPROV aaa " . "$config{CREATEADMIN} root\@$config{CREATEDOMAIN}" );
-                progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+                progressResult($rc);
 
                 progress("Creating postmaster alias...");
                 $rc = runAsZextras( "$ZMPROV aaa " . "$config{CREATEADMIN} postmaster\@$config{CREATEDOMAIN}" );
-                progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+                progressResult($rc);
             }
 
             # set carbonioNotificationFrom & carbonioNotificationRecipients global config attributes
             progress("Setting infrastructure notification sender and recipients accounts...");
             my $rc = setLdapGlobalConfig( 'carbonioNotificationFrom', "$config{CREATEADMIN}", 'carbonioNotificationRecipients', "$config{CREATEADMIN}" );
-            progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+            progressResult($rc);
         }
 
         if ( $config{DOTRAINSA} eq "yes" ) {
@@ -4194,7 +4194,7 @@ sub configCreateDomain {
 
             progress("Setting spam, training and anti-virus quarantine accounts...");
             my $rc = setLdapGlobalConfig( 'zimbraSpamIsSpamAccount', "$config{TRAINSASPAM}", 'zimbraSpamIsNotSpamAccount', "$config{TRAINSAHAM}", 'zimbraAmavisQuarantineAccount', "$config{VIRUSQUARANTINE}" );
-            progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+            progressResult($rc);
         }
     }
     configLog("configCreateDomain");
@@ -4298,7 +4298,7 @@ sub configCreateDefaultDomainGALSyncAcct {
         my $default_domain = ( ($newinstall) ? "$config{CREATEDOMAIN}" : "$config{zimbraDefaultDomainName}" );
         my $galsyncacct    = "galsync." . lc( genRandomPass() ) . '@' . $default_domain;
         my $rc             = runAsZextras("/opt/zextras/bin/zmgsautil createAccount -a $galsyncacct -n InternalGAL --domain $default_domain -s $_server -t zimbra -f _InternalGAL -p 1d");
-        progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+        progressResult($rc);
         configLog("configCreateDefaultDomainGALSyncAcct") if ( $rc == 0 );
     }
 }
@@ -4705,7 +4705,7 @@ sub addServerToHostPool {
         push( @zmprov_args, ( 'zimbraMailHostPool', $host ) );
     }
     my $rc = setLdapCOSConfig( 'default', @zmprov_args );
-    progress( ( $rc == 0 ) ? "done.\n" : "failed.\n" );
+    progressResult($rc);
 }
 
 sub mainMenu {
