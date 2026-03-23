@@ -103,6 +103,7 @@ sub getLdapValueHelper {
     while ( scalar(@d) > 0 ) {
         chomp( my $line = shift(@d) );
         my ( $k, $v ) = $line =~ m/^(\w+):\s(.*)/;
+        next unless defined $k;
         while ( scalar(@d) > 0 && $d[0] !~ m/^\w+:\s.*/ ) {
             chomp( $v .= shift(@d) );
         }
@@ -441,12 +442,12 @@ sub createSystemAccountIfMissing {
 # Returns 0 on success, 1 on failure to start LDAP.
 sub ensureLdapForServerQuery {
     $main::config{zimbra_server_hostname} = main::getLocalConfig("zimbra_server_hostname")
-      if ( $main::config{zimbra_server_hostname} eq "" );
+      if ( ( $main::config{zimbra_server_hostname} // "" ) eq "" );
     main::detail("DEBUG: zimbra_server_hostname=$main::config{zimbra_server_hostname}")
       if $main::options{d};
 
     $main::config{ldap_url} = main::getLocalConfig("ldap_url")
-      if ( $main::config{ldap_url} eq "" );
+      if ( ( $main::config{ldap_url} // "" ) eq "" );
     main::detail("DEBUG: ldap_url=$main::config{ldap_url}")
       if $main::options{d};
 
@@ -875,7 +876,7 @@ sub configSetupLdap {
             setLdapPasswordHelper( "amavis", "-a", "LDAPAMAVISPASS", "ldap_amavis_password", 1 )        if $main::ldapAmavisChanged;
             setLdapPasswordHelper( "nginx", "-n", "ldap_nginx_password", "ldap_nginx_password", 1 )    if $main::ldapNginxChanged;
         }
-        if ( $main::config{FORCEREPLICATION} eq "yes" ) {
+        if ( ( $main::config{FORCEREPLICATION} // "" ) eq "yes" ) {
             my $rc   = system("/opt/zextras/libexec/zmldapenablereplica");
             my $file = "/opt/zextras/.enable_replica";
             open( ER, ">>$file" );
@@ -1408,8 +1409,8 @@ sub configSetEnabledServices {
 
 sub addServerToHostPool {
     main::progress("Adding $main::config{HOSTNAME} to MailHostPool in default COS...");
-    my $id = getLdapServerValue( "zimbraId", $main::config{HOSTNAME} );
-    my $hp = getLdapCOSValue("zimbraMailHostPool");
+    my $id = getLdapServerValue( "zimbraId", $main::config{HOSTNAME} ) // "";
+    my $hp = getLdapCOSValue("zimbraMailHostPool") // "";
 
     if ( $id eq "" ) {
         main::progress("failed. Could not find a server entry for $main::config{HOSTNAME}.\n");
