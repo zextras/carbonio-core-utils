@@ -846,7 +846,7 @@ sub configSetupLdap {
     updatePasswordsInLocalConfig();
 
     #Check if skipping configSetupLdap on existing install is distructive
-    if ( $main::configStatus{configSetupLdap} eq "CONFIGURED" ) {
+    if ( ( $main::configStatus{configSetupLdap} // "" ) eq "CONFIGURED" ) {
         main::detail("LDAP already configured, bypassing configuration.\n");
         main::configLog("configSetupLdap");
         return 0;
@@ -977,7 +977,7 @@ sub configLDAPSchemaVersion {
 
 sub configCreateServerEntry {
 
-    if ( $main::configStatus{configCreateServerEntry} eq "CONFIGURED" ) {
+    if ( ( $main::configStatus{configCreateServerEntry} // "" ) eq "CONFIGURED" ) {
         main::configLog("configCreateServerEntry");
         return 0;
     }
@@ -1059,7 +1059,7 @@ sub configSetStoreDefaults {
 
 sub configSetServicePorts {
 
-    if ( $main::configStatus{configSetServicePorts} eq "CONFIGURED" ) {
+    if ( ( $main::configStatus{configSetServicePorts} // "" ) eq "CONFIGURED" ) {
         main::configLog("configSetServicePorts");
         return 0;
     }
@@ -1097,7 +1097,7 @@ sub configSetServicePorts {
 }
 
 sub configSetKeyboardShortcutsPref {
-    if ( $main::configStatus{zimbraPrefUseKeyboardShortcuts} eq "CONFIGURED" ) {
+    if ( ( $main::configStatus{zimbraPrefUseKeyboardShortcuts} // "" ) eq "CONFIGURED" ) {
         main::configLog("zimbraPrefUseKeyboardShortcuts");
         return 0;
     }
@@ -1108,7 +1108,7 @@ sub configSetKeyboardShortcutsPref {
 }
 
 sub configSetTimeZonePref {
-    if ( $main::configStatus{zimbraPrefTimeZoneId} eq "CONFIGURED" ) {
+    if ( ( $main::configStatus{zimbraPrefTimeZoneId} // "" ) eq "CONFIGURED" ) {
         main::configLog("zimbraPrefTimeZoneId");
         return 0;
     }
@@ -1226,7 +1226,7 @@ sub configSetProxyPrefs {
 
 sub configCreateDomain {
 
-    if ( $main::configStatus{configCreateDomain} eq "CONFIGURED" ) {
+    if ( ( $main::configStatus{configCreateDomain} // "" ) eq "CONFIGURED" ) {
         main::configLog("configCreateDomain");
         return 0;
     }
@@ -1309,7 +1309,7 @@ sub configCreateDomain {
 
 sub configInitGALSyncAccts {
 
-    if ( $main::configStatus{configInitGALSyncAccts} eq "CONFIGURED" ) {
+    if ( ( $main::configStatus{configInitGALSyncAccts} // "" ) eq "CONFIGURED" ) {
         main::configLog("configInitGALSyncAccts");
         return 0;
     }
@@ -1327,7 +1327,7 @@ sub configInitGALSyncAccts {
 
 sub configCreateDefaultDomainGALSyncAcct {
 
-    if ( $main::configStatus{configCreateDefaultGALSyncAcct} eq "CONFIGURED" ) {
+    if ( ( $main::configStatus{configCreateDefaultGALSyncAcct} // "" ) eq "CONFIGURED" ) {
         main::configLog("configCreateDefaultGALSyncAcct");
         return 0;
     }
