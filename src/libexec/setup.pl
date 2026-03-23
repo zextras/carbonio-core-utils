@@ -3730,44 +3730,29 @@ sub configCreateCert {
         progressResult( $rc, 1 );
     };
 
-    if ( isInstalled("carbonio-appserver") ) {
-        if ( !-f "$config{mailboxd_keystore}" && !-f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
-            if ( !-d "$config{mailboxd_directory}" ) {
-                qx(mkdir -p $config{mailboxd_directory}/etc);
-                qx(chown -R zextras:zextras $config{mailboxd_directory});
-                qx(chmod 744 $config{mailboxd_directory}/etc);
-            }
-            $createCertFor->( "appserver", "Creating SSL carbonio-appserver certificate" );
-        }
-        elsif ( $needNewCert ne "" && $ssl_cert_type eq "self" ) {
-            $createCertFor->( "appserver", "Creating new carbonio-appserver SSL certificate" );
-        }
-    }
+    my @cert_components = (
+        [ 'carbonio-appserver',        $config{mailboxd_keystore},    'appserver' ],
+        [ 'carbonio-directory-server', '/opt/zextras/conf/slapd.crt', 'ldap' ],
+        [ 'carbonio-mta',             '/opt/zextras/conf/smtpd.crt', 'mta' ],
+        [ 'carbonio-proxy',           '/opt/zextras/conf/nginx.crt', 'proxy' ],
+    );
 
-    if ( isInstalled("carbonio-directory-server") ) {
-        if ( !-f "/opt/zextras/conf/slapd.crt" && !-f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
-            $createCertFor->( "ldap", "Creating carbonio-directory-server SSL certificate" );
-        }
-        elsif ( $needNewCert ne "" && $ssl_cert_type eq "self" ) {
-            $createCertFor->( "ldap", "Creating new carbonio-directory-server SSL certificate" );
-        }
-    }
+    for my $comp (@cert_components) {
+        my ( $package, $cert_file, $label ) = @$comp;
+        next unless isInstalled($package);
 
-    if ( isInstalled("carbonio-mta") ) {
-        if ( !-f "/opt/zextras/conf/smtpd.crt" && !-f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
-            $createCertFor->( "mta", "Creating carbonio-mta SSL certificate" );
+        # Ensure mailboxd directory exists for appserver
+        if ( $package eq "carbonio-appserver" && !-d "$config{mailboxd_directory}" ) {
+            qx(mkdir -p $config{mailboxd_directory}/etc);
+            qx(chown -R zextras:zextras $config{mailboxd_directory});
+            qx(chmod 744 $config{mailboxd_directory}/etc);
         }
-        elsif ( $needNewCert ne "" && $ssl_cert_type eq "self" ) {
-            $createCertFor->( "mta", "Creating new carbonio-mta SSL certificate" );
-        }
-    }
 
-    if ( isInstalled("carbonio-proxy") ) {
-        if ( !-f "/opt/zextras/conf/nginx.crt" && !-f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
-            $createCertFor->( "proxy", "Creating carbonio-proxy SSL certificate" );
+        if ( !-f "$cert_file" && !-f "/opt/zextras/ssl/carbonio/server/server.crt" ) {
+            $createCertFor->( $label, "Creating $package SSL certificate" );
         }
         elsif ( $needNewCert ne "" && $ssl_cert_type eq "self" ) {
-            $createCertFor->( "proxy", "Creating new carbonio-proxy SSL certificate" );
+            $createCertFor->( $label, "Creating new $package SSL certificate" );
         }
     }
 
@@ -3791,93 +3776,47 @@ sub configSaveCert {
 sub configInstallCert {
     my $rc;
 
-    # Determine which certificates need to be installed
-    my $needStoreInstall = 0;
-    my $needMtaInstall   = 0;
-    my $needLdapInstall  = 0;
-    my $needProxyInstall = 0;
+    # Certificate install check table: [ config_key, package, check_files, deploy_label ]
+    my @install_checks = (
+        [ 'configInstallCertStore', 'carbonio-appserver',        [ $config{mailboxd_keystore} ],                                  'mailboxd' ],
+        [ 'configInstallCertMTA',   'carbonio-mta',             [ '/opt/zextras/conf/smtpd.key', '/opt/zextras/conf/smtpd.crt' ], 'MTA' ],
+        [ 'configInstallCertLDAP',  'carbonio-directory-server', [ '/opt/zextras/conf/slapd.key', '/opt/zextras/conf/slapd.crt' ], 'LDAP' ],
+        [ 'configInstallCertProxy', 'carbonio-proxy',           [ '/opt/zextras/conf/nginx.key', '/opt/zextras/conf/nginx.crt' ], 'Proxy' ],
+    );
 
-    # Check Store/Mailbox certificate
-    if ( $configStatus{configInstallCertStore} eq "CONFIGURED" && $needNewCert eq "" ) {
-        configLog("configInstallCertStore");
-    }
-    elsif ( isInstalled("carbonio-appserver") ) {
-        if ( !( -f "$config{mailboxd_keystore}" ) || $needNewCert ne "" ) {
-            detail("Keystore $config{mailboxd_keystore} does not exist.")
-              if ( !-f "$config{mailboxd_keystore}" );
-            detail("New certificate required: $needNewCert.")
-              if ( $needNewCert ne "" );
-            $needStoreInstall = 1;
+    my %needInstall;
+    for my $check (@install_checks) {
+        my ( $config_key, $package, $check_files, $label ) = @$check;
+        if ( $configStatus{$config_key} eq "CONFIGURED" && $needNewCert eq "" ) {
+            configLog($config_key);
         }
-        else {
-            configLog("configInstallCertStore");
-        }
-    }
-
-    # Check MTA certificate
-    if ( $configStatus{configInstallCertMTA} eq "CONFIGURED" && $needNewCert eq "" ) {
-        configLog("configInstallCertMTA");
-    }
-    elsif ( isInstalled("carbonio-mta") ) {
-        if ( !( -f "/opt/zextras/conf/smtpd.key" || -f "/opt/zextras/conf/smtpd.crt" )
-            || $needNewCert ne "" )
-        {
-            $needMtaInstall = 1;
-        }
-        else {
-            configLog("configInstallCertMTA");
-        }
-    }
-
-    # Check LDAP certificate
-    if ( $configStatus{configInstallCertLDAP} eq "CONFIGURED" && $needNewCert eq "" ) {
-        configLog("configInstallCertLDAP");
-    }
-    elsif ( isInstalled("carbonio-directory-server") ) {
-        if ( !( -f "/opt/zextras/conf/slapd.key" || -f "/opt/zextras/conf/slapd.crt" )
-            || $needNewCert ne "" )
-        {
-            $needLdapInstall = 1;
-        }
-        else {
-            configLog("configInstallCertLDAP");
-        }
-    }
-
-    # Check Proxy certificate
-    if ( $configStatus{configInstallCertProxy} eq "CONFIGURED" && $needNewCert eq "" ) {
-        configLog("configInstallCertProxy");
-    }
-    elsif ( isInstalled("carbonio-proxy") ) {
-        if ( !( -f "/opt/zextras/conf/nginx.key" || -f "/opt/zextras/conf/nginx.crt" )
-            || $needNewCert ne "" )
-        {
-            $needProxyInstall = 1;
-        }
-        else {
-            configLog("configInstallCertProxy");
+        elsif ( isInstalled($package) ) {
+            my $files_exist = grep { -f $_ } @$check_files;
+            if ( !$files_exist || $needNewCert ne "" ) {
+                $needInstall{$config_key} = $label;
+            }
+            else {
+                configLog($config_key);
+            }
         }
     }
 
     # Run deploycrt only once if any certificate needs to be installed
-    if ( $needStoreInstall || $needMtaInstall || $needLdapInstall || $needProxyInstall ) {
-        my @components;
-        push @components, "mailboxd" if $needStoreInstall;
-        push @components, "MTA"      if $needMtaInstall;
-        push @components, "LDAP"     if $needLdapInstall;
-        push @components, "Proxy"    if $needProxyInstall;
+    if (%needInstall) {
+        my @components = map { $needInstall{ $_->[0] } } grep { $needInstall{ $_->[0] } } @install_checks;
         progress( "Installing SSL certificates for: " . join( ", ", @components ) . "..." );
 
         $rc = runAsZextras("/opt/zextras/bin/zmcertmgr deploycrt $ssl_cert_type");
         progressResult( $rc, 1 );
-        configLog("configInstallCertStore") if $needStoreInstall;
-        configLog("configInstallCertMTA")   if $needMtaInstall;
-        if ($needLdapInstall) {
-            stopLdap()  if ($ldapConfigured);
-            startLdap() if ($ldapConfigured);
-            configLog("configInstallCertLDAP");
+        for my $check (@install_checks) {
+            my ( $config_key, $package, $check_files, $label ) = @$check;
+            next unless $needInstall{$config_key};
+            if ( $label eq "LDAP" && $ldapConfigured ) {
+                stopLdap();
+                startLdap();
+            }
+            configLog($config_key);
         }
-        configLog("configInstallCertProxy") if $needProxyInstall;
     }
 
 }
