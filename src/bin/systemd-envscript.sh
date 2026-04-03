@@ -77,6 +77,7 @@ fi
   echo "log_directory=${zimbra_log_directory}"
   echo "mailboxd_directory=${mailboxd_directory}"
   echo "mailboxd_java_heap_new_size_percent=${mailboxd_java_heap_new_size_percent}"
+  echo "mail_service_port=${zimbra_mail_service_port}"
   echo "mailboxd_java_options=${mailboxd_java_options}"
   echo "mysql_errlogfile=${mysql_errlogfile}"
   echo "mysql_mycnf=${mysql_mycnf}"
