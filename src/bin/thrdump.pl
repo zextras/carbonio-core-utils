@@ -83,12 +83,12 @@ if ( exists $opts{'p'} ) {
     usage() if ( !defined($pid) || $pid !~ /^\d+$/ );
 }
 else {
-    $pid = qx(pgrep -f '/opt/zextras/.*/java.*mailboxd');
+    $pid = qx(pgrep -o -f '/opt/zextras/.*/java.*mailboxd');
     chomp($pid);
 }
 
-if ( !kill( 0, $pid ) ) {
-    print STDERR "zmthrdump: pid $pid not found\n";
+if ( !defined($pid) || $pid !~ /^\d+$/ || !kill( 0, $pid ) ) {
+    print STDERR "zmthrdump: unable to determine mailboxd pid\n";
     exit 1;
 }
 
