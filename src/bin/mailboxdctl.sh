@@ -83,7 +83,6 @@ case "$1" in
       -Xms${javaXms}m \
       -Xmx${javaXmx}m \
       -Djava.io.tmpdir=/opt/zextras/mailboxd/work \
-      -Djava.library.path=/opt/zextras/lib \
       -Dzimbra.config=/opt/zextras/conf/localconfig.xml \
       -cp /opt/zextras/mailbox/jars/mailbox.jar:/opt/zextras/mailbox/jars/* \
       com.zextras.mailbox.Mailbox &>>/opt/zextras/log/zmmailboxd.out &

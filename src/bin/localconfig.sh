@@ -19,5 +19,5 @@ java="${ROOT}/common/bin/java"
 CP="${ROOT}/mailbox/jars/*"
 
 exec ${java} -client -cp "$CP" \
-  -Djava.library.path=${ROOT}/lib -Dzimbra.home="${ROOT}" \
+  -Dzimbra.home="${ROOT}" \
   com.zimbra.cs.localconfig.LocalConfigCLI "$@"
