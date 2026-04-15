@@ -78,6 +78,8 @@ case "$1" in
 
     # shellcheck disable=SC2086
     /opt/zextras/common/bin/java \
+      --enable-preview \
+      --enable-native-access=ALL-UNNAMED \
       -Dfile.encoding=UTF-8 \
       $mailboxd_java_options \
       -Xms${javaXms}m \
