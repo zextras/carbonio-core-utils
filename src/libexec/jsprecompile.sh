@@ -42,7 +42,6 @@ done
 java_cmd="${zimbra_java_home}/bin/java \
   -client -Xmx256m \
   -Dzimbra.home=/opt/zextras \
-  -Djava.library.path=/opt/zextras/lib \
   -classpath ${jspc_class_path}:${class_path}"
 
 if [ -d "${jspc_build_dir}" ]; then

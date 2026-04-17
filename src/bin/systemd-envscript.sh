@@ -4,15 +4,8 @@
 eval "$(/opt/zextras/common/bin/java \
   -client \
   -cp '/opt/zextras/mailbox/jars/*' \
-  -Djava.library.path=/opt/zextras/lib \
   -Dzimbra.home=/opt/zextras \
   com.zimbra.cs.localconfig.LocalConfigCLI -q -m shell || true)"
-
-# java
-
-if [[ "${zimbra_zmjava_java_library_path}" = "" ]]; then
-  zimbra_zmjava_java_library_path=/opt/zextras/lib
-fi
 
 # openldap
 # Check for ldap_bind_url first (can contain multiple URLs), then fall back to ldap_url
@@ -68,7 +61,6 @@ fi
   echo "bind_url=${bind_url}"
   echo "configd_listen_port=${zmconfigd_listen_port}"
   echo "configd_rewrite_timeout=${zimbra_configrewrite_timeout}"
-  echo "java_library_path=${zimbra_zmjava_java_library_path}"
   echo "java_options=${zimbra_zmjava_options}"
   echo "java_xms=${javaXms}"
   echo "java_xmx=${javaXmx}"

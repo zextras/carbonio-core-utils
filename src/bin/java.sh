@@ -11,14 +11,9 @@ zmsetvars -f
 
 java_options="-XX:ErrorFile=/opt/zextras/log"
 
-if [ "${zimbra_zmjava_java_library_path}" = "" ]; then
-  zimbra_zmjava_java_library_path=/opt/zextras/lib
-fi
-
 # shellcheck disable=SC2086
 exec "${zimbra_java_home}/bin/java" ${java_options} \
   -client ${zimbra_zmjava_options} \
   -Dzimbra.home=/opt/zextras \
-  -Djava.library.path=${zimbra_zmjava_java_library_path} \
   -classpath "/opt/zextras/mailbox/jars/*" \
   "$@"
