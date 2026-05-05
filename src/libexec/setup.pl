@@ -1145,7 +1145,7 @@ sub getLocalConfig {
 
     detail("Getting local config $key...");
     my $expand = $raw ? "" : "-x";
-    my $val = qx(/opt/zextras/bin/zmlocalconfig $expand -s -m nokey ${key} 2> /dev/null);
+    my $val = qx(/opt/zextras/bin/configd localconfig $expand -s -m nokey ${key} 2> /dev/null);
     chomp $val;
     detail("DEBUG: Local config loaded $key=$val.") if $debug;
     $main::loaded{lc}{$key} = $val;
@@ -1161,7 +1161,7 @@ sub deleteLocalConfig {
     my $key = shift;
 
     detail("Deleting local config $key...");
-    my $rc = runAsZextras("/opt/zextras/bin/zmlocalconfig -u ${key} 2> /dev/null");
+    my $rc = runAsZextras("/opt/zextras/bin/configd localconfig -u ${key} 2> /dev/null");
     if ( $rc == 0 ) {
         detail("DEBUG: Deleted local config key $key.") if $debug;
         delete( $main::loaded{lc}{$key} )             if ( exists $main::loaded{lc}{$key} );
@@ -1185,7 +1185,7 @@ sub setLocalConfig {
     $main::saved{lc}{$key}  = $val;
     $main::loaded{lc}{$key} = $val;
     $val =~ s/\$/\\\$/g;
-    runAsZextras("/opt/zextras/bin/zmlocalconfig -f -e ${key}=\'${val}\' 2> /dev/null");
+    runAsZextras("/opt/zextras/bin/configd localconfig -f -e ${key}=\'${val}\' 2> /dev/null");
 }
 
 # Batch version of setLocalConfig - sets multiple values in a single call
@@ -1210,7 +1210,7 @@ sub setLocalConfigBatch {
     }
 
     if (@args) {
-        runAsZextras( "/opt/zextras/bin/zmlocalconfig -f -e " . join( " ", @args ) . " 2> /dev/null" );
+        runAsZextras( "/opt/zextras/bin/configd localconfig -f -e " . join( " ", @args ) . " 2> /dev/null" );
     }
 }
 
@@ -1534,9 +1534,9 @@ sub applyConfig {
             startAllSystemdTargets();
         }
         else {
-            runAsZextras("/opt/zextras/bin/zmcontrol stop");
-            runAsZextras("/opt/zextras/bin/zmcontrol start");
-            qx($SU "/opt/zextras/bin/zmcontrol status");
+            runAsZextras("/opt/zextras/bin/configd control stop");
+            runAsZextras("/opt/zextras/bin/configd control start");
+            qx($SU "/opt/zextras/bin/configd control status");
         }
         progress("done.\n");
 
