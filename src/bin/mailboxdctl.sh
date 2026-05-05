@@ -78,12 +78,13 @@ case "$1" in
 
     # shellcheck disable=SC2086
     /opt/zextras/common/bin/java \
+      --enable-preview \
+      --enable-native-access=ALL-UNNAMED \
       -Dfile.encoding=UTF-8 \
       $mailboxd_java_options \
       -Xms${javaXms}m \
       -Xmx${javaXmx}m \
       -Djava.io.tmpdir=/opt/zextras/mailboxd/work \
-      -Djava.library.path=/opt/zextras/lib \
       -Dzimbra.config=/opt/zextras/conf/localconfig.xml \
       -cp /opt/zextras/mailbox/jars/mailbox.jar:/opt/zextras/mailbox/jars/* \
       com.zextras.mailbox.Mailbox &>>/opt/zextras/log/zmmailboxd.out &

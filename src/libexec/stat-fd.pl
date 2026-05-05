@@ -88,7 +88,7 @@ sub get_mboxd_pid() {
     my $pid = 0;
     if ( !$pid ) {
         eval {
-            $pid = qx(pgrep -f '/opt/zextras/.*/java.*mailboxd');
+            $pid = qx(pgrep -o -f '/opt/zextras/.*/java.*mailboxd');
             chomp($pid);
         };
         if ( !$pid ) {

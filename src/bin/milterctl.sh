@@ -16,8 +16,13 @@ configfile=/opt/zextras/conf/localconfig.xml
 log4jfile=/opt/zextras/conf/milter.log4j.properties
 java="/opt/zextras/bin/zmjava"
 
-runcmd="${java} -Dlog4j.configurationFile=file:${log4jfile} -Dzimbra.home=\"/opt/zextras\" -Dzimbra.config=\"${configfile}\" \
-   com.zimbra.cs.milter.MilterServer"
+runcmd="${java} \
+    --enable-preview \
+    --enable-native-access=ALL-UNNAMED \
+    -Dlog4j.configurationFile=file:${log4jfile} \
+    -Dzimbra.home=\"/opt/zextras\" \
+    -Dzimbra.config=\"${configfile}\" \
+    com.zimbra.cs.milter.MilterServer"
 
 get_pid() {
   pid=$(pgrep -f '/opt/zextras/.*/java.*milter.MilterServer')

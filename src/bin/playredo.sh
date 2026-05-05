@@ -82,7 +82,6 @@ done
 ${zimbra_java_home}/bin/java \
   ${xms_xmx_options} ${sanitized_options} \
   -Dzimbra.config=/opt/zextras/conf/localconfig.xml \
-  -Djava.library.path=/opt/zextras/lib \
   -classpath ${jardirs} \
   com.zimbra.cs.redolog.util.PlaybackUtil "$@"
 rc=$?

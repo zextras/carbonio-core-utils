@@ -25,10 +25,6 @@ done
 
 java_options="-XX:ErrorFile=/opt/zextras/log"
 
-if [ "${zimbra_zmjava_java_library_path}" = "" ]; then
-  zimbra_zmjava_java_library_path=/opt/zextras/lib
-fi
-
 if [ "${zimbra_zmjava_java_ext_dirs}" = "" ]; then
   zimbra_zmjava_java_ext_dirs=${JRE_EXT_DIR}:/opt/zextras/mailbox/jars:${ZIMBRA_EXT_DIR}
 fi
@@ -37,6 +33,5 @@ fi
 exec "${zimbra_java_home}/bin/java" ${java_options} \
   -client ${zimbra_zmjava_options} \
   -Dzimbra.home=/opt/zextras \
-  -Djava.library.path=${zimbra_zmjava_java_library_path} \
   -Djava.ext.dirs=${zimbra_zmjava_java_ext_dirs} \
   "$@"

@@ -39,7 +39,7 @@ check_advanced() {
 
 check_running_advanced() {
   local output
-  if output=$(/opt/zextras/bin/carbonio core getVersion 2>&1); then
+  if output=$(/opt/zextras/bin/carbonio core getAllServicesStatus 2>&1); then
     [[ "$output" != *"Unable to communicate with server"* ]]
   else
     return 1
