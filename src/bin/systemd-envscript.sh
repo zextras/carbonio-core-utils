@@ -33,13 +33,6 @@ javaXmx=${mailboxd_java_heap_size:=512}
 javaXms=${javaXmx}
 mailboxd_java_heap_new_size_percent=${mailboxd_java_heap_new_size_percent:=25}
 
-# mailboxd
-if [[ -d ${mailboxd_directory} ]]; then
-  if [[ ! -d ${mailboxd_directory}/work/service/jsp ]]; then
-    mkdir -p "${mailboxd_directory}/work/service/jsp"
-  fi
-fi
-
 mailboxd_thread_stack_size=${mailboxd_thread_stack_size:=256k}
 if ! echo "${mailboxd_java_options}" | grep 'Xss'; then
   mailboxd_java_options="${mailboxd_java_options} -Xss${mailboxd_thread_stack_size}"
