@@ -134,78 +134,39 @@ sub postLdapStart {
   }
 
   $mesg = $ldap->bind( "cn=config", password => "$ldap_root_password" );
-
-  $infile = "$config_dir/carbonio.ldif";
-  $ldifin = Net::LDAP::LDIF->new( "$infile", "r", onerror => 'undef' );
-  while ( not $ldifin->eof() ) {
-    my $entry = $ldifin->read_entry();
-    if ( $ldifin->error() ) {
-      print "Error msg: ",    $ldifin->error(),       "\n";
-      print "Error lines:\n", $ldifin->error_lines(), "\n";
-      return 1;
-    } elsif ($entry) {
-      $entry->changetype("add");
-      $entry->update($ldap);
-    }
+  if ( $mesg->code ) {
+    print "ERROR: bind to cn=config failed: ", $mesg->error, "\n";
+    return 2;
   }
 
-  $infile = "$source_config_dir/zimbra/zimbra_globalconfig.ldif";
-  $ldifin = Net::LDAP::LDIF->new( "$infile", "r", onerror => 'undef' );
-  while ( not $ldifin->eof() ) {
-    my $entry = $ldifin->read_entry();
-    if ( $ldifin->error() ) {
-      print "Error msg: ",    $ldifin->error(),       "\n";
-      print "Error lines:\n", $ldifin->error_lines(), "\n";
-      return 1;
-    } elsif ($entry) {
-      $entry->changetype("add");
-      $entry->update($ldap);
-    }
-  }
+  my @ldif_files = (
+    "$config_dir/carbonio.ldif",
+    "$source_config_dir/zimbra/zimbra_globalconfig.ldif",
+    "$source_config_dir/zimbra/zimbra_defaultcos.ldif",
+    "$source_config_dir/zimbra/zimbra_defaultexternalcos.ldif",
+    ( -f "/opt/zextras/conf/ldap/mimehandlers.ldif"
+      ? "/opt/zextras/conf/ldap/mimehandlers.ldif"
+      : "$source_config_dir/zimbra/mimehandlers.ldif" ),
+  );
 
-  $infile = "$source_config_dir/zimbra/zimbra_defaultcos.ldif";
-  $ldifin = Net::LDAP::LDIF->new( "$infile", "r", onerror => 'undef' );
-  while ( not $ldifin->eof() ) {
-    my $entry = $ldifin->read_entry();
-    if ( $ldifin->error() ) {
-      print "Error msg: ",    $ldifin->error(),       "\n";
-      print "Error lines:\n", $ldifin->error_lines(), "\n";
-      return 1;
-    } elsif ($entry) {
-      $entry->changetype("add");
-      $entry->update($ldap);
-    }
-  }
-
-  $infile = "$source_config_dir/zimbra/zimbra_defaultexternalcos.ldif";
-  $ldifin = Net::LDAP::LDIF->new( "$infile", "r", onerror => 'undef' );
-  while ( not $ldifin->eof() ) {
-    my $entry = $ldifin->read_entry();
-    if ( $ldifin->error() ) {
-      print "Error msg: ",    $ldifin->error(),       "\n";
-      print "Error lines:\n", $ldifin->error_lines(), "\n";
-      return 1;
-    } elsif ($entry) {
-      $entry->changetype("add");
-      $entry->update($ldap);
-    }
-  }
-
-  if ( -f "/opt/zextras/conf/ldap/mimehandlers.ldif" ) {
-    $infile = "/opt/zextras/conf/ldap/mimehandlers.ldif";
-  } else {
-    $infile = "$source_config_dir/zimbra/mimehandlers.ldif";
-  }
-  $ldifin = Net::LDAP::LDIF->new( "$infile", "r", onerror => 'undef' );
-  while ( not $ldifin->eof() ) {
-    my $entry = $ldifin->read_entry();
-    if ( $ldifin->error() ) {
-      print "Error msg: ",    $ldifin->error(),       "\n";
-      print "Error lines:\n", $ldifin->error_lines(), "\n";
-      return 1;
-    } elsif ($entry) {
-      $entry->changetype("add");
-      $entry->update($ldap);
+  for my $f (@ldif_files) {
+    $infile = $f;
+    $ldifin = Net::LDAP::LDIF->new( "$infile", "r", onerror => 'undef' );
+    while ( not $ldifin->eof() ) {
+      my $entry = $ldifin->read_entry();
+      if ( $ldifin->error() ) {
+        print "Error msg: ",    $ldifin->error(),       "\n";
+        print "Error lines:\n", $ldifin->error_lines(), "\n";
+        return 1;
+      } elsif ($entry) {
+        $entry->changetype("add");
+        my $res = $entry->update($ldap);
+        if ( $res && $res->code ) {
+          print "ERROR: ldap add failed for ", $entry->dn(),
+                " (from $infile): ", $res->error, "\n";
+          return 2;
+        }
+      }
     }
   }
 
@@ -219,7 +180,8 @@ sub setLocalConfig {
   if ( exists $main::saved{lc}{$key} && $main::saved{lc}{$key} eq $val ) {
     return;
   }
-  $main::saved{lc}{$key} = $val;
+  $main::saved{lc}{$key}  = $val;
+  $main::loaded{lc}{$key} = $val;
   qx(su - zextras -c '/opt/zextras/bin/zmlocalconfig -f -e ${key}=\'${val}\' 2> /dev/null');
 }
 
