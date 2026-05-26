@@ -4651,6 +4651,19 @@ sub configSetupLdap {
 
     if ( !$ldapConfigured && isEnabled("carbonio-directory-server") && !-f "/opt/zextras/.enable_replica" && $newinstall && ( $config{LDAPHOST} eq $config{HOSTNAME} ) ) {
         progress("Initializing ldap...");
+        # Stop any already-running slapd BEFORE preLdapStart rewrites
+        # olcDatabase={0}config.ldif. Otherwise slapd keeps the stale
+        # olcRootPW in memory and the subsequent cn=config bind fails
+        # with rc=49 invalid credentials against an on-disk hash that
+        # is, in fact, correct. `systemctl start` / `ldap start` are
+        # no-ops on an already-active unit, so we cannot rely on them
+        # to reload the rewritten config.
+        if ( isSystemd() ) {
+            system("systemctl stop carbonio-openldap.service");
+        }
+        else {
+            runAsZextras("/opt/zextras/bin/ldap stop");
+        }
         ldapinit->preLdapStart( $config{LDAPROOTPASS}, $config{LDAPADMINPASS} );
         if ( isSystemd() ) {
             system("systemctl start carbonio-openldap.service");
