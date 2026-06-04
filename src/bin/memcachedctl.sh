@@ -19,6 +19,15 @@ zmsetvars
 
 get_pid() {
   pid=$(pidof /opt/zextras/common/bin/memcached)
+  # Fallback: pidof resolves /proc/<pid>/exe, so when memcached is launched
+  # outside of this script (e.g. by carbonio-memcached-sidecar.service) through
+  # a symlinked or otherwise differently-resolved path, the exact-path match
+  # misses even though memcached is running. Match the command line of the
+  # zextras binary instead, which stays scoped to our instance (not a
+  # distro-packaged memcached) while tolerating the path difference.
+  if [ "$pid" = "" ]; then
+    pid=$(pgrep -f '/opt/zextras/common/bin/memcached')
+  fi
 }
 
 check_running() {
