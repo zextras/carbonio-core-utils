@@ -11,8 +11,9 @@ properties(defaultPipelineProperties())
 
 pipeline {
     options {
-        skipDefaultCheckout()
         buildDiscarder(logRotator(numToKeepStr: '5'))
+        disableConcurrentBuilds()
+        skipDefaultCheckout()
         timeout(time: 1, unit: 'HOURS')
     }
     agent {
