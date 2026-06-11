@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/zextras/carbonio-core-utils/compare/v1.0.0...v1.0.1) (2026-06-11)
+
+### Bug Fixes
+
+* **ci:** remove @semantic-release/exec and VERSION from .releaserc.json ([ac7e7ea](https://github.com/zextras/carbonio-core-utils/commit/ac7e7eacda0830a123969bc67cdeaea3f4a2ec23))
+
 ## 1.0.0 (2026-06-11)
 
 ### Features
