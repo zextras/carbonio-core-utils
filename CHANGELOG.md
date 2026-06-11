@@ -1,3 +1,9 @@
+## [1.0.2](https://github.com/zextras/carbonio-core-utils/compare/v1.0.1...v1.0.2) (2026-06-11)
+
+### Bug Fixes
+
+* **mta:** use Postfix 3.11 parameter names and set compatibility_level ([#154](https://github.com/zextras/carbonio-core-utils/issues/154)) ([3e86b04](https://github.com/zextras/carbonio-core-utils/commit/3e86b04a5f2140a7d191c5d0f419041ab413f9e6))
+
 ## [1.0.1](https://github.com/zextras/carbonio-core-utils/compare/v1.0.0...v1.0.1) (2026-06-11)
 
 ### Bug Fixes
