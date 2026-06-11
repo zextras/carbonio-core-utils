@@ -13,11 +13,8 @@
       "preset": "conventionalcommits"
     }],
     "@semantic-release/changelog",
-    ["@semantic-release/exec", {
-      "prepareCmd": "echo ${nextRelease.version} > VERSION"
-    }],
     ["@semantic-release/git", {
-      "assets": ["CHANGELOG.md", "VERSION"],
+      "assets": ["CHANGELOG.md"],
       "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
     }],
     "@semantic-release/github"
