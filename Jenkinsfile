@@ -1,5 +1,5 @@
 library(
-    identifier: 'jenkins-lib-common@v2.8.5',
+    identifier: 'jenkins-lib-common@v2.11.2',
     retriever: modernSCM([
         $class: 'GitSCMSource',
         remote: 'git@github.com:zextras/jenkins-lib-common.git',
@@ -27,6 +27,11 @@ pipeline {
                 stash includes: '**', name: 'staging'
             }
         }
+        stage('Skip CI') {
+            steps {
+                script { semanticRelease.guard() }
+            }
+        }
         stage('SonarQube analysis') {
             steps {
                 unstash 'staging'
@@ -37,6 +42,11 @@ pipeline {
                     installationName: 'SonarQube instance') {
                     sh "${scannerHome}/bin/sonar-scanner"
                 }
+            }
+        }
+        stage('Semantic Release') {
+            steps {
+                script { semanticRelease() }
             }
         }
     }
