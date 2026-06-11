@@ -25,7 +25,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
-                stash includes: '**', name: 'staging'
+                gitMetadata()
             }
         }
         stage('Skip CI') {
@@ -35,7 +35,6 @@ pipeline {
         }
         stage('SonarQube analysis') {
             steps {
-                unstash 'staging'
                 script {
                     scannerHome = tool 'SonarScanner';
                 }
