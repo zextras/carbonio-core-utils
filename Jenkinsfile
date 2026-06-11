@@ -30,7 +30,7 @@ pipeline {
         }
         stage('Skip CI') {
             steps {
-                semanticRelease.guard()
+                script { semanticRelease.guard() }
             }
         }
         stage('SonarQube analysis') {
