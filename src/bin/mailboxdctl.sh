@@ -94,9 +94,19 @@ case "$1" in
       exit $rc
     fi
     rc=1
-    MPORT=$(/opt/zextras/bin/zmprov -l gs "${zimbra_server_hostname}" zimbraMailPort | grep zimbraMailPort: | awk '{print $2}')
+    MPORT=""
+    for ((i = 0; i < 6; i++)); do
+      MPORT=$(/opt/zextras/bin/zmprov -l gs "${zimbra_server_hostname}" zimbraMailPort | grep zimbraMailPort: | awk '{print $2}')
+      if [ -n "${MPORT}" ]; then
+        break
+      fi
+      sleep 5
+    done
     ncOpt="-z"
-    for ((i = 0; i < 12; i++)); do
+    # 36 * 5s = 180s: matches mailboxd's own internal DB-connect retry
+    # window, giving the JVM enough headroom to open its port under
+    # boot-time contention (CO-4008).
+    for ((i = 0; i < 36; i++)); do
       $NC $ncOpt localhost "${MPORT}" >/dev/null 2>&1
       rc=$?
       if [ $rc -eq 0 ]; then
