@@ -5,50 +5,10 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-source /opt/zextras/bin/zmshutil || exit 1
-zmsetvars -f
+# CO-3682: aggregate quota computation has been removed from the mailbox
+# server. This command is kept as a no-op so that existing scripts and
+# scheduled jobs invoking it do not break.
 
-COMPUTE_HOST=$(/opt/zextras/common/bin/ldapsearch -x -H "${ldap_url}" -w "${zimbra_ldap_password}" -D uid=zimbra,cn=admins,cn=zimbra -b '' '(&(objectClass=zimbraServer)(zimbraServiceEnabled=mailbox))' zimbraServiceHostname | awk 'BEGIN { FOUND=0 } { if ((FOUND == 0) && ($1 ~ /^zimbraServiceHostname:$/)) { print $2 ; FOUND=1 } }')
-
-while [ $# -gt 0 ]; do
-  if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
-    echo "usage: $0 [ -h | --help ]"
-    echo "Compute current total aggregate quota used by each domain in the system and update LDAP with the data."
-    echo ""
-    echo "  -h, --help    display this help and exit"
-    echo ""
-    exit 0
-  elif [ "$1" == "-d" ] || [ "$1" == "--debug" ]; then
-    DEBUG=1
-    shift
-  elif [ "$1" == "-f" ] || [ "$1" == "--force" ]; then
-    FORCE=1
-    shift
-  else
-    echo "Usage: $0 [ -h | --help ]"
-    echo "Compute current total aggregate quota used by each domain in the system and update LDAP with the data."
-    echo ""
-    echo "  -h, --help    display this help and exit"
-    echo ""
-    exit 1
-  fi
-done
-
-if [ "${DEBUG}" == "1" ]; then
-  echo "Your hostname:                 ${zimbra_server_hostname}"
-  echo "Host this should be run from:  ${COMPUTE_HOST}"
-fi
-
-# Exit if you are not the chosen one!
-if [ "${zimbra_server_hostname}" != "${COMPUTE_HOST}" ] && [ "${FORCE}" != "1" ]; then
-  if [ "${DEBUG}" == "1" ]; then
-    echo "You are not the chosen one!  Run this command from host:  ${COMPUTE_HOST}"
-  fi
-  exit
-fi
-
-if [ "${FORCE}" == "1" ] && [ "${DEBUG}" == "1" ]; then
-  echo "Forcing execution from un-expected host:  ${zimbra_server_hostname}"
-fi
-
-exec /opt/zextras/bin/zmjava com.zimbra.soap.SoapCommandUtil -z ComputeAggregateQuotaUsageRequest
+echo "zmcomputequotausage is deprecated and no longer functional."
+echo "Aggregate quota computation has been removed in favor of the unified quota management system."
+exit 0
