@@ -65,7 +65,6 @@ case "$1" in
       sleep 1
     done
 
-    check_running
     if [ $running = 1 ]; then
       echo "done."
       exit 0
