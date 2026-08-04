@@ -59,9 +59,7 @@ case "$1" in
     sleep 3
     for ((i = 0; i < 30; i++)); do
       check_running
-      if [ $running = 1 ]; then
-        break
-      fi
+      [ $running = 1 ] && break
       sleep 1
     done
 
