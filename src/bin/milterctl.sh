@@ -57,6 +57,13 @@ case "$1" in
 
     nohup sh -c "exec ${runcmd} 2>&1" >/opt/zextras/log/milter.out 2>&1 &
     sleep 3
+    for ((i = 0; i < 30; i++)); do
+      check_running
+      if [ $running = 1 ]; then
+        break
+      fi
+      sleep 1
+    done
 
     check_running
     if [ $running = 1 ]; then
